@@ -1,0 +1,33 @@
+import { NextResponse } from 'next/server';
+import { connectDB } from '@/lib/mongodb';
+import { Product } from '@/lib/models';
+
+export async function PATCH(request, { params }) {
+  try {
+    await connectDB();
+    const body = await request.json();
+    // Sanitise allowed fields
+    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'isActive'];
+    const update = {};
+    for (const key of allowed) {
+      if (key in body) update[key] = body[key];
+    }
+    if (update.category === '') update.category = null;
+    const product = await Product.findByIdAndUpdate(params.id, update, { new: true, runValidators: true }).populate('category', 'name');
+    if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ product });
+  } catch (err) {
+    if (err.code === 11000) return NextResponse.json({ error: 'Product name already exists' }, { status: 409 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(_, { params }) {
+  try {
+    await connectDB();
+    await Product.findByIdAndDelete(params.id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

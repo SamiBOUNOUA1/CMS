@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/sbounoua/Downloads/catering-quotes-app/src/app/api/event-type-configs/\\\\[id\\\\])"
+    ],
+    "additionalDirectories": [
+      "/Users/sbounoua/Downloads/catering-quotes-app/src/app/api/event-type-configs"
+    ]
+  }
+}
