@@ -53,6 +53,18 @@ const customerTypeConfigSchema = new Schema(
 );
 export const CustomerTypeConfig = models.CustomerTypeConfig || model('CustomerTypeConfig', customerTypeConfigSchema);
 
+// ── STAFF ROLE CONFIG ─────────────────────────────────────────────────────────
+const staffRoleConfigSchema = new Schema(
+  {
+    key:       { type: String, required: true, unique: true, trim: true },
+    label:     { type: String, required: true, trim: true },
+    isActive:  { type: Boolean, default: true },
+    sortOrder: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+export const StaffRoleConfig = models.StaffRoleConfig || model('StaffRoleConfig', staffRoleConfigSchema);
+
 // ── ROLE ──────────────────────────────────────────────────────────────────────
 const roleSchema = new Schema(
   {
@@ -204,11 +216,7 @@ export const Event = models.Event || model('Event', eventSchema);
 
 // ── STAFF ASSIGNMENT (shared by Order and Quote) ──────────────────────────────
 const staffAssignmentSchema = new Schema({
-  role: {
-    type: String,
-    enum: ['head-chef', 'sous-chef', 'server', 'bartender', 'coordinator', 'other'],
-    required: true,
-  },
+  role: { type: String, required: true },
   count: { type: Number, default: 1, min: 1 },
   hours: { type: Number, required: true, min: 0 },
   ratePerHour: { type: Number, required: true, min: 0 },

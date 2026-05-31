@@ -51,6 +51,11 @@ const IconTravelRegions = () => (
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
   </svg>
 );
+const IconStaffRoles = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M11 6.08V4h2v2.08A8.01 8.01 0 0 1 19.92 13H22v2h-2.08A8.01 8.01 0 0 1 13 19.92V22h-2v-2.08A8.01 8.01 0 0 1 4.08 15H2v-2h2.08A8.01 8.01 0 0 1 11 6.08zM12 18c3.31 0 6-2.69 6-6s-2.69-6-6-6-6 2.69-6 6 2.69 6 6 6zm0-4a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+  </svg>
+);
 const IconChevron = ({ open }) => (
   <svg
     width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
@@ -84,6 +89,7 @@ function useNavGroups(t, perms) {
         { href: '/settings/order-statuses',  label: ts.tabs.orderStatuses, icon: <IconOrderStatuses />,   perm: 'manage_order_statuses' },
         { href: '/settings/customer-types',  label: ts.tabs.customerTypes, icon: <IconCustomerTypes />,   perm: 'manage_customer_types' },
         { href: '/settings/travel-regions',  label: ts.tabs.travelRegions, icon: <IconTravelRegions />,   perm: 'manage_event_types' },
+        { href: '/settings/staff-roles',     label: ts.tabs.staffRoles,    icon: <IconStaffRoles />,       perm: 'manage_event_types' },
       ].filter(i => perms[i.perm]),
     },
     {

@@ -2,13 +2,13 @@
 
 import { SectionTitle, Field, FormInput, FormSelect, fmt, btnOutline, removeBtn } from './FormPrimitives';
 
-export const STAFF_ROLES = ['head-chef', 'sous-chef', 'server', 'bartender', 'coordinator', 'other'];
-export const defaultStaff = () => ({ role: 'server', count: 1, hours: 8, ratePerHour: 25, notes: '' });
+export const defaultStaff = (roleKey = '') => ({ role: roleKey, count: 1, hours: 8, ratePerHour: 25, notes: '' });
 
-export function StepStaff({ form, setForm, isMobile, tn, currency }) {
+export function StepStaff({ form, setForm, isMobile, tn, currency, staffRoles = [] }) {
   const ts = tn.staff;
+  const defaultRoleKey = staffRoles.length > 0 ? staffRoles[0].key : '';
 
-  const addStaff = () => setForm(f => ({ ...f, staffAssignments: [...f.staffAssignments, defaultStaff()] }));
+  const addStaff = () => setForm(f => ({ ...f, staffAssignments: [...f.staffAssignments, defaultStaff(defaultRoleKey)] }));
   const removeStaff = i => setForm(f => ({ ...f, staffAssignments: f.staffAssignments.filter((_, idx) => idx !== i) }));
   const setStaffField = (i, field, val) => setForm(f => {
     const arr = [...f.staffAssignments];
@@ -29,7 +29,7 @@ export function StepStaff({ form, setForm, isMobile, tn, currency }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <Field label={ts.role}>
               <FormSelect value={sa.role} onChange={e => setStaffField(i, 'role', e.target.value)}>
-                {STAFF_ROLES.map(r => <option key={r} value={r}>{tn.staffRoles[r]}</option>)}
+                {staffRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
               </FormSelect>
             </Field>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 12, alignItems: 'flex-end' }}>

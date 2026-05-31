@@ -62,7 +62,7 @@ export async function PATCH(request, { params }) {
     const _sTotal = (order.staffAssignments || []).reduce(
       (s, sa) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
     );
-    order.totalAmount = +(_iTotal + _sTotal - (order.discountAmount || 0)).toFixed(2);
+    order.totalAmount = +(_iTotal + _sTotal + (order.travelPrice || 0) - (order.discountAmount || 0)).toFixed(2);
 
     await order.save();
     const updated = await Order.findById(params.id).populate('event').lean();

@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/orders/[id]/page": [
+    "/orders/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/orders/[id]/page.js"
+      "static/chunks/app/orders/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -11,10 +11,50 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/quotes/[id]/page": [
+    "/customers/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/quotes/[id]/page.js"
+      "static/chunks/app/customers/page.js"
+    ],
+    "/calendar/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/calendar/page.js"
+    ],
+    "/settings/catalog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/settings/catalog/page.js"
+    ],
+    "/settings/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/settings/layout.js"
+    ],
+    "/settings/permissions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/settings/permissions/page.js"
+    ],
+    "/orders/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/orders/[id]/page.js"
+    ],
+    "/orders/[id]/payments/[paymentId]/receipt/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/orders/[id]/payments/[paymentId]/receipt/page.js"
+    ],
+    "/settings/staff-roles/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/settings/staff-roles/page.js"
+    ],
+    "/settings/company/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/settings/company/page.js"
     ]
   }
 }

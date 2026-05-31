@@ -58,9 +58,17 @@ export default function PaymentReceiptPage() {
     return <div style={{ padding: 40, textAlign: 'center', color: '#5f6368' }}>Receipt not found.</div>;
   }
 
+  const travelFee = order.travelPrice || 0;
+  const discount = order.discountAmount || 0;
   const orderTotal = order.totalAmount || 0;
   const totalPaid = +allPayments.reduce((s, p) => s + p.amount, 0).toFixed(2);
   const remaining = +(orderTotal - totalPaid).toFixed(2);
+
+  const itemsSubtotal = (order.lineGroups || []).reduce((s, g) =>
+    s + (g.items || []).reduce((gi, item) => gi + Number(g.count) * Number(item.unitPrice), 0), 0);
+  const staffSubtotal = (order.staffAssignments || []).reduce((s, sa) =>
+    s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0);
+  const subtotal = +(itemsSubtotal + staffSubtotal).toFixed(2);
 
   const clientName = order.clientName || '—';
   const clientEmail = order.clientEmail || '';
@@ -77,7 +85,21 @@ export default function PaymentReceiptPage() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px', fontFamily: 'Georgia, serif', color: '#1a1a1a' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media print {
+          @page { margin: 10mm 14mm 12mm; size: A4; }
+          .receipt-root { padding: 0 !important; }
+          .receipt-section { margin-bottom: 12px !important; }
+          .receipt-header { margin-bottom: 14px !important; padding-bottom: 12px !important; }
+          .receipt-client-event { margin-top: 10px !important; padding-bottom: 2px !important; }
+          .receipt-payment-box { padding: 10px 14px !important; margin-bottom: 14px !important; }
+          .receipt-summary { margin-bottom: 14px !important; }
+          .receipt-table td, .receipt-table th { padding: 4px 6px !important; }
+          .receipt-group-header { padding: 5px 10px !important; margin-bottom: 4px !important; }
+          .receipt-item { margin-bottom: 4px !important; }
+        }
+      `}</style>
 
       {/* Screen nav — hidden in print */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
@@ -94,7 +116,7 @@ export default function PaymentReceiptPage() {
       </div>
 
       {/* ── Document header ── */}
-      <div style={{ marginBottom: 28 }}>
+      <div className="receipt-header" style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 20 }}>
           {/* Company identity */}
           <div style={{ maxWidth: '55%' }}>
@@ -134,7 +156,7 @@ export default function PaymentReceiptPage() {
         <hr className="pdf-rule-thin" style={{ marginTop: 3 }} />
 
         {/* Client + Event info */}
-        <div style={{ display: 'flex', gap: 0, marginTop: 16, paddingBottom: 4 }}>
+        <div className="receipt-client-event" style={{ display: 'flex', gap: 0, marginTop: 16, paddingBottom: 4 }}>
           <div style={{ flex: 1, paddingRight: 24, borderRight: '1px solid #e8e0d0' }}>
             <p style={pdfLabel}>{tr.client}</p>
             <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '11pt', color: '#1a1a1a' }}>{clientName}</p>
@@ -156,7 +178,7 @@ export default function PaymentReceiptPage() {
       </div>
 
       {/* ── Payment Details (highlighted) ── */}
-      <div style={{ background: '#fafaf7', border: '1px solid #e8e0d0', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
+      <div className="receipt-payment-box" style={{ background: '#fafaf7', border: '1px solid #e8e0d0', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
         <p style={sectionTitle}>{tr.paymentDetails}</p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -198,15 +220,15 @@ export default function PaymentReceiptPage() {
 
       {/* ── Order Items ── */}
       {(order.lineGroups || []).some(g => g.items?.length > 0) && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="receipt-section" style={{ marginBottom: 24 }}>
           <p style={sectionTitle}>{tr.orderItems}</p>
           <hr className="pdf-rule-thin" style={{ margin: '0 0 10px' }} />
           {(order.lineGroups || []).filter(g => g.items?.length > 0).map((g, gi, arr) => {
             const groupTotal = (g.items || []).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0);
             return (
-              <div key={gi} style={{ marginBottom: gi < arr.length - 1 ? 14 : 0 }}>
+              <div key={gi} className="receipt-item" style={{ marginBottom: gi < arr.length - 1 ? 14 : 0 }}>
                 {/* Group header: name + total */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f5f2ec', borderRadius: 6, padding: '8px 12px', marginBottom: 6 }}>
+                <div className="receipt-group-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f5f2ec', borderRadius: 6, padding: '8px 12px', marginBottom: 6 }}>
                   <span style={{ fontFamily: 'Georgia, serif', fontSize: '10pt', fontWeight: 'bold', color: '#1a1a1a' }}>{g.label || '—'}</span>
                   <span style={{ fontFamily: 'Georgia, serif', fontSize: '10pt', fontWeight: 'bold', color: '#6b5e4e' }}>{formatCurrency(groupTotal, currency)}</span>
                 </div>
@@ -233,11 +255,11 @@ export default function PaymentReceiptPage() {
       )}
 
       {/* ── Staff Assignments ── */}
-      {(order.staffAssignments || []).length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+      {staffSubtotal > 0 && (order.staffAssignments || []).length > 0 && (
+        <div className="receipt-section" style={{ marginBottom: 24 }}>
           <p style={sectionTitle}>{tr.staff}</p>
           <hr className="pdf-rule-thin" style={{ margin: '0 0 10px' }} />
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9pt', fontFamily: 'Georgia, serif' }}>
+          <table className="receipt-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9pt', fontFamily: 'Georgia, serif' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e8e0d0' }}>
                 {[tr.role, tr.count, tr.hours, tr.rate, tr.total].map((h, i) => (
@@ -263,12 +285,33 @@ export default function PaymentReceiptPage() {
       )}
 
       {/* ── Financial Summary ── */}
-      <div style={{ marginBottom: 24 }}>
+      <div className="receipt-summary" style={{ marginBottom: 24 }}>
         <hr className="pdf-rule-gold" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300, marginLeft: 'auto', marginTop: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 300, marginLeft: 'auto', marginTop: 12 }}>
+          {(travelFee > 0 || discount > 0) && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5pt' }}>
+              <span style={{ color: '#9a8c7a', fontStyle: 'italic' }}>{tr.subtotal}</span>
+              <span style={{ color: '#6b5e4e' }}>{formatCurrency(subtotal, currency)}</span>
+            </div>
+          )}
+          {travelFee > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5pt' }}>
+              <span style={{ color: '#6b5e4e' }}>{tr.travelFee}</span>
+              <span style={{ color: '#6b5e4e' }}>+{formatCurrency(travelFee, currency)}</span>
+            </div>
+          )}
+          {discount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5pt' }}>
+              <span style={{ color: '#6b5e4e' }}>{tr.discount}</span>
+              <span style={{ color: '#137333' }}>−{formatCurrency(discount, currency)}</span>
+            </div>
+          )}
+          {(travelFee > 0 || discount > 0) && (
+            <hr style={{ border: 'none', borderTop: '1px solid #e8e0d0', margin: '2px 0' }} />
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9pt' }}>
             <span style={{ color: '#6b5e4e' }}>{tr.orderTotal}</span>
-            <span style={{ color: '#1a1a1a' }}>{formatCurrency(orderTotal, currency)}</span>
+            <span style={{ color: '#1a1a1a', fontWeight: 'bold' }}>{formatCurrency(orderTotal, currency)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9pt' }}>
             <span style={{ color: '#6b5e4e' }}>{tr.paidAmount}</span>

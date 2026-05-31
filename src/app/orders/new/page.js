@@ -22,6 +22,7 @@ export default function NewOrderPage() {
   const [orderStatuses, setOrderStatuses] = useState([]);
   const [products, setProducts] = useState([]);
   const [travelRegions, setTravelRegions] = useState([]);
+  const [staffRolesConfig, setStaffRolesConfig] = useState([]);
 
   useEffect(() => {
     fetch('/api/event-type-configs').then(r => r.json()).then(d => setEventTypeConfigs((d.configs || []).filter(c => c.isActive)));
@@ -31,6 +32,9 @@ export default function NewOrderPage() {
       const active = (d.regions || []).filter(r => r.isActive);
       setTravelRegions(active);
     });
+    fetch('/api/settings/staff-roles').then(r => r.json()).then(d => {
+      setStaffRolesConfig((d.roles || []).filter(r => r.isActive));
+    });
   }, []);
 
   const [form, setForm] = useState({
@@ -39,7 +43,7 @@ export default function NewOrderPage() {
     startTime: '', notes: '', status: 'new',
   });
   const [lineGroups, setLineGroups] = useState([defaultLineGroup()]);
-  const [staffAssignments, setStaffAssignments] = useState([defaultStaff()]);
+  const [staffAssignments, setStaffAssignments] = useState([defaultStaff('')]);
   const [selectedRegion, setSelectedRegion] = useState(null);
 
   // Pre-select default region when regions load
@@ -49,6 +53,15 @@ export default function NewOrderPage() {
       setSelectedRegion(def);
     }
   }, [travelRegions]);
+
+  // Seed initial staff role once roles load
+  useEffect(() => {
+    if (staffRolesConfig.length > 0) {
+      setStaffAssignments(prev =>
+        prev.map(sa => sa.role === '' ? { ...sa, role: staffRolesConfig[0].key } : sa)
+      );
+    }
+  }, [staffRolesConfig]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -340,6 +353,7 @@ export default function NewOrderPage() {
             isMobile={isMobile}
             tn={t.newQuote}
             currency={currency}
+            staffRoles={staffRolesConfig}
           />
         </div>
       )}

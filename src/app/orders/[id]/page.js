@@ -32,6 +32,7 @@ export default function OrderDetailPage() {
   const [statuses, setStatuses] = useState([]);
   const [eventTypeConfigs, setEventTypeConfigs] = useState([]);
   const [products, setProducts] = useState([]);
+  const [staffRolesConfig, setStaffRolesConfig] = useState([]);
   const [loading, setLoading] = useState(true);
   const [perms, setPerms] = useState({});
   const [notification, setNotification] = useState(null);
@@ -43,7 +44,7 @@ export default function OrderDetailPage() {
 
   // Order line items / staff editing state
   const [orderLineGroups, setOrderLineGroups] = useState([defaultLineGroup()]);
-  const [orderStaff, setOrderStaff] = useState([defaultStaff()]);
+  const [orderStaff, setOrderStaff] = useState([defaultStaff('')]);
   const [editingItems, setEditingItems] = useState(false);
   const [editingStaff, setEditingStaff] = useState(false);
   const [savingItems, setSavingItems] = useState(false);
@@ -97,7 +98,7 @@ export default function OrderDetailPage() {
         status: data.order.status,
       });
       setOrderLineGroups(data.order.lineGroups?.length ? data.order.lineGroups : [defaultLineGroup()]);
-      setOrderStaff(data.order.staffAssignments?.length ? data.order.staffAssignments : [defaultStaff()]);
+      setOrderStaff(data.order.staffAssignments?.length ? data.order.staffAssignments : [defaultStaff('')]);
     } catch {
       showNotification(td.loadFailed, 'error');
     } finally {
@@ -110,6 +111,7 @@ export default function OrderDetailPage() {
     fetch('/api/settings/order-statuses').then(r => r.json()).then(d => setStatuses(d.statuses || []));
     fetch('/api/event-type-configs').then(r => r.json()).then(d => setEventTypeConfigs((d.configs || []).filter(c => c.isActive)));
     fetch('/api/products').then(r => r.json()).then(d => setProducts((d.products || []).filter(p => p.isActive !== false)));
+    fetch('/api/settings/staff-roles').then(r => r.json()).then(d => setStaffRolesConfig(d.roles || []));
     loadData();
   }, [loadData]);
 
@@ -535,18 +537,19 @@ export default function OrderDetailPage() {
                 isMobile={isMobile}
                 tn={t.newQuote}
                 currency={currency}
+                staffRoles={staffRolesConfig.filter(r => r.isActive)}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                 <button onClick={handleSaveStaff} disabled={savingStaff} style={{ ...btnFilled, opacity: savingStaff ? 0.7 : 1 }}>
                   {savingStaff ? '…' : td.saveStaff}
                 </button>
-                <button onClick={() => { setEditingStaff(false); setOrderStaff(order.staffAssignments?.length ? order.staffAssignments : [defaultStaff()]); }} style={btnOutline}>
+                <button onClick={() => { setEditingStaff(false); setOrderStaff(order.staffAssignments?.length ? order.staffAssignments : [defaultStaff('')]); }} style={btnOutline}>
                   {td.cancelEdit}
                 </button>
               </div>
             </>
           ) : (
-            <StaffReadView assignments={order.staffAssignments || []} currency={currency} emptyLabel={td.noStaff} staffRoles={t.newQuote.staffRoles} />
+            <StaffReadView assignments={order.staffAssignments || []} currency={currency} emptyLabel={td.noStaff} staffRolesMap={Object.fromEntries(staffRolesConfig.map(r => [r.key, r.label]))} />
           )}
         </div>
       </div>
@@ -778,7 +781,7 @@ function MenuItemsReadView({ groups, currency, emptyLabel }) {
   );
 }
 
-function StaffReadView({ assignments, currency, emptyLabel, staffRoles }) {
+function StaffReadView({ assignments, currency, emptyLabel, staffRolesMap = {} }) {
   const hasStaff = assignments.some(sa => sa.role);
   if (!hasStaff) {
     return <p style={{ fontSize: 14, color: '#9aa0a6', margin: 0 }}>{emptyLabel}</p>;
@@ -787,7 +790,7 @@ function StaffReadView({ assignments, currency, emptyLabel, staffRoles }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {assignments.map((sa, i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#202124' }}>
-          <span>{staffRoles[sa.role] || sa.role} — {sa.count}× {sa.hours}h @ {fmt(sa.ratePerHour, currency)}/h</span>
+          <span>{staffRolesMap[sa.role] || sa.role} — {sa.count}× {sa.hours}h @ {fmt(sa.ratePerHour, currency)}/h</span>
           <span style={{ color: '#5f6368' }}>{fmt(Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), currency)}</span>
         </div>
       ))}
