@@ -40,6 +40,7 @@ export default function QuoteDetailPage() {
   const guestCount = order?.guestCount;
   const tableCount = order?.tableCount;
   const orderId = order?._id;
+  const staffTotal = quote.staffAssignments?.reduce((s, sa) => s + sa.lineTotal, 0) ?? 0;
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
@@ -176,8 +177,8 @@ export default function QuoteDetailPage() {
             ) : <p style={{ color: '#9aa0a6', fontSize: 14 }}>{td.noItems}</p>}
           </Section>
 
-          <Section title={td.staffAssignments} icon="👨‍🍳" style={{ marginTop: 20 }}>
-            {quote.staffAssignments?.length ? (
+          {staffTotal > 0 && (
+            <Section title={td.staffAssignments} icon="👨‍🍳" style={{ marginTop: 20 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e8eaed' }}>
@@ -198,8 +199,8 @@ export default function QuoteDetailPage() {
                   ))}
                 </tbody>
               </table>
-            ) : <p style={{ color: '#9aa0a6', fontSize: 14 }}>{td.noStaff}</p>}
-          </Section>
+            </Section>
+          )}
 
           {(quote.clientNotes || quote.internalNotes) && (
             <Section title={td.notes} icon="📝" style={{ marginTop: 20 }}>
@@ -222,7 +223,8 @@ export default function QuoteDetailPage() {
         <div>
           <Section title={td.financial.title} icon="💶">
             <TotalRow label={td.financial.menuServices} value={quote.lineItems?.reduce((s, li) => s + li.lineTotal, 0)} currency={currency} />
-            <TotalRow label={td.financial.staff} value={quote.staffAssignments?.reduce((s, sa) => s + sa.lineTotal, 0)} currency={currency} />
+            {staffTotal > 0 && <TotalRow label={td.financial.staff} value={staffTotal} currency={currency} />}
+            {quote.travelFee > 0 && <TotalRow label={quote.travelRegion || td.financial.travel} value={quote.travelFee} currency={currency} />}
             {quote.discountAmount > 0 && <TotalRow label={td.financial.discount} value={-quote.discountAmount} color="#d93025" currency={currency} />}
             <div style={{ height: 1, background: '#e8eaed', margin: '12px 0' }} />
             <TotalRow label={td.financial.subtotal} value={quote.subtotal} currency={currency} />

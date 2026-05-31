@@ -1,11 +1,13 @@
 {
-  "/login/page": "app/login/page.js",
-  "/orders/page": "app/orders/page.js",
-  "/orders/new/page": "app/orders/new/page.js",
-  "/api/products/route": "app/api/products/route.js",
   "/orders/[id]/page": "app/orders/[id]/page.js",
-  "/api/categories/route": "app/api/categories/route.js",
+  "/api/orders/[id]/route": "app/api/orders/[id]/route.js",
+  "/api/quotes/route": "app/api/quotes/route.js",
+  "/api/orders/[id]/payments/route": "app/api/orders/[id]/payments/route.js",
+  "/quotes/[id]/page": "app/quotes/[id]/page.js",
+  "/api/settings/company/route": "app/api/settings/company/route.js",
+  "/api/quotes/[id]/route": "app/api/quotes/[id]/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/settings/users/page": "app/settings/users/page.js",
-  "/settings/catalog/page": "app/settings/catalog/page.js"
+  "/api/event-type-configs/route": "app/api/event-type-configs/route.js",
+  "/api/settings/order-statuses/route": "app/api/settings/order-statuses/route.js",
+  "/api/products/route": "app/api/products/route.js"
 }

@@ -1,4 +1,4 @@
-// File: /Users/sbounoua/Downloads/catering-quotes-app/src/app/orders/[id]/page.js
+// File: C:\Users\user\Documents\catering-management-app\catering-management\src\app\orders\[id]\page.js
 import * as entry from '../../../../../src/app/orders/[id]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

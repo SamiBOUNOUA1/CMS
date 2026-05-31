@@ -1,5 +1,18 @@
 import mongoose, { Schema, models, model } from 'mongoose';
 
+// ── TRAVEL REGION CONFIG ──────────────────────────────────────────────────────
+const travelRegionConfigSchema = new Schema(
+  {
+    label:       { type: String, required: true, trim: true },
+    travelPrice: { type: Number, default: 0, min: 0 },
+    isDefault:   { type: Boolean, default: false },
+    isActive:    { type: Boolean, default: true },
+    sortOrder:   { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+export const TravelRegionConfig = models.TravelRegionConfig || model('TravelRegionConfig', travelRegionConfigSchema);
+
 // ── ORDER STATUS CONFIG ───────────────────────────────────────────────────────
 const orderStatusConfigSchema = new Schema(
   {
@@ -27,6 +40,18 @@ const eventTypeConfigSchema = new Schema(
   { timestamps: true }
 );
 export const EventTypeConfig = models.EventTypeConfig || model('EventTypeConfig', eventTypeConfigSchema);
+
+// ── CUSTOMER TYPE CONFIG ──────────────────────────────────────────────────────
+const customerTypeConfigSchema = new Schema(
+  {
+    key:       { type: String, required: true, unique: true, trim: true, lowercase: true },
+    label:     { type: String, required: true, trim: true },
+    isActive:  { type: Boolean, default: true },
+    sortOrder: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+export const CustomerTypeConfig = models.CustomerTypeConfig || model('CustomerTypeConfig', customerTypeConfigSchema);
 
 // ── ROLE ──────────────────────────────────────────────────────────────────────
 const roleSchema = new Schema(
@@ -105,6 +130,7 @@ const clientSchema = new Schema(
       country: { type: String, default: 'FR' },
     },
     notes: String,
+    customerType: { type: String, trim: true, default: '' },
   },
   { timestamps: true }
 );
@@ -176,6 +202,37 @@ const eventSchema = new Schema(
 );
 export const Event = models.Event || model('Event', eventSchema);
 
+// ── STAFF ASSIGNMENT (shared by Order and Quote) ──────────────────────────────
+const staffAssignmentSchema = new Schema({
+  role: {
+    type: String,
+    enum: ['head-chef', 'sous-chef', 'server', 'bartender', 'coordinator', 'other'],
+    required: true,
+  },
+  count: { type: Number, default: 1, min: 1 },
+  hours: { type: Number, required: true, min: 0 },
+  ratePerHour: { type: Number, required: true, min: 0 },
+  lineTotal: { type: Number, required: true, min: 0 },
+  notes: String,
+});
+
+// ── ORDER LINE GROUPS (editable working state stored on Order) ─────────────────
+const orderLineGroupItemSchema = new Schema({
+  catalogItem: { type: Schema.Types.ObjectId, ref: 'CatalogItem' },
+  _productId: { type: String, default: '' },
+  name: String,
+  unitPrice: { type: Number, default: 0 },
+  category: String,
+  notes: String,
+  subItems: [{ name: String }],
+}, { _id: false });
+
+const orderLineGroupSchema = new Schema({
+  label: { type: String, default: '' },
+  count: { type: Number, default: 1 },
+  items: [orderLineGroupItemSchema],
+});
+
 // ── ORDER ─────────────────────────────────────────────────────────────────────
 const orderSchema = new Schema(
   {
@@ -192,12 +249,24 @@ const orderSchema = new Schema(
     tableCount:  { type: Number, min: 1 },
     startTime:   String,
     notes:       String,
-    status:      { type: String, required: true, default: 'new' },
+    status:        { type: String, required: true, default: 'new' },
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'partially-paid', 'fully-paid'],
+      default: 'unpaid',
+    },
     event:       { type: Schema.Types.ObjectId, ref: 'Event' },
     createdBy:   { type: Schema.Types.ObjectId, ref: 'User' },
+    travelRegion:     { type: String, default: '' },
+    travelPrice:      { type: Number, default: 0 },
+    discountAmount:   { type: Number, default: 0 },
+    lineGroups:       [orderLineGroupSchema],
+    staffAssignments: [staffAssignmentSchema],
+    totalAmount:      { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+
 export const Order = models.Order || model('Order', orderSchema);
 
 // ── QUOTE ─────────────────────────────────────────────────────────────────────
@@ -213,19 +282,6 @@ const lineItemSchema = new Schema({
   subItems: [{ name: { type: String, required: true } }],
 });
 
-const staffAssignmentSchema = new Schema({
-  role: {
-    type: String,
-    enum: ['head-chef', 'sous-chef', 'server', 'bartender', 'coordinator', 'other'],
-    required: true,
-  },
-  count: { type: Number, default: 1, min: 1 },
-  hours: { type: Number, required: true, min: 0 },
-  ratePerHour: { type: Number, required: true, min: 0 },
-  lineTotal: { type: Number, required: true, min: 0 },
-  notes: String,
-});
-
 const quoteSchema = new Schema(
   {
     order:         { type: Schema.Types.ObjectId, ref: 'Order', required: true },
@@ -234,6 +290,8 @@ const quoteSchema = new Schema(
     validUntil:    Date,
     lineItems:     [lineItemSchema],
     staffAssignments: [staffAssignmentSchema],
+    travelFee:     { type: Number, default: 0 },
+    travelRegion:  { type: String, default: '' },
     subtotal:      { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },
     taxRate:       { type: Number, default: 0.2 },
@@ -248,7 +306,8 @@ const quoteSchema = new Schema(
 quoteSchema.pre('save', function (next) {
   const itemsTotal = this.lineItems.reduce((s, li) => s + li.lineTotal, 0);
   const staffTotal = this.staffAssignments.reduce((s, sa) => s + sa.lineTotal, 0);
-  this.subtotal = +(itemsTotal + staffTotal - this.discountAmount).toFixed(2);
+  const travelTotal = this.travelFee || 0;
+  this.subtotal = +(itemsTotal + staffTotal + travelTotal - this.discountAmount).toFixed(2);
   this.taxAmount = +(this.subtotal * this.taxRate).toFixed(2);
   this.total = +(this.subtotal + this.taxAmount).toFixed(2);
   next();
@@ -278,6 +337,24 @@ const invoiceSchema = new Schema(
   { timestamps: true }
 );
 export const Invoice = models.Invoice || model('Invoice', invoiceSchema);
+
+// ── PAYMENT ───────────────────────────────────────────────────────────────────
+const paymentSchema = new Schema(
+  {
+    order:         { type: Schema.Types.ObjectId, ref: 'Order', required: true },
+    amount:        { type: Number, required: true, min: 0 },
+    paymentDate:   { type: Date, required: true, default: Date.now },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'card', 'transfer', 'check', 'other'],
+      default: 'cash',
+    },
+    reference: String,
+    notes:     String,
+  },
+  { timestamps: true }
+);
+export const Payment = models.Payment || model('Payment', paymentSchema);
 
 // ── COMPANY SETTINGS ──────────────────────────────────────────────────────────
 const companySettingsSchema = new Schema(

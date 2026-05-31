@@ -41,6 +41,16 @@ const IconOrderStatuses = () => (
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
   </svg>
 );
+const IconCustomerTypes = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+  </svg>
+);
+const IconTravelRegions = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+  </svg>
+);
 const IconChevron = ({ open }) => (
   <svg
     width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
@@ -70,8 +80,10 @@ function useNavGroups(t, perms) {
       items: [
         { href: '/settings/company',        label: ts.tabs.company,       icon: <IconCompany />,        perm: 'manage_users' },
         { href: '/settings/catalog',        label: ts.tabs.catalog,       icon: <IconCatalog />,        perm: 'manage_catalog' },
-        { href: '/settings/event-types',    label: ts.tabs.eventTypes,    icon: <IconEventTypes />,     perm: 'manage_event_types' },
-        { href: '/settings/order-statuses', label: ts.tabs.orderStatuses, icon: <IconOrderStatuses />,  perm: 'manage_order_statuses' },
+        { href: '/settings/event-types',      label: ts.tabs.eventTypes,    icon: <IconEventTypes />,      perm: 'manage_event_types' },
+        { href: '/settings/order-statuses',  label: ts.tabs.orderStatuses, icon: <IconOrderStatuses />,   perm: 'manage_order_statuses' },
+        { href: '/settings/customer-types',  label: ts.tabs.customerTypes, icon: <IconCustomerTypes />,   perm: 'manage_customer_types' },
+        { href: '/settings/travel-regions',  label: ts.tabs.travelRegions, icon: <IconTravelRegions />,   perm: 'manage_event_types' },
       ].filter(i => perms[i.perm]),
     },
     {
@@ -216,7 +228,7 @@ export default function SettingsLayout({ children }) {
           <IconMenu />
         </button>
         <span style={{ fontFamily: "'Google Sans'", fontSize: 15, fontWeight: 500, color: '#202124' }}>
-          {ts.title} rrrr
+          {ts.title}
         </span>
       </div>
 

@@ -4,23 +4,33 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useIsMobile } from '@/lib/useIsMobile';
-import { useT } from '@/lib/LanguageContext';
+import { useT, useCurrency } from '@/lib/LanguageContext';
+import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
+import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 
 export default function NewOrderPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const t = useT();
   const tn = t.newOrder;
+  const currency = useCurrency();
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [eventTypeConfigs, setEventTypeConfigs] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [travelRegions, setTravelRegions] = useState([]);
 
   useEffect(() => {
     fetch('/api/event-type-configs').then(r => r.json()).then(d => setEventTypeConfigs((d.configs || []).filter(c => c.isActive)));
     fetch('/api/settings/order-statuses').then(r => r.json()).then(d => setOrderStatuses(d.statuses || []));
+    fetch('/api/products').then(r => r.json()).then(d => setProducts((d.products || []).filter(p => p.isActive !== false)));
+    fetch('/api/travel-regions').then(r => r.json()).then(d => {
+      const active = (d.regions || []).filter(r => r.isActive);
+      setTravelRegions(active);
+    });
   }, []);
 
   const [form, setForm] = useState({
@@ -28,6 +38,17 @@ export default function NewOrderPage() {
     eventDate: '', eventType: 'corporate', guestCount: 50, tableCount: '',
     startTime: '', notes: '', status: 'new',
   });
+  const [lineGroups, setLineGroups] = useState([defaultLineGroup()]);
+  const [staffAssignments, setStaffAssignments] = useState([defaultStaff()]);
+  const [selectedRegion, setSelectedRegion] = useState(null);
+
+  // Pre-select default region when regions load
+  useEffect(() => {
+    if (travelRegions.length > 0 && selectedRegion === null) {
+      const def = travelRegions.find(r => r.isDefault) || travelRegions[0];
+      setSelectedRegion(def);
+    }
+  }, [travelRegions]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -53,11 +74,21 @@ export default function NewOrderPage() {
     return Object.keys(e).length === 0;
   };
 
-  const next = () => { if (validate()) setStep(1); };
-  const prev = () => setStep(0);
+  const effectiveCount = isTableMode ? Number(form.tableCount) || 1 : Number(form.guestCount) || 1;
+
+  const next = () => {
+    if (!validate()) return;
+    if (step === 1) {
+      setLineGroups(prev => prev.map(g => ({ ...g, count: effectiveCount })));
+    }
+    setStep(s => Math.min(s + 1, 4));
+  };
+  const skip = () => setStep(s => Math.min(s + 1, 4));
+  const prev = () => setStep(s => Math.max(s - 1, 0));
+
+  const travelPrice = selectedRegion?.travelPrice || 0;
 
   const submit = async () => {
-    if (!validate()) return;
     setSaving(true);
     try {
       const payload = {
@@ -71,6 +102,13 @@ export default function NewOrderPage() {
         startTime: form.startTime,
         notes: form.notes,
         status: orderStatuses[0]?.name || 'new',
+        travelRegion: selectedRegion?.label || '',
+        travelPrice: travelPrice,
+        lineGroups,
+        staffAssignments: staffAssignments.map(sa => ({
+          ...sa,
+          lineTotal: +((Number(sa.count) || 1) * (Number(sa.hours) || 0) * (Number(sa.ratePerHour) || 0)).toFixed(2),
+        })),
       };
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -91,13 +129,38 @@ export default function NewOrderPage() {
     borderRadius: 8, fontSize: 15, outline: 'none', fontFamily: 'Roboto, Arial',
     color: '#202124', background: '#fff', boxSizing: 'border-box',
   });
-
   const labelStyle = { fontSize: 13, fontWeight: 500, color: '#3c4043', display: 'block', marginBottom: 6, fontFamily: "'Google Sans'" };
   const fieldStyle = { marginBottom: 18 };
   const errorStyle = { fontSize: 12, color: '#d93025', marginTop: 4 };
 
+  const runningItemsTotal = lineGroups.reduce(
+    (t, g) => t + (g.items || []).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0), 0
+  );
+  const runningStaffTotal = staffAssignments.reduce(
+    (s, sa) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
+  );
+  const runningTotal = runningItemsTotal + runningStaffTotal + travelPrice;
+
+  // Wrap state for LineItemsStep / StaffStep components
+  const lineItemsForm = { lineGroups };
+  const setLineItemsForm = (updater) => {
+    if (typeof updater === 'function') {
+      setLineGroups(prev => updater({ lineGroups: prev }).lineGroups);
+    } else {
+      setLineGroups(updater.lineGroups);
+    }
+  };
+  const staffForm = { staffAssignments };
+  const setStaffForm = (updater) => {
+    if (typeof updater === 'function') {
+      setStaffAssignments(prev => updater({ staffAssignments: prev }).staffAssignments);
+    } else {
+      setStaffAssignments(updater.staffAssignments);
+    }
+  };
+
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto', padding: isMobile ? '20px 16px' : '40px 24px' }}>
+    <div style={{ maxWidth: step >= 3 ? 800 : 560, margin: '0 auto', padding: isMobile ? '20px 16px' : '40px 24px' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <Link href="/orders" style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 16 }}>
@@ -108,19 +171,25 @@ export default function NewOrderPage() {
       </div>
 
       {/* Stepper */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32, gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
         {tn.steps.map((label, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: i <= step ? '#1a73e8' : '#e8eaed',
-              color: i <= step ? '#fff' : '#5f6368',
-              fontSize: 13, fontWeight: 600, fontFamily: "'Google Sans'", flexShrink: 0,
-            }}>
-              {i < step ? '✓' : i + 1}
+          <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < tn.steps.length - 1 ? 1 : 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: i < step ? '#137333' : i === step ? '#1a73e8' : '#e8eaed',
+                color: i <= step ? '#fff' : '#5f6368',
+                fontSize: 12, fontWeight: 600, fontFamily: "'Google Sans'", flexShrink: 0,
+              }}>
+                {i < step ? '✓' : i + 1}
+              </div>
+              <span style={{ fontSize: isMobile ? 9 : 11, fontWeight: i === step ? 600 : 400, color: i === step ? '#1a73e8' : i < step ? '#137333' : '#5f6368', fontFamily: "'Google Sans'", whiteSpace: 'nowrap' }}>
+                {label}
+              </span>
             </div>
-            <span style={{ fontSize: 13, fontWeight: i === step ? 600 : 400, color: i === step ? '#1a73e8' : '#5f6368', fontFamily: "'Google Sans'" }}>{label}</span>
-            {i < tn.steps.length - 1 && <div style={{ width: 24, height: 2, background: i < step ? '#1a73e8' : '#e8eaed', flexShrink: 0 }} />}
+            {i < tn.steps.length - 1 && (
+              <div style={{ flex: 1, height: 2, background: i < step ? '#137333' : '#e8eaed', margin: isMobile ? '0 4px' : '0 8px', marginBottom: isMobile ? 14 : 18, transition: 'background 0.3s' }} />
+            )}
           </div>
         ))}
       </div>
@@ -192,6 +261,101 @@ export default function NewOrderPage() {
         </div>
       )}
 
+      {/* Step 2: Location */}
+      {step === 2 && (
+        <div>
+          <h2 style={{ fontFamily: "'Google Sans'", fontSize: 16, fontWeight: 500, color: '#202124', margin: '0 0 8px' }}>{tn.location.title}</h2>
+          <p style={{ fontSize: 13, color: '#5f6368', margin: '0 0 24px' }}>{tn.location.hint}</p>
+          {travelRegions.length === 0 ? (
+            <div style={{ padding: '24px', background: '#f8f9fa', borderRadius: 12, border: '1px solid #e8eaed', color: '#5f6368', fontSize: 14, fontFamily: "'Google Sans'", textAlign: 'center' }}>
+              {tn.location.noRegions}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {travelRegions.map(region => {
+                const isSelected = selectedRegion?._id === region._id;
+                return (
+                  <button
+                    key={region._id}
+                    onClick={() => setSelectedRegion(region)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '16px 20px', borderRadius: 12, border: `2px solid ${isSelected ? '#1a73e8' : '#e8eaed'}`,
+                      background: isSelected ? '#e8f0fe' : '#fff', cursor: 'pointer',
+                      fontFamily: "'Google Sans'", textAlign: 'left', transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: '50%', border: `2px solid ${isSelected ? '#1a73e8' : '#9aa0a6'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        {isSelected && <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#1a73e8' }} />}
+                      </div>
+                      <span style={{ fontSize: 15, fontWeight: isSelected ? 600 : 400, color: isSelected ? '#1a73e8' : '#202124' }}>
+                        {region.label}
+                      </span>
+                    </div>
+                    <span style={{
+                      fontSize: 14, fontWeight: 500,
+                      color: region.travelPrice > 0 ? '#202124' : '#137333',
+                      background: region.travelPrice > 0 ? '#fce8e6' : '#e6f4ea',
+                      padding: '4px 12px', borderRadius: 20,
+                    }}>
+                      {region.travelPrice > 0
+                        ? `+ ${Number(region.travelPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+                        : tn.location.included}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Step 3: Menu Items */}
+      {step === 3 && (
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8eaed', boxShadow: '0 1px 3px rgba(60,64,67,.12)', padding: isMobile ? 16 : 32, marginBottom: 8 }}>
+          <StepLineItems
+            form={lineItemsForm}
+            setForm={setLineItemsForm}
+            errors={errors}
+            products={products}
+            isMobile={isMobile}
+            tn={t.newQuote}
+            isTableMode={isTableMode}
+            currency={currency}
+            defaultCount={effectiveCount}
+          />
+        </div>
+      )}
+
+      {/* Step 4: Staff */}
+      {step === 4 && (
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8eaed', boxShadow: '0 1px 3px rgba(60,64,67,.12)', padding: isMobile ? 16 : 32, marginBottom: 8 }}>
+          <StepStaff
+            form={staffForm}
+            setForm={setStaffForm}
+            isMobile={isMobile}
+            tn={t.newQuote}
+            currency={currency}
+          />
+        </div>
+      )}
+
+      {/* Running total */}
+      {step >= 3 && (
+        <div style={{ textAlign: 'right', fontSize: 15, fontFamily: "'Google Sans'", color: '#202124', marginTop: 16 }}>
+          {travelPrice > 0 && (
+            <div style={{ fontSize: 13, color: '#5f6368', marginBottom: 4 }}>
+              {tn.location.travelFee}: <span style={{ color: '#202124' }}>{currency}{travelPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {tn.estimatedTotal} : <strong>{currency}{(runningTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+        </div>
+      )}
+
       {/* Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
         {step === 0 ? (
@@ -199,13 +363,26 @@ export default function NewOrderPage() {
         ) : (
           <button onClick={prev} style={btnOutline}>{tn.back}</button>
         )}
-        {step === 0 ? (
-          <button onClick={next} style={btnFilled}>{tn.continue}</button>
-        ) : (
-          <button onClick={submit} disabled={saving} style={{ ...btnFilled, opacity: saving ? 0.7 : 1 }}>
-            {saving ? tn.creating : tn.create}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {/* Steps 3 and 4 are optional — show Skip */}
+          {step === 3 && (
+            <button onClick={skip} style={btnOutline}>{tn.skip}</button>
+          )}
+          {step === 4 && (
+            <button onClick={submit} disabled={saving} style={{ ...btnOutline, opacity: saving ? 0.7 : 1 }}>
+              {tn.skip}
+            </button>
+          )}
+          {step < 3 ? (
+            <button onClick={next} style={btnFilled}>{tn.continue}</button>
+          ) : step === 3 ? (
+            <button onClick={next} style={btnFilled}>{tn.continue}</button>
+          ) : (
+            <button onClick={submit} disabled={saving} style={{ ...btnFilled, opacity: saving ? 0.7 : 1 }}>
+              {saving ? tn.creating : tn.create}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

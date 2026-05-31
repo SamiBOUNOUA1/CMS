@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Quote, Order } from '@/lib/models';
 
-// POST /api/quotes — generate a new quote version for an order
+// POST /api/quotes — snapshot the order's current items/staff into a new quote version
 export async function POST(request) {
   try {
     await connectDB();
@@ -15,7 +15,7 @@ export async function POST(request) {
     const order = await Order.findById(body.orderId);
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-    // Find current active quote (if any) to determine version number and copy items
+    // Find current active quote to determine next version and inherit pricing defaults
     const prevActive = await Quote.findOne({ order: body.orderId, isActive: true });
 
     // Deactivate previous active quote
@@ -25,27 +25,28 @@ export async function POST(request) {
 
     const nextVersion = prevActive ? prevActive.versionNumber + 1 : 1;
 
-    // Build line items from body (or copy from previous active)
-    const sourceItems = body.lineItems ?? (prevActive?.lineItems?.map(li => li.toObject?.() ?? li) ?? []);
-    const sourceStaff = body.staffAssignments ?? (prevActive?.staffAssignments?.map(sa => sa.toObject?.() ?? sa) ?? []);
+    // Flatten order's lineGroups into snapshot lineItems
+    const lineItems = (order.lineGroups || []).flatMap(g =>
+      (g.items || []).map(item => ({
+        groupLabel: g.label || '',
+        name: item.name || '',
+        category: item.category || '',
+        quantity: Number(g.count) || 1,
+        unitPrice: Number(item.unitPrice) || 0,
+        lineTotal: +((Number(g.count) || 1) * (Number(item.unitPrice) || 0)).toFixed(2),
+        notes: item.notes || '',
+        subItems: (item.subItems || []).map(s => ({ name: s.name })),
+        catalogItem: item.catalogItem || undefined,
+      }))
+    );
 
-    const lineItems = sourceItems.map(li => ({
-      groupLabel: li.groupLabel || '',
-      name: li.name,
-      category: li.category || '',
-      quantity: Number(li.quantity),
-      unitPrice: Number(li.unitPrice),
-      lineTotal: +(Number(li.quantity) * Number(li.unitPrice)).toFixed(2),
-      notes: li.notes || '',
-      subItems: (li.subItems || []).map(s => ({ name: s.name })),
-    }));
-
-    const staffAssignments = sourceStaff.map(sa => ({
+    // Map order's staffAssignments with computed lineTotals
+    const staffAssignments = (order.staffAssignments || []).map(sa => ({
       role: sa.role,
       count: Number(sa.count) || 1,
-      hours: Number(sa.hours),
-      ratePerHour: Number(sa.ratePerHour),
-      lineTotal: +(Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour)).toFixed(2),
+      hours: Number(sa.hours) || 0,
+      ratePerHour: Number(sa.ratePerHour) || 0,
+      lineTotal: +((Number(sa.count) || 1) * (Number(sa.hours) || 0) * (Number(sa.ratePerHour) || 0)).toFixed(2),
       notes: sa.notes || '',
     }));
 
@@ -56,7 +57,9 @@ export async function POST(request) {
       validUntil: body.validUntil ? new Date(body.validUntil) : (prevActive?.validUntil ?? undefined),
       lineItems,
       staffAssignments,
-      discountAmount: body.discountAmount !== undefined ? Number(body.discountAmount) : (prevActive?.discountAmount ?? 0),
+      travelFee: order.travelPrice || 0,
+      travelRegion: order.travelRegion || '',
+      discountAmount: order.discountAmount || 0,
       taxRate: body.taxRate !== undefined ? Number(body.taxRate) : (prevActive?.taxRate ?? 0.2),
       clientNotes: body.clientNotes ?? (prevActive?.clientNotes ?? ''),
       internalNotes: body.internalNotes ?? (prevActive?.internalNotes ?? ''),

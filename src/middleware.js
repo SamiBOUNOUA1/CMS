@@ -52,6 +52,18 @@ export async function middleware(request) {
       if (!permissions.create_orders) return forbidden(request);
     }
 
+    if (pathname.startsWith('/customers')) {
+      if (!permissions.view_customers) return forbidden(request);
+    }
+
+    if (pathname.startsWith('/customers/new')) {
+      if (!permissions.edit_customers) return forbidden(request);
+    }
+
+    if (pathname.startsWith('/settings/customer-types')) {
+      if (!permissions.manage_customer_types) return forbidden(request);
+    }
+
     // ── API mutation guards ──────────────────────────────────────────────────
     if (pathname.startsWith('/api/') && isMutating) {
       if (pathname.startsWith('/api/orders')) {
@@ -78,6 +90,16 @@ export async function middleware(request) {
       }
 
       if (pathname.startsWith('/api/event-type-configs') && !permissions.manage_event_types) {
+        return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/clients')) {
+        if (method === 'POST'   && !permissions.edit_customers)   return forbidden(request);
+        if (method === 'PATCH'  && !permissions.edit_customers)   return forbidden(request);
+        if (method === 'DELETE' && !permissions.delete_customers) return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/settings/customer-types') && !permissions.manage_customer_types) {
         return forbidden(request);
       }
     }

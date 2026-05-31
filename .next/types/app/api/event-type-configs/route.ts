@@ -1,4 +1,4 @@
-// File: /Users/sbounoua/Downloads/catering-quotes-app/src/app/api/event-type-configs/route.js
+// File: C:\Users\user\Documents\catering-management-app\catering-management\src\app\api\event-type-configs\route.js
 import * as entry from '../../../../../src/app/api/event-type-configs/route.js'
 import type { NextRequest } from 'next/server.js'
 

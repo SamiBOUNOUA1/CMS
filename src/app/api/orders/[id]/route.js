@@ -27,7 +27,14 @@ export async function PATCH(request, { params }) {
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const prevStatus = order.status;
-    Object.assign(order, body);
+    const allowed = [
+      'clientName', 'clientEmail', 'clientPhone', 'eventDate', 'eventType',
+      'guestCount', 'tableCount', 'startTime', 'notes', 'status',
+      'lineGroups', 'staffAssignments', 'discountAmount',
+    ];
+    for (const key of allowed) {
+      if (body[key] !== undefined) order[key] = body[key];
+    }
 
     // If status changed and new status has triggerEvent, create event if not yet created
     if (body.status && body.status !== prevStatus) {
@@ -48,6 +55,14 @@ export async function PATCH(request, { params }) {
         order.event = event._id;
       }
     }
+
+    const _iTotal = (order.lineGroups || []).reduce(
+      (t, g) => t + (g.items || []).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0), 0
+    );
+    const _sTotal = (order.staffAssignments || []).reduce(
+      (s, sa) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
+    );
+    order.totalAmount = +(_iTotal + _sTotal - (order.discountAmount || 0)).toFixed(2);
 
     await order.save();
     const updated = await Order.findById(params.id).populate('event').lean();

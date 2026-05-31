@@ -63,6 +63,19 @@ export async function POST(request) {
     const userId = headers.get('x-user-id');
     const body = await request.json();
 
+    const lineGroups       = body.lineGroups       || [];
+    const staffAssignments = body.staffAssignments || [];
+    const travelPrice = Number(body.travelPrice) || 0;
+    const discountAmount = Number(body.discountAmount) || 0;
+    const itemsTotal = lineGroups.reduce(
+      (t, g) => t + (g.items || []).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0), 0
+    );
+    const staffTotal = staffAssignments.reduce(
+      (s, sa) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
+    );
+    const totalAmount = +(itemsTotal + staffTotal + travelPrice - discountAmount).toFixed(2);
+    console.log('Calculated totalAmount:', totalAmount);
+
     const order = await Order.create({
       clientName:  body.clientName,
       clientEmail: body.clientEmail,
@@ -71,10 +84,17 @@ export async function POST(request) {
       eventType:   body.eventType,
       guestCount:  Number(body.guestCount),
       tableCount:  body.tableCount ? Number(body.tableCount) : undefined,
-      startTime:   body.startTime || '',
-      notes:       body.notes || '',
-      status:      body.status || 'new',
-      createdBy:   userId || undefined,
+      startTime:    body.startTime || '',
+      notes:        body.notes || '',
+      status:       body.status || 'new',
+      travelRegion:   body.travelRegion || '',
+      travelPrice:    travelPrice,
+      discountAmount: discountAmount,
+      createdBy:      userId || undefined,
+      totalAmount:    totalAmount || 0,
+      lineGroups,
+      staffAssignments,
+      
     });
 
     return NextResponse.json({ order }, { status: 201 });
