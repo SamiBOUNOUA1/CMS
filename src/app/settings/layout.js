@@ -64,6 +64,11 @@ const IconChevron = ({ open }) => (
     <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
   </svg>
 );
+const IconFlow = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm10-16H7v2h6V1zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 7h2V5h-2v2zm0 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zM7 5h2V3H7v2zm6 16h-2v2h2v-2zm4 0h-2v2h2v-2zm2-18v2h2c0-1.1-.9-2-2-2z" />
+  </svg>
+);
 const IconMenu = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
@@ -90,6 +95,7 @@ function useNavGroups(t, perms) {
         { href: '/settings/customer-types',  label: ts.tabs.customerTypes, icon: <IconCustomerTypes />,   perm: 'manage_customer_types' },
         { href: '/settings/travel-regions',  label: ts.tabs.travelRegions, icon: <IconTravelRegions />,   perm: 'manage_event_types' },
         { href: '/settings/staff-roles',     label: ts.tabs.staffRoles,    icon: <IconStaffRoles />,       perm: 'manage_event_types' },
+        { href: '/settings/flow-templates',  label: ts.tabs.flowTemplates, icon: <IconFlow />,             perm: 'manage_flow_templates' },
       ].filter(i => perms[i.perm]),
     },
     {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Quote } from '@/lib/models';
+import { Order, Quote, FlowTemplate } from '@/lib/models';
 
 // GET /api/orders — list orders with latest active quote summary
 export async function GET(request) {
@@ -96,6 +96,21 @@ export async function POST(request) {
       staffAssignments,
       
     });
+
+    // Auto-populate flow instance from active template for this event type
+    const template = await FlowTemplate.findOne({ eventTypeKey: body.eventType, isActive: true }).lean();
+    if (template && template.steps?.length) {
+      const instanceSteps = template.steps
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((s, i) => ({ label: s.label, description: s.description || '', sortOrder: i, status: 'pending' }));
+      await Order.findByIdAndUpdate(order._id, {
+        $set: {
+          'flowInstance.templateId': template._id,
+          'flowInstance.templateName': template.name,
+          'flowInstance.steps': instanceSteps,
+        },
+      });
+    }
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err) {

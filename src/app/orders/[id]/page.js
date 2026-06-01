@@ -67,6 +67,12 @@ export default function OrderDetailPage() {
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [deletingPaymentId, setDeletingPaymentId] = useState(null);
 
+  // Assign manager state
+  const [managerModalOpen, setManagerModalOpen] = useState(false);
+  const [managers, setManagers] = useState([]);
+  const [selectedManagerId, setSelectedManagerId] = useState('');
+  const [savingManager, setSavingManager] = useState(false);
+
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3500);
@@ -112,6 +118,7 @@ export default function OrderDetailPage() {
     fetch('/api/event-type-configs').then(r => r.json()).then(d => setEventTypeConfigs((d.configs || []).filter(c => c.isActive)));
     fetch('/api/products').then(r => r.json()).then(d => setProducts((d.products || []).filter(p => p.isActive !== false)));
     fetch('/api/settings/staff-roles').then(r => r.json()).then(d => setStaffRolesConfig(d.roles || []));
+    fetch('/api/admin/managers').then(r => r.ok ? r.json() : { managers: [] }).then(d => setManagers(d.managers || []));
     loadData();
   }, [loadData]);
 
@@ -296,6 +303,26 @@ export default function OrderDetailPage() {
     setDeletingPaymentId(null);
   };
 
+  const handleSaveManager = async () => {
+    setSavingManager(true);
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignedManager: selectedManagerId || null }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setOrder(data.order);
+      setManagerModalOpen(false);
+      showNotification('Manager assigned');
+    } catch {
+      showNotification('Failed to assign manager', 'error');
+    } finally {
+      setSavingManager(false);
+    }
+  };
+
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spinner /></div>;
   if (!order) return <div style={{ padding: 40, color: '#d93025' }}>Order not found.</div>;
 
@@ -371,6 +398,37 @@ export default function OrderDetailPage() {
         />
       )}
 
+      {/* Assign manager modal */}
+      {managerModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '24px 28px', width: '100%', maxWidth: 400, boxShadow: '0 24px 38px rgba(0,0,0,.14)' }}>
+            <h3 style={{ fontFamily: "'Google Sans'", fontSize: 18, fontWeight: 500, margin: '0 0 16px', color: 'var(--google-text-primary)' }}>Assign Manager</h3>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#5f6368', display: 'block', marginBottom: 6, fontFamily: "'Google Sans'" }}>Manager</label>
+              <select
+                value={selectedManagerId}
+                onChange={e => setSelectedManagerId(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #dadce0', borderRadius: 8, fontSize: 14, fontFamily: 'Roboto, Arial', color: '#202124', background: '#fff', outline: 'none' }}
+              >
+                <option value="">— Unassigned —</option>
+                {managers.map(m => (
+                  <option key={m._id} value={m._id}>{m.name} ({m.email})</option>
+                ))}
+              </select>
+              {managers.length === 0 && (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#b06000' }}>No manager accounts found. Create a user with the manager role first.</p>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setManagerModalOpen(false)} style={btnOutline}>Cancel</button>
+              <button onClick={handleSaveManager} disabled={savingManager} style={{ ...btnFilled, opacity: savingManager ? 0.7 : 1 }}>
+                {savingManager ? '…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Generate quote modal */}
       {quoteModalOpen && (
         <GenerateQuoteModal
@@ -386,10 +444,28 @@ export default function OrderDetailPage() {
         />
       )}
 
-      {/* Back link */}
-      <Link href="/orders" style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 20 }}>
-        ← {td.back}
-      </Link>
+      {/* Back link + actions row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
+        <Link href="/orders" style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          ← {td.back}
+        </Link>
+        {(perms.manage_flow_templates || perms.update_flow_status) && (
+          <Link
+            href={`/orders/${id}/flow`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '8px 16px', background: '#fff', border: '1px solid #dadce0',
+              borderRadius: 8, textDecoration: 'none', fontSize: 13,
+              fontFamily: "'Google Sans'", color: '#3c4043', fontWeight: 500,
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#5f6368' }}>
+              <path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm10-16H7v2h6V1zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 7h2V5h-2v2zm0 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zM7 5h2V3H7v2zm6 16h-2v2h2v-2zm4 0h-2v2h2v-2zm2-18v2h2c0-1.1-.9-2-2-2z" />
+            </svg>
+            {t.orderFlow.title}
+          </Link>
+        )}
+      </div>
 
       {/* Order card */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8eaed', boxShadow: '0 1px 4px rgba(60,64,67,.1)', marginBottom: 24, overflow: 'hidden' }}>
@@ -468,6 +544,34 @@ export default function OrderDetailPage() {
             <div style={{ fontSize: 13, color: '#b06000' }}>{td.noEvent}</div>
           </div>
         )}
+      </div>
+
+      {/* Assign Manager section */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8eaed', boxShadow: '0 1px 4px rgba(60,64,67,.1)', marginBottom: 24, overflow: 'hidden' }}>
+        <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 20 }}>👤</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#5f6368', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>Assigned Manager</div>
+              {order.assignedManager ? (
+                <div style={{ fontFamily: "'Google Sans'", fontSize: 15, fontWeight: 500, color: '#202124' }}>
+                  {order.assignedManager.name}
+                  <span style={{ fontWeight: 400, color: '#5f6368', marginLeft: 6, fontSize: 13 }}>{order.assignedManager.email}</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 14, color: '#9aa0a6', fontStyle: 'italic' }}>Unassigned</div>
+              )}
+            </div>
+          </div>
+          {perms.edit_orders && (
+            <button
+              onClick={() => { setSelectedManagerId(order.assignedManager?._id || ''); setManagerModalOpen(true); }}
+              style={btnOutlineSmall}
+            >
+              {order.assignedManager ? 'Change' : 'Assign'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Menu & Items section */}

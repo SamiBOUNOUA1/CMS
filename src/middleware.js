@@ -64,12 +64,27 @@ export async function middleware(request) {
       if (!permissions.manage_customer_types) return forbidden(request);
     }
 
+    if (pathname.startsWith('/settings/flow-templates')) {
+      if (!permissions.manage_flow_templates) return forbidden(request);
+    }
+
+    if (pathname.startsWith('/calendar') || pathname.startsWith('/api/calendar')) {
+      if (!permissions.view_calendar) return forbidden(request);
+    }
+
     // ── API mutation guards ──────────────────────────────────────────────────
     if (pathname.startsWith('/api/') && isMutating) {
       if (pathname.startsWith('/api/orders')) {
         if (method === 'POST'   && !permissions.create_orders) return forbidden(request);
-        if (method === 'PATCH'  && !permissions.edit_orders)   return forbidden(request);
         if (method === 'DELETE' && !permissions.delete_orders) return forbidden(request);
+        if (method === 'PATCH') {
+          // Allow event-flow step status updates with only update_flow_status
+          if (/^\/api\/orders\/[^/]+\/event-flow$/.test(pathname)) {
+            if (!permissions.update_flow_status) return forbidden(request);
+          } else if (!permissions.edit_orders) {
+            return forbidden(request);
+          }
+        }
       }
 
       if (pathname.startsWith('/api/quotes')) {
@@ -102,6 +117,10 @@ export async function middleware(request) {
       if (pathname.startsWith('/api/settings/customer-types') && !permissions.manage_customer_types) {
         return forbidden(request);
       }
+
+      if (pathname.startsWith('/api/settings/flow-templates') && !permissions.manage_flow_templates) {
+        return forbidden(request);
+      }
     }
 
     const res = NextResponse.next();
@@ -124,7 +143,7 @@ function redirectToLogin(request) {
 function forbidden(request) {
   if (request && !request.nextUrl.pathname.startsWith('/api/')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/orders';
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
   return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {

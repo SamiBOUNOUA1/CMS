@@ -219,13 +219,22 @@ function OrderModal({ order, onClose, t, currency }) {
             </div>
           )}
 
-          <Link
-            href={`/orders/${order._id}`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#1a73e8', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontFamily: "'Google Sans'", fontWeight: 500, textDecoration: 'none' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" /></svg>
-            View order
-          </Link>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Link
+              href={`/orders/${order._id}`}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#1a73e8', color: '#fff', borderRadius: 10, padding: '12px 16px', fontSize: 14, fontFamily: "'Google Sans'", fontWeight: 500, textDecoration: 'none' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" /></svg>
+              {t.calendar?.viewOrder || 'View order'}
+            </Link>
+            <Link
+              href={`/orders/${order._id}/event-flow`}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', borderRadius: 10, padding: '12px 16px', fontSize: 14, fontFamily: "'Google Sans'", fontWeight: 500, textDecoration: 'none' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm10-16H7v2h6V1zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 7h2V5h-2v2zm0 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zM7 5h2V3H7v2zm6 16h-2v2h2v-2zm4 0h-2v2h2v-2zm2-18v2h2c0-1.1-.9-2-2-2z" /></svg>
+              {t.calendar?.eventFlow || 'Event Flow'}
+            </Link>
+          </div>
         </div>
       </div>
     </>

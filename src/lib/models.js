@@ -188,6 +188,14 @@ const menuPackageSchema = new Schema(
 );
 export const MenuPackage = models.MenuPackage || model('MenuPackage', menuPackageSchema);
 
+// ── FLOW INSTANCE STEP (embedded in Event and Order) ─────────────────────────
+const flowInstanceStepSchema = new Schema({
+  label:       { type: String, required: true, trim: true },
+  description: { type: String, default: '', trim: true },
+  sortOrder:   { type: Number, default: 0 },
+  status:      { type: String, enum: ['pending', 'in_progress', 'completed', 'skipped'], default: 'pending' },
+}, { _id: true });
+
 // ── EVENT ─────────────────────────────────────────────────────────────────────
 const eventSchema = new Schema(
   {
@@ -209,6 +217,11 @@ const eventSchema = new Schema(
       enum: ['inquiry', 'confirmed', 'completed', 'cancelled'],
       default: 'inquiry',
     },
+    flowInstance: {
+      templateId:   { type: Schema.Types.ObjectId, ref: 'FlowTemplate' },
+      templateName: { type: String, default: '' },
+      steps:        [flowInstanceStepSchema],
+    },
   },
   { timestamps: true }
 );
@@ -223,6 +236,23 @@ const staffAssignmentSchema = new Schema({
   lineTotal: { type: Number, required: true, min: 0 },
   notes: String,
 });
+
+// ── FLOW TEMPLATE ─────────────────────────────────────────────────────────────
+const flowTemplateStepSchema = new Schema({
+  label:       { type: String, required: true, trim: true },
+  description: { type: String, default: '', trim: true },
+  sortOrder:   { type: Number, default: 0 },
+}, { _id: true });
+
+const flowTemplateSchema = new Schema({
+  eventTypeKey: { type: String, required: true, trim: true, lowercase: true },
+  name:         { type: String, required: true, trim: true },
+  steps:        [flowTemplateStepSchema],
+  isActive:     { type: Boolean, default: true },
+  sortOrder:    { type: Number, default: 0 },
+}, { timestamps: true });
+
+export const FlowTemplate = models.FlowTemplate || model('FlowTemplate', flowTemplateSchema);
 
 // ── ORDER LINE GROUPS (editable working state stored on Order) ─────────────────
 const orderLineGroupItemSchema = new Schema({
@@ -263,14 +293,20 @@ const orderSchema = new Schema(
       enum: ['unpaid', 'partially-paid', 'fully-paid'],
       default: 'unpaid',
     },
-    event:       { type: Schema.Types.ObjectId, ref: 'Event' },
-    createdBy:   { type: Schema.Types.ObjectId, ref: 'User' },
+    event:           { type: Schema.Types.ObjectId, ref: 'Event' },
+    createdBy:       { type: Schema.Types.ObjectId, ref: 'User' },
+    assignedManager: { type: Schema.Types.ObjectId, ref: 'User' },
     travelRegion:     { type: String, default: '' },
     travelPrice:      { type: Number, default: 0 },
     discountAmount:   { type: Number, default: 0 },
     lineGroups:       [orderLineGroupSchema],
     staffAssignments: [staffAssignmentSchema],
     totalAmount:      { type: Number, default: 0 },
+    flowInstance: {
+      templateId:   { type: Schema.Types.ObjectId, ref: 'FlowTemplate' },
+      templateName: { type: String, default: '' },
+      steps:        [flowInstanceStepSchema],
+    },
   },
   { timestamps: true }
 );

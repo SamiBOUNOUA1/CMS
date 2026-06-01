@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Quote, Event, OrderStatusConfig } from '@/lib/models';
+import { Order, Quote, Event, OrderStatusConfig, FlowTemplate } from '@/lib/models';
 
 export async function GET(request, { params }) {
   try {
     await connectDB();
-    const order = await Order.findById(params.id).populate('event').lean();
+    const order = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const quotes = await Quote.find({ order: params.id })
@@ -30,7 +30,7 @@ export async function PATCH(request, { params }) {
     const allowed = [
       'clientName', 'clientEmail', 'clientPhone', 'eventDate', 'eventType',
       'guestCount', 'tableCount', 'startTime', 'notes', 'status',
-      'lineGroups', 'staffAssignments', 'discountAmount',
+      'lineGroups', 'staffAssignments', 'discountAmount', 'assignedManager',
     ];
     for (const key of allowed) {
       if (body[key] !== undefined) order[key] = body[key];
@@ -40,9 +40,14 @@ export async function PATCH(request, { params }) {
     if (body.status && body.status !== prevStatus) {
       const statusConfig = await OrderStatusConfig.findOne({ name: body.status });
       if (statusConfig?.triggerEvent && !order.event) {
+        const template = await FlowTemplate.findOne({ eventTypeKey: order.eventType, isActive: true }).lean();
+        const instanceSteps = template?.steps?.length
+          ? template.steps
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((s, i) => ({ label: s.label, description: s.description || '', sortOrder: i, status: 'pending' }))
+          : [];
+
         const event = await Event.create({
-          // Event references a Client — we embed client info on the order, so create a minimal stub
-          // using a virtual client document keyed by email
           client: await ensureClient(order),
           eventDate: order.eventDate,
           eventType: order.eventType,
@@ -51,6 +56,9 @@ export async function PATCH(request, { params }) {
           startTime: order.startTime,
           notes: order.notes,
           status: 'confirmed',
+          flowInstance: template
+            ? { templateId: template._id, templateName: template.name, steps: instanceSteps }
+            : { steps: [] },
         });
         order.event = event._id;
       }
@@ -65,7 +73,7 @@ export async function PATCH(request, { params }) {
     order.totalAmount = +(_iTotal + _sTotal + (order.travelPrice || 0) - (order.discountAmount || 0)).toFixed(2);
 
     await order.save();
-    const updated = await Order.findById(params.id).populate('event').lean();
+    const updated = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
     const quotes = await Quote.find({ order: params.id }).sort({ versionNumber: 1 }).lean();
     return NextResponse.json({ order: updated, quotes });
   } catch (err) {
