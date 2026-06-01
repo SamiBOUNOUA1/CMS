@@ -48,14 +48,15 @@ export default function AppNav() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
-  }, []);
+      .then(d => setUser(d?.user ?? null));
+  }, [pathname]);
 
   // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
     router.push('/login');
     router.refresh();
   };
@@ -69,9 +70,10 @@ export default function AppNav() {
 
   const links = [
     { href: '/orders', label: t.nav.orders, perm: 'view_orders' },
+    { href: '/manager/events', label: 'My Events', matchPrefix: '/manager', condition: user && !perms.view_orders },
     { href: '/customers', label: t.nav.customers, perm: 'view_customers' },
-    { href: '/calendar', label: t.nav.calendar, always: true },
-  ].filter(l => l.always || (user && (!l.perm || perms[l.perm])));
+    { href: '/calendar', label: t.nav.calendar, perm: 'view_calendar' },
+  ].filter(l => l.always || l.condition || (user && (!l.perm || perms[l.perm])));
 
   const isActive = (link) =>
     pathname.startsWith(link.matchPrefix ?? link.href);

@@ -45,6 +45,9 @@ export default function NewOrderPage() {
   const [lineGroups, setLineGroups] = useState([defaultLineGroup()]);
   const [staffAssignments, setStaffAssignments] = useState([defaultStaff('')]);
   const [selectedRegion, setSelectedRegion] = useState(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerResults, setCustomerResults] = useState([]);
+  const [showCustomerResults, setShowCustomerResults] = useState(false);
 
   // Pre-select default region when regions load
   useEffect(() => {
@@ -64,6 +67,25 @@ export default function NewOrderPage() {
   }, [staffRolesConfig]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  useEffect(() => {
+    if (!customerSearch.trim()) { setCustomerResults([]); setShowCustomerResults(false); return; }
+    const timer = setTimeout(() => {
+      fetch(`/api/clients?search=${encodeURIComponent(customerSearch)}`)
+        .then(r => r.json())
+        .then(d => { setCustomerResults(d.clients || []); setShowCustomerResults(true); });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearch]);
+
+  const selectCustomer = (c) => {
+    set('clientName', c.name);
+    set('clientEmail', c.email);
+    set('clientPhone', c.phone || '');
+    setCustomerSearch('');
+    setCustomerResults([]);
+    setShowCustomerResults(false);
+  };
 
   const activeEventConfig = eventTypeConfigs.find(c => c.key === form.eventType);
   const isTableMode = activeEventConfig?.countMode === 'tables';
@@ -211,6 +233,58 @@ export default function NewOrderPage() {
       {step === 0 && (
         <div>
           <h2 style={{ fontFamily: "'Google Sans'", fontSize: 16, fontWeight: 500, color: '#202124', margin: '0 0 20px' }}>{tn.client.title}</h2>
+
+          {/* Customer search */}
+          <div style={{ ...fieldStyle, position: 'relative' }}>
+            <label style={labelStyle}>{tn.client.searchExisting}</label>
+            <input
+              value={customerSearch}
+              onChange={e => setCustomerSearch(e.target.value)}
+              placeholder={tn.client.searchPlaceholder}
+              style={inputStyle(false)}
+              onBlur={() => setTimeout(() => setShowCustomerResults(false), 150)}
+              onFocus={() => customerResults.length > 0 && setShowCustomerResults(true)}
+              autoComplete="off"
+            />
+            {showCustomerResults && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                background: '#fff', border: '1px solid #dadce0', borderRadius: 8,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)', marginTop: 4, overflow: 'hidden',
+              }}>
+                {customerResults.length === 0 ? (
+                  <div style={{ padding: '12px 16px', fontSize: 13, color: '#5f6368', fontFamily: "'Google Sans'" }}>
+                    {tn.client.noResults}
+                  </div>
+                ) : (
+                  customerResults.slice(0, 8).map(c => (
+                    <button
+                      key={c._id}
+                      onMouseDown={() => selectCustomer(c)}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '10px 16px', border: 'none', background: 'none',
+                        cursor: 'pointer', fontFamily: "'Google Sans'",
+                        borderBottom: '1px solid #f1f3f4',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <div style={{ fontSize: 14, color: '#202124', fontWeight: 500 }}>{c.name}</div>
+                      <div style={{ fontSize: 12, color: '#5f6368' }}>{c.email}{c.phone ? ` · ${c.phone}` : ''}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 20px' }}>
+            <div style={{ flex: 1, height: 1, background: '#e8eaed' }} />
+            <span style={{ fontSize: 12, color: '#5f6368', fontFamily: "'Google Sans'", whiteSpace: 'nowrap' }}>{tn.client.orNewCustomer}</span>
+            <div style={{ flex: 1, height: 1, background: '#e8eaed' }} />
+          </div>
+
           <div style={fieldStyle}>
             <label style={labelStyle}>{tn.client.fullName} *</label>
             <input value={form.clientName} onChange={e => set('clientName', e.target.value)} style={inputStyle(errors.clientName)} />
