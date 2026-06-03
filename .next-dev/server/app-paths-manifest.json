@@ -1,11 +1,4 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/home/page": "app/home/page.js",
-  "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/api/tasks/route": "app/api/tasks/route.js",
-  "/api/settings/modules/route": "app/api/settings/modules/route.js",
-  "/api/settings/modules/state/route": "app/api/settings/modules/state/route.js",
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/api/admin/users/route": "app/api/admin/users/route.js",
-  "/login/page": "app/login/page.js"
+  "/api/settings/modules/state/route": "app/api/settings/modules/state/route.js"
 }
