@@ -12,6 +12,13 @@ module.exports = {
         sans: ['Google Sans', 'Roboto', 'Arial', 'sans-serif'],
       },
       colors: {
+        // CSS-variable-based theme tokens (light/dark mode aware)
+        'g-surface': 'var(--google-surface)',
+        'g-bg':      'var(--google-bg)',
+        'g-border':  'var(--google-border)',
+        'g-text':    'var(--google-text-primary)',
+        'g-text-2':  'var(--google-text-secondary)',
+        'g-text-3':  'var(--google-text-tertiary)',
         google: {
           blue: '#1a73e8',
           'blue-dark': '#1557b0',

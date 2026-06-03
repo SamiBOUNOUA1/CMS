@@ -101,6 +101,55 @@ h1, h2, h3, h4, h5 {
 [data-theme="dark"] .status-rejected { background: #3d1a1a; color: #f28b82; }
 [data-theme="dark"] .status-expired  { background: #3d2e00; color: #fdd663; }
 
+/* ── Sub-navigation bar (SubNav) ─────────────────────────────────────────── */
+.subnav-bar {
+  padding-left: 72px; /* aligns with content area after 64px sidebar */
+}
+.subnav-bar::-webkit-scrollbar { display: none; }
+
+@media (max-width: 639px) {
+  .subnav-bar { padding-left: 16px !important; }
+}
+
+/* ── Left sidebar (SideNav) ───────────────────────────────────────────────── */
+.sidenav {
+  position: fixed;
+  left: 0;
+  top: 104px; /* 64px header + 40px subnav */
+  bottom: 0;
+  width: 64px;
+  z-index: 40;
+  background: var(--google-surface);
+  border-right: 1px solid var(--google-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease;
+  box-shadow: 1px 0 2px rgba(60,64,67,.06);
+}
+
+.sidenav:hover {
+  width: 240px;
+  box-shadow: 2px 0 8px rgba(60,64,67,.15);
+}
+
+.sidenav-label {
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.12s ease 0.05s;
+  overflow: hidden;
+}
+
+.sidenav:hover .sidenav-label {
+  opacity: 1;
+}
+
+/* Hide sidebar on mobile — use hamburger in AppNav instead */
+@media (max-width: 639px) {
+  .sidenav { display: none; }
+  .sidenav-main { margin-left: 0 !important; }
+}
+
 /* Print utilities */
 .print-only { display: none; }
 
