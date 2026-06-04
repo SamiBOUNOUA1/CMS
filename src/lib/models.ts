@@ -206,8 +206,15 @@ const eventSchema = new Schema(
     eventDate: { type: Date, required: true },
     eventType: {
       type: String,
-      enum: ['wedding', 'corporate', 'birthday', 'gala', 'conference', 'buffet', 'other'],
       required: true,
+      validate: {
+        validator: async function (value: string) {
+          const EventTypeConfigModel = models.EventTypeConfig || model('EventTypeConfig', eventTypeConfigSchema);
+          const exists = await EventTypeConfigModel.exists({ key: value, isActive: true });
+          return !!exists;
+        },
+        message: (props: { value: string }) => `\`${props.value}\` is not a valid event type`,
+      },
     },
     guestCount: { type: Number, required: true, min: 1 },
     tableCount: { type: Number, min: 1 },
@@ -282,8 +289,15 @@ const orderSchema = new Schema(
     eventDate:   { type: Date, required: true },
     eventType: {
       type: String,
-      enum: ['wedding', 'corporate', 'birthday', 'gala', 'conference', 'buffet', 'other'],
       required: true,
+      validate: {
+        validator: async function (value: string) {
+          const EventTypeConfigModel = models.EventTypeConfig || model('EventTypeConfig', eventTypeConfigSchema);
+          const exists = await EventTypeConfigModel.exists({ key: value, isActive: true });
+          return !!exists;
+        },
+        message: (props: { value: string }) => `\`${props.value}\` is not a valid event type`,
+      },
     },
     guestCount:  { type: Number, required: true, min: 1 },
     tableCount:  { type: Number, min: 1 },
@@ -422,20 +436,41 @@ const inventoryCategorySchema = new Schema(
 );
 export const InventoryCategory = models.InventoryCategory || model('InventoryCategory', inventoryCategorySchema);
 
+// ── SUPPLIER ──────────────────────────────────────────────────────────────────
+const supplierSchema = new Schema(
+  {
+    name:          { type: String, required: true, trim: true },
+    email:         { type: String, trim: true, lowercase: true, default: '' },
+    phone:         { type: String, trim: true, default: '' },
+    supplierType:  { type: String, enum: ['goods', 'materials', 'services'], required: true },
+    contactPerson: { type: String, trim: true, default: '' },
+    address: {
+      street:     { type: String, default: '' },
+      city:       { type: String, default: '' },
+      postalCode: { type: String, default: '' },
+      state:      { type: String, default: '' },
+      country:    { type: String, default: 'FR' },
+    },
+    notes:    { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const Supplier = models.Supplier || model('Supplier', supplierSchema);
+
 // ── INVENTORY ITEM ────────────────────────────────────────────────────────────
 const inventoryItemSchema = new Schema(
   {
-    name:             { type: String, required: true, trim: true },
-    category:         { type: Schema.Types.ObjectId, ref: 'InventoryCategory', default: null },
-    unit:             { type: String, default: 'unit', trim: true },
-    currentStock:     { type: Number, default: 0, min: 0 },
-    minStock:         { type: Number, default: 0, min: 0 },
-    unitCost:         { type: Number, default: 0, min: 0 },
-    supplierName:     { type: String, default: '', trim: true },
-    supplierContact:  { type: String, default: '', trim: true },
-    notes:            { type: String, default: '' },
-    imageUrl:         { type: String, default: '' },
-    isActive:         { type: Boolean, default: true },
+    name:         { type: String, required: true, trim: true },
+    category:     { type: Schema.Types.ObjectId, ref: 'InventoryCategory', default: null },
+    unit:         { type: String, default: 'unit', trim: true },
+    currentStock: { type: Number, default: 0, min: 0 },
+    minStock:     { type: Number, default: 0, min: 0 },
+    unitCost:     { type: Number, default: 0, min: 0 },
+    supplier:     { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
+    notes:        { type: String, default: '' },
+    imageUrl:     { type: String, default: '' },
+    isActive:     { type: Boolean, default: true },
   },
   { timestamps: true }
 );

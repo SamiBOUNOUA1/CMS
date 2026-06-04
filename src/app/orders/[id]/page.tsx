@@ -107,7 +107,7 @@ export default function OrderDetailPage() {
         notes: data.order.notes || '', status: data.order.status,
       });
       setOrderLineGroups(data.order.lineGroups?.length ? data.order.lineGroups : [defaultLineGroup()]);
-      setOrderStaff(data.order.staffAssignments?.length ? data.order.staffAssignments : [defaultStaff('')]);
+      setOrderStaff(data.order.staffAssignments || []);
     } catch {
       showNotification(td.loadFailed, 'error');
     } finally {

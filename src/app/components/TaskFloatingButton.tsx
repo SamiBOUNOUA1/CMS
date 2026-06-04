@@ -109,7 +109,7 @@ export default function TaskFloatingButton() {
       <button
         onClick={openModal}
         aria-label={tm.titleCreate}
-        className="fixed bottom-6 right-6 z-[199] w-14 h-14 rounded-full bg-google-blue text-white border-none flex items-center justify-center text-3xl font-light font-sans cursor-pointer"
+        className="no-print fixed bottom-6 right-6 z-[199] w-14 h-14 rounded-full bg-google-blue text-white border-none flex items-center justify-center text-3xl font-light font-sans cursor-pointer"
         style={{ boxShadow: '0 4px 12px rgba(26,115,232,.4)' }}
       >
         +

@@ -1,34 +1,29 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { InventoryItem, Supplier } from '@/lib/models';
+import { Supplier } from '@/lib/models';
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') ?? '';
-    const categoryId = searchParams.get('category') ?? '';
-    const lowStock = searchParams.get('lowStock') === 'true';
+    const supplierType = searchParams.get('supplierType') ?? '';
+    const isActiveParam = searchParams.get('isActive');
 
-    const query = { isActive: true };
+    const query: Record<string, unknown> = {};
+    if (isActiveParam !== null) query.isActive = isActiveParam === 'true';
+    if (supplierType) query.supplierType = supplierType;
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { contactPerson: { $regex: search, $options: 'i' } },
       ];
     }
-    if (categoryId) query.category = categoryId;
 
-    let items = await InventoryItem.find(query)
-      .populate('category', 'name color')
-      .populate('supplier', 'name')
-      .sort({ name: 1 });
-
-    if (lowStock) {
-      items = items.filter(i => i.currentStock <= i.minStock);
-    }
-
-    return NextResponse.json({ items });
+    const suppliers = await Supplier.find(query).sort({ name: 1 });
+    return NextResponse.json({ suppliers });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
@@ -38,16 +33,21 @@ export async function POST(request: NextRequest) {
   try {
     const permsHeader = request.headers.get('x-user-permissions');
     const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
+    if (!perms.edit_suppliers) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await connectDB();
     const body = await request.json();
-    const item = await InventoryItem.create(body);
-    await item.populate('category', 'name color');
-    await item.populate('supplier', 'name');
-    return NextResponse.json({ item }, { status: 201 });
+    if (!body.name?.trim()) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+    if (!['goods', 'materials', 'services'].includes(body.supplierType)) {
+      return NextResponse.json({ error: 'Invalid supplier type' }, { status: 400 });
+    }
+
+    const supplier = await Supplier.create(body);
+    return NextResponse.json({ supplier }, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }

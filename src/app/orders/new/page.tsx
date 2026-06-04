@@ -44,7 +44,7 @@ export default function NewOrderPage() {
     startTime: '', notes: '', status: 'new',
   });
   const [lineGroups, setLineGroups] = useState<any[]>([defaultLineGroup()]);
-  const [staffAssignments, setStaffAssignments] = useState<any[]>([defaultStaff('')]);
+  const [staffAssignments, setStaffAssignments] = useState<any[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<any>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerResults, setCustomerResults] = useState<any[]>([]);
@@ -56,14 +56,6 @@ export default function NewOrderPage() {
       setSelectedRegion(def);
     }
   }, [travelRegions]);
-
-  useEffect(() => {
-    if (staffRolesConfig.length > 0) {
-      setStaffAssignments(prev =>
-        prev.map(sa => sa.role === '' ? { ...sa, role: staffRolesConfig[0].key } : sa)
-      );
-    }
-  }, [staffRolesConfig]);
 
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
@@ -110,14 +102,18 @@ export default function NewOrderPage() {
 
   const effectiveCount = isTableMode ? Number(form.tableCount) || 1 : Number(form.guestCount) || 1;
 
+  const hasStaffRoles = staffRolesConfig.length > 0;
+  const lastStep = hasStaffRoles ? 4 : 3;
+  const displaySteps = hasStaffRoles ? tn.steps : tn.steps.slice(0, 4);
+
   const next = () => {
     if (!validate()) return;
     if (step === 1) {
       setLineGroups(prev => prev.map(g => ({ ...g, count: effectiveCount })));
     }
-    setStep(s => Math.min(s + 1, 4));
+    setStep(s => Math.min(s + 1, lastStep));
   };
-  const skip = () => setStep(s => Math.min(s + 1, 4));
+  const skip = () => setStep(s => Math.min(s + 1, lastStep));
   const prev = () => setStep(s => Math.max(s - 1, 0));
 
   const travelPrice = selectedRegion?.travelPrice || 0;
@@ -202,8 +198,8 @@ export default function NewOrderPage() {
 
       {/* Stepper */}
       <div className="flex items-center mb-8">
-        {tn.steps.map((label: string, i: number) => (
-          <div key={i} className="flex items-center" style={{ flex: i < tn.steps.length - 1 ? 1 : 0 }}>
+        {displaySteps.map((label: string, i: number) => (
+          <div key={i} className="flex items-center" style={{ flex: i < displaySteps.length - 1 ? 1 : 0 }}>
             <div className="flex flex-col items-center gap-1">
               <div
                 className="rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
@@ -226,7 +222,7 @@ export default function NewOrderPage() {
                 {label}
               </span>
             </div>
-            {i < tn.steps.length - 1 && (
+            {i < displaySteps.length - 1 && (
               <div
                 className="flex-1 h-0.5 transition-colors duration-300"
                 style={{
@@ -450,16 +446,14 @@ export default function NewOrderPage() {
         )}
         <div className="flex gap-2">
           {step === 3 && (
-            <button onClick={skip} className={btnOutline}>{tn.skip}</button>
+            <button onClick={hasStaffRoles ? skip : submit} disabled={!hasStaffRoles && saving} className={btnOutline}>{tn.skip}</button>
           )}
           {step === 4 && (
             <button onClick={submit} disabled={saving} className={btnOutline} style={{ opacity: saving ? 0.7 : 1 }}>
               {tn.skip}
             </button>
           )}
-          {step < 3 ? (
-            <button onClick={next} className={btnFilled}>{tn.continue}</button>
-          ) : step === 3 ? (
+          {step < lastStep ? (
             <button onClick={next} className={btnFilled}>{tn.continue}</button>
           ) : (
             <button onClick={submit} disabled={saving} className={btnFilled} style={{ opacity: saving ? 0.7 : 1 }}>

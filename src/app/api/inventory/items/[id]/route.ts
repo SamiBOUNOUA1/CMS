@@ -1,12 +1,12 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { InventoryItem, InventoryAdjustment } from '@/lib/models';
+import { InventoryItem, InventoryAdjustment, Supplier } from '@/lib/models';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
-    const item = await InventoryItem.findById(params.id).populate('category', 'name color');
+    const item = await InventoryItem.findById(params.id).populate('category', 'name color').populate('supplier', 'name');
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ item });
   } catch (err: unknown) {
@@ -46,8 +46,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     }
 
     await item.save();
-    const populated = await item.populate('category', 'name color');
-    return NextResponse.json({ item: populated });
+    await item.populate('category', 'name color');
+    await item.populate('supplier', 'name');
+    return NextResponse.json({ item });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }

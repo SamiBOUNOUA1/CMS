@@ -57,9 +57,7 @@ export function StepStaff({ form, setForm, isMobile, tn, currency, staffRoles = 
             <span className="font-sans text-sm font-medium text-google-blue">
               {String((ts.staff as (i: number) => string)(i))}
             </span>
-            {form.staffAssignments.length > 1 && (
-              <button onClick={() => removeStaff(i)} className={removeBtn}>{String(ts.remove)}</button>
-            )}
+            <button onClick={() => removeStaff(i)} className={removeBtn}>{String(ts.remove)}</button>
           </div>
 
           <div className="flex flex-col gap-3">

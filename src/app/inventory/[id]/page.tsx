@@ -17,11 +17,12 @@ export default function InventoryItemPage({ params }) {
 
   const [item, setItem] = useState({
     name: '', category: '', unit: 'unit', currentStock: 0,
-    minStock: 0, unitCost: 0, supplierName: '', supplierContact: '', notes: '', imageUrl: '', isActive: true,
+    minStock: 0, unitCost: 0, supplier: '', notes: '', imageUrl: '', isActive: true,
   });
   const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef(null);
   const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [adjustments, setAdjustments] = useState([]);
   const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,9 @@ export default function InventoryItemPage({ params }) {
     fetch('/api/inventory/categories')
       .then(r => r.ok ? r.json() : { categories: [] })
       .then(d => setCategories(d.categories ?? []));
+    fetch('/api/inventory/suppliers?isActive=true')
+      .then(r => r.ok ? r.json() : { suppliers: [] })
+      .then(d => setSuppliers(d.suppliers ?? []));
   }, []);
 
   useEffect(() => {
@@ -51,7 +55,7 @@ export default function InventoryItemPage({ params }) {
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.item) {
-          setItem({ ...d.item, category: d.item.category?._id ?? '' });
+          setItem({ ...d.item, category: d.item.category?._id ?? '', supplier: d.item.supplier?._id ?? '' });
         }
         setLoading(false);
       });
@@ -77,7 +81,7 @@ export default function InventoryItemPage({ params }) {
       if (isNew) {
         router.push(`/inventory/${d.item._id}`);
       } else {
-        setItem({ ...d.item, category: d.item.category?._id ?? '' });
+        setItem({ ...d.item, category: d.item.category?._id ?? '', supplier: d.item.supplier?._id ?? '' });
         setEditing(false);
         showToast(ti.saved);
       }
@@ -319,12 +323,11 @@ export default function InventoryItemPage({ params }) {
             <input type="number" min="0" step="0.01" value={item.unitCost} onChange={e => setItem(i => ({ ...i, unitCost: Number(e.target.value) }))} disabled={!editing} style={inputStyle} />
           </div>
           <div style={fieldRow}>
-            <label style={labelStyle}>{ti.fields.supplierName}</label>
-            <input value={item.supplierName} onChange={e => setItem(i => ({ ...i, supplierName: e.target.value }))} disabled={!editing} style={inputStyle} />
-          </div>
-          <div style={fieldRow}>
-            <label style={labelStyle}>{ti.fields.supplierContact}</label>
-            <input value={item.supplierContact} onChange={e => setItem(i => ({ ...i, supplierContact: e.target.value }))} disabled={!editing} style={inputStyle} />
+            <label style={labelStyle}>{ti.fields.supplier}</label>
+            <select value={item.supplier} onChange={e => setItem(i => ({ ...i, supplier: e.target.value }))} disabled={!editing} style={inputStyle}>
+              <option value="">{ti.fields.noSupplier}</option>
+              {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+            </select>
           </div>
           <div style={{ gridColumn: '1 / -1', ...fieldRow }}>
             <label style={labelStyle}>{ti.fields.notes}</label>

@@ -36,7 +36,12 @@ export const MODULE_REGISTRY = [
     primaryRoute: '/inventory',
     routes: ['/inventory'],
     apiPrefixes: ['/api/inventory'],
-    permissions: ['view_inventory', 'manage_inventory'],
+    permissions: ['view_inventory', 'manage_inventory', 'view_suppliers', 'edit_suppliers', 'delete_suppliers'],
+    subRoutes: [
+      { href: '/inventory',            label: 'Items',      labelFr: 'Articles',     permission: 'view_inventory' },
+      { href: '/inventory/categories', label: 'Categories', labelFr: 'Catégories',   permission: 'manage_inventory' },
+      { href: '/inventory/suppliers',  label: 'Suppliers',  labelFr: 'Fournisseurs', permission: 'view_suppliers' },
+    ],
     builtIn: false,
   },
   {

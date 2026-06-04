@@ -161,7 +161,7 @@ export default function InventoryPage() {
                     {item.unitCost > 0 ? `${currency}${item.unitCost.toFixed(2)}` : '—'}
                   </td>
                   <td className="py-3 px-3.5 text-g-text-2 max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
-                    {item.supplierName || '—'}
+                    {item.supplier?.name || '—'}
                   </td>
                 </tr>
               ))}

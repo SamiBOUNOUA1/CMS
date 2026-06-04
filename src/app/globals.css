@@ -155,8 +155,10 @@ h1, h2, h3, h4, h5 {
 
 @media print {
   header { display: none !important; }
+  .subnav-bar { display: none !important; }
+  .sidenav { display: none !important; }
   body { background: white !important; font-family: 'Georgia', 'Times New Roman', serif !important; }
-  main { margin-top: 0 !important; }
+  main { margin-top: 0 !important; margin-left: 0 !important; }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
   .print-only-flex { display: flex !important; }
