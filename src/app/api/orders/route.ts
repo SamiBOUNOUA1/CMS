@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, FlowTemplate } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
 
 // GET /api/orders — list orders with latest active quote summary
 export async function GET(request: NextRequest) {
@@ -112,6 +113,14 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    await logActivity({
+      action: 'order_created',
+      entityType: 'order',
+      entityId: order._id.toString(),
+      entityLabel: `${body.clientName} – ${body.eventType}`,
+      performedBy: userId,
+    });
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err: unknown) {

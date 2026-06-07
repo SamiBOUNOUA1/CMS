@@ -58,6 +58,23 @@ export const MODULE_REGISTRY = [
     permissions: ['view_tasks'],
     builtIn: false,
   },
+  {
+    id: 'laundry',
+    name: 'Laundry',
+    nameFr: 'Blanchisserie',
+    description: 'Track linen batches sent to laundry, manage returns and write off losses.',
+    descriptionFr: 'Suivi des envois de linge, gestion des retours et déduction des pertes.',
+    icon: 'WashingMachine',
+    color: '#0b8043',
+    primaryRoute: '/laundry',
+    routes: ['/laundry'],
+    apiPrefixes: ['/api/laundry'],
+    permissions: ['view_laundry', 'manage_laundry'],
+    subRoutes: [
+      { href: '/laundry', label: 'Batches', labelFr: 'Lots', permission: 'view_laundry' },
+    ],
+    builtIn: false,
+  },
 ];
 
 export const MODULE_IDS = MODULE_REGISTRY.map(m => m.id);

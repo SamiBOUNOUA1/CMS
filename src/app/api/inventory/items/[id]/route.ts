@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryItem, InventoryAdjustment, Supplier } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -29,6 +30,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     const item = await InventoryItem.findById(params.id);
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    // Normalize ObjectId fields: empty string → null (Mongoose rejects '' as ObjectId)
+    if (fields.supplier === '') fields.supplier = null;
+    if (fields.category === '') fields.category = null;
+
     // Apply field updates
     Object.assign(item, fields);
 
@@ -42,6 +47,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
         quantity: Number(stockDelta),
         notes: adjNotes ?? '',
         performedBy: userId ?? null,
+      });
+      const delta = Number(stockDelta);
+      await logActivity({
+        action: 'inventory_adjusted',
+        entityType: 'inventoryItem',
+        entityId: params.id,
+        entityLabel: `${item.name} (${delta > 0 ? '+' : ''}${delta})`,
+        performedBy: userId,
+        metadata: { adjustmentType: adjustmentType ?? 'usage', stockDelta: delta },
       });
     }
 

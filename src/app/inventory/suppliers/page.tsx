@@ -20,6 +20,12 @@ interface Supplier {
 
 const TYPE_KEYS = ['goods', 'materials', 'services'] as const;
 
+const typeBadgeStyle = (type: string) => {
+  const bg: Record<string, string> = { goods: '#e6f4ea', materials: '#fce8b2', services: '#e8f0fe' };
+  const color: Record<string, string> = { goods: '#137333', materials: '#b06000', services: '#1a73e8' };
+  return { background: bg[type] || '#f1f3f4', color: color[type] || '#5f6368' };
+};
+
 export default function SuppliersPage() {
   const isMobile = useIsMobile();
   const t = useT();
@@ -81,18 +87,15 @@ export default function SuppliersPage() {
     return (a.name || '').localeCompare(b.name || '');
   });
 
-  const typeBadgeStyle = (type: string) => {
-    const bg: Record<string, string> = {
-      goods: '#e6f4ea', materials: '#fce8b2', services: '#e8f0fe',
-    };
-    const color: Record<string, string> = {
-      goods: '#137333', materials: '#b06000', services: '#1a73e8',
-    };
-    return { background: bg[type] || '#f1f3f4', color: color[type] || '#5f6368' };
-  };
+  const typeChipStyle = (key: string) => ({
+    background: typeFilter === key ? '#e8f0fe' : 'transparent',
+    color: typeFilter === key ? '#1a73e8' : '#5f6368',
+    borderColor: typeFilter === key ? '#c5d8fd' : '#dadce0',
+  });
 
   return (
     <div className="mx-auto" style={{ maxWidth: 1100, padding: isMobile ? '20px 16px' : '32px 24px' }}>
+      {/* Toast */}
       {notification && (
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium z-[200] shadow-google-2 whitespace-nowrap"
@@ -102,21 +105,22 @@ export default function SuppliersPage() {
         </div>
       )}
 
+      {/* Delete dialog */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/45 z-[199] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-7 max-w-[400px] w-full shadow-google-2">
-            <h3 className="mb-2 text-lg font-medium text-[#202124]">{tp.deleteDialog.title}</h3>
-            <p className="mb-6 text-sm text-[#5f6368] leading-relaxed">{tp.deleteDialog.body}</p>
+          <div className="bg-g-surface rounded-2xl p-7 max-w-[400px] w-full shadow-google-3">
+            <h3 className="mb-2 text-lg font-medium text-g-text m-0">{tp.deleteDialog.title}</h3>
+            <p className="mb-6 text-sm text-g-text-2 leading-relaxed m-0 mt-2">{tp.deleteDialog.body}</p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteId(null)}
-                className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer"
+                className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
               >
                 {tp.deleteDialog.cancel}
               </button>
               <button
                 onClick={() => handleDelete(deleteId)}
-                className="bg-google-red text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer"
+                className="ripple bg-google-red text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
               >
                 {tp.deleteDialog.delete}
               </button>
@@ -128,11 +132,14 @@ export default function SuppliersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="m-0 font-normal text-[#202124]" style={{ fontSize: isMobile ? 22 : 28 }}>{tp.title}</h1>
-          <p className="mt-1 mb-0 text-[13px] text-[#5f6368]">{tp.supplierCount(suppliers.length)}</p>
+          <h1 className="m-0 font-medium text-g-text" style={{ fontSize: isMobile ? 22 : 26 }}>{tp.title}</h1>
+          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.supplierCount(suppliers.length)}</p>
         </div>
         {perms.edit_suppliers && (
-          <Link href="/inventory/suppliers/new" className="bg-google-blue text-white border-none rounded-full py-2.5 px-5 text-sm font-medium no-underline inline-flex items-center gap-1.5">
+          <Link
+            href="/inventory/suppliers/new"
+            className="ripple bg-google-blue text-white border-none rounded-full py-2.5 px-5 text-sm font-medium no-underline inline-flex items-center gap-1.5 shadow-google-1 transition-google"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
             {tp.newSupplier}
           </Link>
@@ -141,19 +148,19 @@ export default function SuppliersPage() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#9aa0a6" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-g-text-3">
           <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
         </svg>
         <input
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           placeholder={tp.searchPlaceholder}
-          className="w-full box-border py-2.5 pl-10 pr-10 border border-[#dadce0] rounded-full text-sm text-[#202124] outline-none bg-white"
+          className="w-full box-border py-2.5 pl-11 pr-10 border border-g-border rounded-full text-sm text-g-text outline-none bg-g-surface focus:border-google-blue transition-colors"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 border-none bg-none cursor-pointer text-[#9aa0a6] p-0 flex"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 border-none bg-transparent cursor-pointer text-g-text-3 p-0 flex"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
           </button>
@@ -165,8 +172,8 @@ export default function SuppliersPage() {
         <div className="flex gap-1.5 flex-wrap flex-1">
           <button
             onClick={() => setTypeFilter('all')}
-            className="py-1.5 px-4 rounded-full text-[13px] font-medium cursor-pointer border"
-            style={{ background: typeFilter === 'all' ? '#e6f4ea' : 'transparent', color: typeFilter === 'all' ? '#137333' : '#5f6368', borderColor: typeFilter === 'all' ? '#b7dfbf' : '#dadce0' }}
+            className="ripple py-1.5 px-4 rounded-full text-[13px] font-medium cursor-pointer border transition-colors"
+            style={typeChipStyle('all')}
           >
             {tp.filter.all}
           </button>
@@ -174,8 +181,8 @@ export default function SuppliersPage() {
             <button
               key={key}
               onClick={() => setTypeFilter(key)}
-              className="py-1.5 px-4 rounded-full text-[13px] font-medium cursor-pointer border"
-              style={{ background: typeFilter === key ? '#e6f4ea' : 'transparent', color: typeFilter === key ? '#137333' : '#5f6368', borderColor: typeFilter === key ? '#b7dfbf' : '#dadce0' }}
+              className="ripple py-1.5 px-4 rounded-full text-[13px] font-medium cursor-pointer border transition-colors"
+              style={typeChipStyle(key)}
             >
               {tp.supplierTypes[key]}
             </button>
@@ -184,7 +191,7 @@ export default function SuppliersPage() {
         <select
           value={sortBy}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value)}
-          className="py-1.5 px-3 border border-[#dadce0] rounded-lg text-[13px] text-[#5f6368] bg-white cursor-pointer outline-none"
+          className="py-1.5 px-3 border border-g-border rounded-full text-[13px] text-g-text-2 bg-g-surface cursor-pointer outline-none"
         >
           <option value="name">{tp.sort.nameAZ}</option>
           <option value="newest">{tp.sort.newest}</option>
@@ -193,30 +200,32 @@ export default function SuppliersPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-15 text-[#9aa0a6]">
-          <div className="w-8 h-8 rounded-full border-[3px] border-[#e8eaed] border-t-[#137333] animate-spin mx-auto mb-3" />
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        <div className="text-center py-15">
+          <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-green animate-spin mx-auto mb-3" />
         </div>
       )}
 
       {/* Empty state */}
       {!loading && sorted.length === 0 && (
-        <div className="text-center py-15 px-5 text-[#9aa0a6]">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="#dadce0" className="mb-4">
+        <div className="text-center py-16 px-5 bg-g-surface border border-g-border rounded-2xl">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="currentColor" className="mb-4 text-g-text-3 mx-auto">
             <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z" />
           </svg>
-          <p className="text-base font-medium text-[#5f6368] mb-1.5">{tp.empty.title}</p>
-          <p className="text-sm text-[#9aa0a6] m-0">{tp.empty.body}</p>
+          <p className="text-base font-medium text-g-text mb-1.5 m-0">{tp.empty.title}</p>
+          <p className="text-sm text-g-text-2 m-0">{tp.empty.body}</p>
         </div>
       )}
 
       {/* Desktop table */}
       {!loading && sorted.length > 0 && !isMobile && (
-        <div className="bg-white border border-[#e8eaed] rounded-xl overflow-hidden">
-          <div className="flex px-5 py-2.5 bg-[#f8f9fa] border-b border-[#e8eaed]">
+        <div className="bg-g-surface border border-g-border rounded-2xl overflow-hidden shadow-google-1">
+          <div className="flex px-5 py-3 bg-g-bg border-b border-g-border">
             {[tp.table.name, tp.table.email, tp.table.phone, tp.table.type, tp.table.actions].map((h: string, i: number) => (
-              <div key={i} style={{ flex: i === 0 ? 2 : i === 4 ? 'none' : 1, width: i === 4 ? 100 : undefined }}
-                className="text-[11px] font-semibold text-[#5f6368] uppercase tracking-wide">
+              <div
+                key={i}
+                className="text-[11px] font-semibold text-g-text-2 uppercase tracking-wider"
+                style={{ flex: i === 0 ? 2 : i === 4 ? 'none' : 1, width: i === 4 ? 100 : undefined }}
+              >
                 {h}
               </div>
             ))}
@@ -225,8 +234,8 @@ export default function SuppliersPage() {
             <div
               key={s._id}
               onClick={() => router.push(`/inventory/suppliers/${s._id}`)}
-              className="flex px-5 py-3.5 items-center border-b border-[#f1f3f4] cursor-pointer last:border-b-0"
-              onMouseEnter={e => (e.currentTarget.style.background = '#f8f9fa')}
+              className="flex px-5 py-3.5 items-center border-b border-g-border last:border-b-0 cursor-pointer transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
               onMouseLeave={e => (e.currentTarget.style.background = '')}
             >
               <div className="flex-[2] flex items-center gap-3 min-w-0">
@@ -236,19 +245,19 @@ export default function SuppliersPage() {
                 >
                   {(s.name || '?')[0].toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-[#202124] overflow-hidden text-ellipsis whitespace-nowrap">{s.name}</span>
+                <span className="text-sm font-medium text-g-text overflow-hidden text-ellipsis whitespace-nowrap">{s.name}</span>
               </div>
-              <div className="flex-1 text-[13px] text-[#5f6368] overflow-hidden text-ellipsis whitespace-nowrap pr-2">{s.email || '—'}</div>
-              <div className="flex-1 text-[13px] text-[#5f6368]">{s.phone || '—'}</div>
+              <div className="flex-1 text-[13px] text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap pr-2">{s.email || '—'}</div>
+              <div className="flex-1 text-[13px] text-g-text-2">{s.phone || '—'}</div>
               <div className="flex-1">
-                <span className="inline-block py-0.5 px-2.5 rounded-xl text-xs font-medium" style={typeBadgeStyle(s.supplierType)}>
+                <span className="inline-block py-0.5 px-2.5 rounded-full text-[12px] font-medium" style={typeBadgeStyle(s.supplierType)}>
                   {tp.supplierTypes[s.supplierType as keyof typeof tp.supplierTypes] || s.supplierType}
                 </span>
               </div>
               <div className="w-[100px] flex justify-end gap-1" onClick={e => e.stopPropagation()}>
                 <Link
                   href={`/inventory/suppliers/${s._id}`}
-                  className="p-1.5 rounded-md text-[#5f6368] flex no-underline"
+                  className="ripple p-2 rounded-full text-g-text-2 flex no-underline hover:bg-g-bg transition-colors"
                   onClick={e => e.stopPropagation()}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>
@@ -256,7 +265,7 @@ export default function SuppliersPage() {
                 {perms.delete_suppliers && (
                   <button
                     onClick={() => setDeleteId(s._id)}
-                    className="p-1.5 rounded-md border-none bg-none cursor-pointer text-google-red flex"
+                    className="ripple p-2 rounded-full border-none bg-transparent cursor-pointer text-google-red flex hover:bg-google-red-light transition-colors"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                   </button>
@@ -274,7 +283,7 @@ export default function SuppliersPage() {
             <div
               key={s._id}
               onClick={() => router.push(`/inventory/suppliers/${s._id}`)}
-              className="bg-white border border-[#e8eaed] rounded-xl p-4 cursor-pointer"
+              className="bg-g-surface border border-g-border rounded-2xl p-4 cursor-pointer shadow-google-1"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -285,19 +294,19 @@ export default function SuppliersPage() {
                     {(s.name || '?')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="m-0 text-[15px] font-medium text-[#202124] overflow-hidden text-ellipsis whitespace-nowrap">{s.name}</p>
-                    <p className="mt-0.5 mb-0 text-[13px] text-[#5f6368] overflow-hidden text-ellipsis whitespace-nowrap">{s.email || '—'}</p>
-                    {s.phone && <p className="mt-px mb-0 text-xs text-[#9aa0a6]">{s.phone}</p>}
+                    <p className="m-0 text-[15px] font-medium text-g-text overflow-hidden text-ellipsis whitespace-nowrap">{s.name}</p>
+                    <p className="mt-0.5 mb-0 text-[13px] text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{s.email || '—'}</p>
+                    {s.phone && <p className="mt-px mb-0 text-xs text-g-text-3">{s.phone}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  <span className="py-0.5 px-2 rounded-xl text-[11px] font-medium" style={typeBadgeStyle(s.supplierType)}>
+                  <span className="py-0.5 px-2.5 rounded-full text-[12px] font-medium" style={typeBadgeStyle(s.supplierType)}>
                     {tp.supplierTypes[s.supplierType as keyof typeof tp.supplierTypes] || s.supplierType}
                   </span>
                   {perms.delete_suppliers && (
                     <button
                       onClick={() => setDeleteId(s._id)}
-                      className="p-1.5 rounded-md border-none bg-none cursor-pointer text-google-red flex"
+                      className="ripple p-1.5 rounded-full border-none bg-transparent cursor-pointer text-google-red flex"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                     </button>

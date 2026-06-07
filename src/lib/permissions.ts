@@ -24,6 +24,9 @@ export const ALL_PERMISSIONS = [
   'view_tasks',
   'create_tasks',
   'delete_tasks',
+  'view_laundry',
+  'manage_laundry',
+  'view_activities',
 ] as const;
 
 export type PermissionKey = typeof ALL_PERMISSIONS[number];
@@ -56,6 +59,9 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_tasks:             true,
     create_tasks:           true,
     delete_tasks:           true,
+    view_laundry:           true,
+    manage_laundry:         true,
+    view_activities:        true,
   },
   manager: {
     view_orders:            false,
@@ -83,6 +89,9 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_tasks:             true,
     create_tasks:           true,
     delete_tasks:           false,
+    view_laundry:           false,
+    manage_laundry:         false,
+    view_activities:        false,
   },
   viewer: {
     view_orders:            true,
@@ -110,6 +119,9 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_tasks:             true,
     create_tasks:           true,
     delete_tasks:           false,
+    view_laundry:           false,
+    manage_laundry:         false,
+    view_activities:        false,
   },
 };
 

@@ -22,6 +22,12 @@ const EMPTY_FORM = {
   address: { street: '', city: '', state: '', postalCode: '', country: 'FR' },
 };
 
+const typeBadgeStyle = (type) => {
+  const bg = { goods: '#e6f4ea', materials: '#fce8b2', services: '#e8f0fe' };
+  const color = { goods: '#137333', materials: '#b06000', services: '#1a73e8' };
+  return { background: bg[type] || '#f1f3f4', color: color[type] || '#5f6368' };
+};
+
 export default function SupplierDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -33,7 +39,6 @@ export default function SupplierDetailPage() {
   const [loading, setLoading] = useState(true);
   const [perms, setPerms] = useState({});
   const [notification, setNotification] = useState(null);
-
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -56,17 +61,11 @@ export default function SupplierDetailPage() {
 
   function seedEditForm(s) {
     setEditForm({
-      name: s.name || '',
-      email: s.email || '',
-      phone: s.phone || '',
-      supplierType: s.supplierType || '',
-      contactPerson: s.contactPerson || '',
-      notes: s.notes || '',
+      name: s.name || '', email: s.email || '', phone: s.phone || '',
+      supplierType: s.supplierType || '', contactPerson: s.contactPerson || '', notes: s.notes || '',
       address: {
-        street: s.address?.street || '',
-        city: s.address?.city || '',
-        state: s.address?.state || '',
-        postalCode: s.address?.postalCode || '',
+        street: s.address?.street || '', city: s.address?.city || '',
+        state: s.address?.state || '', postalCode: s.address?.postalCode || '',
         country: s.address?.country || 'FR',
       },
     });
@@ -112,47 +111,24 @@ export default function SupplierDetailPage() {
     }
   };
 
-  const typeBadgeStyle = (type) => {
-    const bg = { goods: '#e6f4ea', materials: '#fce8b2', services: '#e8f0fe' };
-    const color = { goods: '#137333', materials: '#b06000', services: '#1a73e8' };
-    return { background: bg[type] || '#f1f3f4', color: color[type] || '#5f6368' };
-  };
-
-  const btnFilled = {
-    background: '#1a73e8', color: '#fff', border: 'none',
-    borderRadius: 24, padding: '9px 20px', fontSize: 14,
-    fontFamily: "'Google Sans'", fontWeight: 500, cursor: 'pointer',
-  };
-  const btnOutline = {
-    background: 'transparent', color: '#5f6368', border: '1px solid #dadce0',
-    borderRadius: 24, padding: '9px 20px', fontSize: 14,
-    fontFamily: "'Google Sans'", fontWeight: 500, cursor: 'pointer',
-  };
-  const card = {
-    background: '#fff', border: '1px solid #e8eaed', borderRadius: 12,
-    padding: isMobile ? '18px 16px' : '24px', marginBottom: 16,
-  };
-  const sectionLabel = {
-    fontSize: 11, fontWeight: 600, color: '#5f6368', textTransform: 'uppercase',
-    letterSpacing: '0.06em', fontFamily: "'Google Sans'", marginBottom: 12, display: 'block',
-  };
-  const fieldRow = { fontSize: 14, color: '#202124', fontFamily: 'Roboto, Arial', marginBottom: 8 };
-  const fieldLabel = { fontSize: 12, color: '#9aa0a6', marginBottom: 2 };
+  const cardCls = `bg-g-surface border border-g-border rounded-2xl mb-4 shadow-google-1 ${isMobile ? 'p-[18px]' : 'p-6'}`;
+  const sectionLabelCls = 'text-[11px] font-semibold text-g-text-2 uppercase tracking-wider block mb-4';
+  const fieldLabelCls = 'text-[12px] text-g-text-3 mb-0.5';
+  const fieldValueCls = 'text-sm text-g-text';
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px', textAlign: 'center', color: '#9aa0a6' }}>
-        <div style={{ width: 32, height: 32, border: '3px solid #e8eaed', borderTopColor: '#137333', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-green animate-spin" />
       </div>
     );
   }
 
   if (!supplier) {
     return (
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px', textAlign: 'center' }}>
-        <p style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>{tp.loadFailed}</p>
-        <Link href="/inventory/suppliers" style={{ color: '#137333' }}>← {tp.back}</Link>
+      <div className="max-w-[800px] mx-auto p-10 text-center">
+        <p className="text-g-text-2 mb-3">{tp.loadFailed}</p>
+        <Link href="/inventory/suppliers" className="text-google-blue no-underline text-sm">← {tp.back}</Link>
       </div>
     );
   }
@@ -163,86 +139,99 @@ export default function SupplierDetailPage() {
     <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
       {/* Toast */}
       {notification && (
-        <div style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: notification.type === 'error' ? '#d93025' : '#137333',
-          color: '#fff', padding: '12px 24px', borderRadius: 8,
-          fontFamily: "'Google Sans'", fontSize: 14, fontWeight: 500,
-          zIndex: 200, boxShadow: '0 4px 12px rgba(0,0,0,.2)', whiteSpace: 'nowrap',
-        }}>
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium z-[200] shadow-google-2 whitespace-nowrap"
+          style={{ background: notification.type === 'error' ? '#d93025' : '#137333' }}
+        >
           {notification.msg}
         </div>
       )}
 
       {/* Delete dialog */}
       {deleteOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 199, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}>
-            <h3 style={{ margin: '0 0 8px', fontFamily: "'Google Sans'", fontSize: 18, fontWeight: 500, color: '#202124' }}>
-              {tp.deleteDialog.title}
-            </h3>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#5f6368', lineHeight: 1.5 }}>
-              {tp.deleteDialog.body}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setDeleteOpen(false)} style={btnOutline}>{tp.deleteDialog.cancel}</button>
-              <button onClick={handleDelete} style={{ ...btnFilled, background: '#d93025' }}>{tp.deleteDialog.delete}</button>
+        <div className="fixed inset-0 bg-black/45 z-[199] flex items-center justify-center p-4">
+          <div className="bg-g-surface rounded-2xl p-7 max-w-[400px] w-full shadow-google-3">
+            <h3 className="m-0 mb-2 text-lg font-medium text-g-text">{tp.deleteDialog.title}</h3>
+            <p className="m-0 mt-2 mb-6 text-sm text-g-text-2 leading-relaxed">{tp.deleteDialog.body}</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteOpen(false)}
+                className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
+              >
+                {tp.deleteDialog.cancel}
+              </button>
+              <button
+                onClick={handleDelete}
+                className="ripple bg-google-red text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
+              >
+                {tp.deleteDialog.delete}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Back link */}
-      <Link href="/inventory/suppliers" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#5f6368', textDecoration: 'none', fontSize: 14, fontFamily: "'Google Sans'", marginBottom: 20 }}>
+      {/* Back */}
+      <Link href="/inventory/suppliers" className="inline-flex items-center gap-1.5 text-sm text-g-text-2 no-underline mb-5 hover:text-google-blue transition-colors">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
         {tp.back}
       </Link>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
-            background: avatarColor(supplier.name), color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 500, fontFamily: "'Google Sans'",
-          }}>
+      {/* Header card */}
+      <div className={`${cardCls} flex items-start justify-between gap-4 flex-wrap`}>
+        <div className="flex items-center gap-4">
+          <div
+            className="rounded-full flex-shrink-0 flex items-center justify-center text-white font-medium"
+            style={{ width: 52, height: 52, background: avatarColor(supplier.name), fontSize: 22 }}
+          >
             {(supplier.name || '?')[0].toUpperCase()}
           </div>
           <div>
-            <h1 style={{ margin: 0, fontFamily: "'Google Sans'", fontSize: isMobile ? 20 : 24, fontWeight: 500, color: '#202124' }}>
+            <h1 className="m-0 font-medium text-g-text" style={{ fontSize: isMobile ? 20 : 24 }}>
               {supplier.name}
             </h1>
-            <p style={{ margin: '3px 0 0', fontSize: 14, color: '#5f6368', fontFamily: 'Roboto, Arial' }}>
-              {supplier.email || ''}
-              {supplier.email && supplier.phone ? ` · ${supplier.phone}` : supplier.phone || ''}
-            </p>
+            {(supplier.email || supplier.phone) && (
+              <p className="m-0 mt-1 text-sm text-g-text-2">
+                {supplier.email}
+                {supplier.email && supplier.phone ? ' · ' : ''}
+                {supplier.phone}
+              </p>
+            )}
             {supplier.supplierType && (
-              <span style={{
-                display: 'inline-block', marginTop: 6, padding: '3px 10px', borderRadius: 12,
-                fontSize: 12, fontWeight: 500, fontFamily: "'Google Sans'",
-                ...typeBadgeStyle(supplier.supplierType),
-              }}>
+              <span
+                className="inline-block mt-2 py-0.5 px-2.5 rounded-full text-[12px] font-medium"
+                style={typeBadgeStyle(supplier.supplierType)}
+              >
                 {typeLabel}
               </span>
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div className="flex gap-2 flex-shrink-0">
           {perms.edit_suppliers && !editing && (
-            <button onClick={() => setEditing(true)} style={btnOutline}>{tp.editSupplier}</button>
+            <button
+              onClick={() => setEditing(true)}
+              className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2 px-4 text-sm font-medium cursor-pointer transition-google"
+            >
+              {tp.editSupplier}
+            </button>
           )}
           {perms.delete_suppliers && !editing && (
-            <button onClick={() => setDeleteOpen(true)} style={{ ...btnFilled, background: '#d93025' }}>{tp.deleteSupplier}</button>
+            <button
+              onClick={() => setDeleteOpen(true)}
+              className="ripple bg-google-red text-white border-none rounded-full py-2 px-4 text-sm font-medium cursor-pointer transition-google"
+            >
+              {tp.deleteSupplier}
+            </button>
           )}
         </div>
       </div>
 
       {/* Contact section */}
-      <div style={card}>
-        <span style={sectionLabel}>{tp.infoSection}</span>
+      <div className={cardCls}>
+        <span className={sectionLabelCls}>{tp.infoSection}</span>
         {!editing ? (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px 24px' }}>
+          <div className="grid gap-x-6 gap-y-3" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             {[
               { label: tp.fields.name, value: supplier.name },
               { label: tp.fields.supplierType, value: typeLabel },
@@ -251,13 +240,13 @@ export default function SupplierDetailPage() {
               { label: tp.fields.contactPerson, value: supplier.contactPerson || '—' },
             ].map(({ label, value }) => (
               <div key={label}>
-                <p style={{ margin: 0, ...fieldLabel }}>{label}</p>
-                <p style={{ margin: 0, ...fieldRow }}>{value}</p>
+                <p className={`m-0 ${fieldLabelCls}`}>{label}</p>
+                <p className={`m-0 mt-0.5 ${fieldValueCls}`}>{value}</p>
               </div>
             ))}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px 24px' }}>
+          <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             <Field label={`${tp.fields.name} *`}>
               <FormInput value={editForm.name} onChange={e => set('name', e.target.value)} />
             </Field>
@@ -283,34 +272,34 @@ export default function SupplierDetailPage() {
       </div>
 
       {/* Address section */}
-      <div style={card}>
-        <span style={sectionLabel}>{tp.addressSection}</span>
+      <div className={cardCls}>
+        <span className={sectionLabelCls}>{tp.addressSection}</span>
         {!editing ? (
           (() => {
             const addr = supplier.address || {};
             const hasAddr = addr.street || addr.city || addr.postalCode || addr.state || addr.country;
-            if (!hasAddr) return <p style={{ margin: 0, fontSize: 14, color: '#9aa0a6', fontFamily: 'Roboto, Arial' }}>{tp.noAddress}</p>;
+            if (!hasAddr) return <p className={`m-0 text-sm text-g-text-3`}>{tp.noAddress}</p>;
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px 24px' }}>
+              <div className="grid gap-x-6 gap-y-3" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
                 {addr.street && (
                   <div style={{ gridColumn: isMobile ? undefined : '1 / -1' }}>
-                    <p style={{ margin: 0, ...fieldLabel }}>{tp.fields.street}</p>
-                    <p style={{ margin: 0, ...fieldRow }}>{addr.street}</p>
+                    <p className={`m-0 ${fieldLabelCls}`}>{tp.fields.street}</p>
+                    <p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.street}</p>
                   </div>
                 )}
-                {addr.city && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.city}</p><p style={{ margin: 0, ...fieldRow }}>{addr.city}</p></div>}
-                {addr.postalCode && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.postalCode}</p><p style={{ margin: 0, ...fieldRow }}>{addr.postalCode}</p></div>}
-                {addr.state && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.state}</p><p style={{ margin: 0, ...fieldRow }}>{addr.state}</p></div>}
-                {addr.country && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.country}</p><p style={{ margin: 0, ...fieldRow }}>{addr.country}</p></div>}
+                {addr.city && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.city}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.city}</p></div>}
+                {addr.postalCode && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.postalCode}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.postalCode}</p></div>}
+                {addr.state && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.state}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.state}</p></div>}
+                {addr.country && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.country}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.country}</p></div>}
               </div>
             );
           })()
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex flex-col gap-4">
             <Field label={tp.fields.street}>
               <FormInput value={editForm.address.street} onChange={e => setAddr('street', e.target.value)} />
             </Field>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px 24px' }}>
+            <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <Field label={tp.fields.city}>
                 <FormInput value={editForm.address.city} onChange={e => setAddr('city', e.target.value)} />
               </Field>
@@ -329,10 +318,10 @@ export default function SupplierDetailPage() {
       </div>
 
       {/* Notes section */}
-      <div style={card}>
-        <span style={sectionLabel}>{tp.notesSection}</span>
+      <div className={cardCls}>
+        <span className={sectionLabelCls}>{tp.notesSection}</span>
         {!editing ? (
-          <p style={{ margin: 0, fontSize: 14, color: supplier.notes ? '#202124' : '#9aa0a6', fontFamily: 'Roboto, Arial', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+          <p className={`m-0 text-sm leading-relaxed whitespace-pre-wrap ${supplier.notes ? 'text-g-text' : 'text-g-text-3'}`}>
             {supplier.notes || tp.noNotes}
           </p>
         ) : (
@@ -344,11 +333,19 @@ export default function SupplierDetailPage() {
 
       {/* Save / Cancel */}
       {editing && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={() => { setEditing(false); seedEditForm(supplier); }} style={btnOutline} disabled={saving}>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => { setEditing(false); seedEditForm(supplier); }}
+            disabled={saving}
+            className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
+          >
             {tp.cancelEdit}
           </button>
-          <button onClick={handleSave} style={btnFilled} disabled={saving}>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="ripple bg-google-blue text-white border-none rounded-full py-2.5 px-6 text-sm font-medium cursor-pointer shadow-google-1 transition-google"
+          >
             {saving ? '…' : tp.saveSupplier}
           </button>
         </div>

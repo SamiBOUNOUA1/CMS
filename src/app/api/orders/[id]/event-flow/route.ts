@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
 
 function getPerms(request) {
   try {
@@ -67,6 +68,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
       const step = event.flowInstance.steps.find(s => s._id.toString() === stepId);
       if (!step) return NextResponse.json({ error: 'Step not found' }, { status: 404 });
       step.status = status;
+
+      event.markModified('flowInstance');
+      await event.save();
+
+      const userId = request.headers.get('x-user-id');
+      await logActivity({
+        action: 'event_step_changed',
+        entityType: 'order',
+        entityId: params.id,
+        entityLabel: `${order.clientName} – ${step.label}`,
+        performedBy: userId,
+        metadata: { stepId, newStatus: status, stepLabel: step.label },
+      });
+
+      return NextResponse.json({ flowInstance: event.flowInstance });
     } else {
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }

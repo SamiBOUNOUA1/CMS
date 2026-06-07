@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
 
 async function recalculatePaymentStatus(order) {
   const payments = await Payment.find({ order: order._id }).lean();
@@ -64,6 +65,16 @@ export async function POST(request: NextRequest, { params }: { params: Record<st
     });
 
     await recalculatePaymentStatus(order);
+
+    const userId = request.headers.get('x-user-id');
+    await logActivity({
+      action: 'payment_created',
+      entityType: 'payment',
+      entityId: payment._id.toString(),
+      entityLabel: `${newAmount}€ – ${order.clientName}`,
+      performedBy: userId,
+      metadata: { orderId: params.id, amount: newAmount, method: body.paymentMethod || 'cash' },
+    });
 
     const updatedOrder = await Order.findById(params.id).lean();
     return NextResponse.json({ payment, order: updatedOrder }, { status: 201 });

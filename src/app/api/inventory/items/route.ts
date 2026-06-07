@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') ?? '';
     const categoryId = searchParams.get('category') ?? '';
     const lowStock = searchParams.get('lowStock') === 'true';
+    const laundryEligible = searchParams.get('laundryEligible') === 'true';
 
     const query = { isActive: true };
     if (search) {
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
       ];
     }
     if (categoryId) query.category = categoryId;
+    if (laundryEligible) query.laundryEligible = true;
 
     let items = await InventoryItem.find(query)
       .populate('category', 'name color')

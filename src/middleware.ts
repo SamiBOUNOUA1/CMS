@@ -150,6 +150,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (pathname.startsWith('/api/settings/modules') && !permissions.manage_users) {
         return forbidden(request);
       }
+
+      if (pathname.startsWith('/api/laundry')) {
+        if (!permissions.view_laundry) return forbidden(request);
+        if (isMutating && !permissions.manage_laundry) return forbidden(request);
+      }
     }
 
     // ── Inventory page guard ─────────────────────────────────────────────────
@@ -160,6 +165,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // ── Tasks page guard ─────────────────────────────────────────────────────
     if (pathname.startsWith('/tasks')) {
       if (!permissions.view_tasks) return forbidden(request);
+    }
+
+    // ── Laundry page guard ───────────────────────────────────────────────────
+    if (pathname.startsWith('/laundry')) {
+      if (!permissions.view_laundry) return forbidden(request);
+    }
+
+    // ── Activities page & API guard ──────────────────────────────────────────
+    if (pathname.startsWith('/activities') || pathname.startsWith('/api/activities')) {
+      if (!permissions.view_activities) return forbidden(request);
     }
 
     // ── Module-level guards ──────────────────────────────────────────────────

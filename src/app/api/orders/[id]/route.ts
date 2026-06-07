@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, Event, OrderStatusConfig, FlowTemplate } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -74,6 +75,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     order.totalAmount = +(_iTotal + _sTotal + (order.travelPrice || 0) - (order.discountAmount || 0)).toFixed(2);
 
     await order.save();
+
+    if (body.status && body.status !== prevStatus) {
+      const userId = request.headers.get('x-user-id');
+      await logActivity({
+        action: 'order_status_changed',
+        entityType: 'order',
+        entityId: params.id,
+        entityLabel: `${order.clientName} – ${body.status}`,
+        performedBy: userId,
+        metadata: { previousStatus: prevStatus, newStatus: body.status },
+      });
+    }
+
     const updated = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
     const quotes = await Quote.find({ order: params.id }).sort({ versionNumber: 1 }).lean();
     return NextResponse.json({ order: updated, quotes });

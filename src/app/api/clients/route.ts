@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
 
 // GET /api/clients?search=&customerType=
 export async function GET(request: NextRequest) {
@@ -60,6 +61,16 @@ export async function POST(request: NextRequest) {
       notes: notes?.trim() || '',
       customerType: customerType?.trim() || '',
     });
+
+    const userId = request.headers.get('x-user-id');
+    await logActivity({
+      action: 'customer_created',
+      entityType: 'client',
+      entityId: client._id.toString(),
+      entityLabel: client.name,
+      performedBy: userId,
+    });
+
     return NextResponse.json({ client }, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

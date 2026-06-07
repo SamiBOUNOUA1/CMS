@@ -468,9 +468,10 @@ const inventoryItemSchema = new Schema(
     minStock:     { type: Number, default: 0, min: 0 },
     unitCost:     { type: Number, default: 0, min: 0 },
     supplier:     { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
-    notes:        { type: String, default: '' },
-    imageUrl:     { type: String, default: '' },
-    isActive:     { type: Boolean, default: true },
+    notes:           { type: String, default: '' },
+    imageUrl:        { type: String, default: '' },
+    isActive:        { type: Boolean, default: true },
+    laundryEligible: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -489,6 +490,31 @@ const inventoryAdjustmentSchema = new Schema(
   { timestamps: true }
 );
 export const InventoryAdjustment = models.InventoryAdjustment || model('InventoryAdjustment', inventoryAdjustmentSchema);
+
+// ── LAUNDRY BATCH ─────────────────────────────────────────────────────────────
+const laundryBatchItemSchema = new Schema({
+  inventoryItem:    { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
+  quantitySent:     { type: Number, required: true, min: 1 },
+  quantityReturned: { type: Number, default: 0, min: 0 },
+  quantityLost:     { type: Number, default: 0, min: 0 },
+  quantityDamaged:  { type: Number, default: 0, min: 0 },
+  notes:            { type: String, default: '' },
+}, { _id: true });
+
+const laundryBatchSchema = new Schema(
+  {
+    batchNumber:        { type: String, required: true, unique: true, trim: true },
+    date:               { type: Date, required: true, default: Date.now },
+    order:              { type: Schema.Types.ObjectId, ref: 'Order', default: null },
+    status:             { type: String, enum: ['draft', 'sent', 'returned', 'completed'], default: 'draft' },
+    notes:              { type: String, default: '' },
+    items:              [laundryBatchItemSchema],
+    createdBy:          { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    inventoryProcessed: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+export const LaundryBatch = models.LaundryBatch || model('LaundryBatch', laundryBatchSchema);
 
 // ── COMPANY SETTINGS ──────────────────────────────────────────────────────────
 const companySettingsSchema = new Schema(
@@ -524,3 +550,21 @@ const taskSchema = new Schema(
 );
 export const Task = models.Task || model('Task', taskSchema);
 
+// ── ACTIVITY ──────────────────────────────────────────────────────────────────
+const activitySchema = new Schema(
+  {
+    action:      { type: String, required: true, enum: [
+      'order_created', 'customer_created', 'event_step_changed',
+      'order_status_changed', 'payment_created', 'quote_generated',
+      'inventory_adjusted', 'laundry_sent', 'laundry_received',
+    ]},
+    entityType:  { type: String, required: true },
+    entityId:    { type: Schema.Types.ObjectId, required: true },
+    entityLabel: { type: String, default: '' },
+    performedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    metadata:    { type: Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
+activitySchema.index({ createdAt: -1 });
+export const Activity = models.Activity || model('Activity', activitySchema);
