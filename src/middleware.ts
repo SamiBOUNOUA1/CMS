@@ -155,6 +155,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         if (!permissions.view_laundry) return forbidden(request);
         if (isMutating && !permissions.manage_laundry) return forbidden(request);
       }
+
+      if (pathname.startsWith('/api/kitchen')) {
+        if (!permissions.view_kitchen) return forbidden(request);
+        if (!permissions.manage_kitchen) return forbidden(request);
+      }
     }
 
     // ── Inventory page guard ─────────────────────────────────────────────────
@@ -170,6 +175,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // ── Laundry page guard ───────────────────────────────────────────────────
     if (pathname.startsWith('/laundry')) {
       if (!permissions.view_laundry) return forbidden(request);
+    }
+
+    // ── Kitchen page guard ───────────────────────────────────────────────────
+    if (pathname.startsWith('/kitchen')) {
+      if (!permissions.view_kitchen) return forbidden(request);
     }
 
     // ── Activities page & API guard ──────────────────────────────────────────

@@ -438,30 +438,57 @@ export default function NewOrderPage() {
       )}
 
       {/* Actions */}
-      <div className="flex justify-between mt-6 gap-3">
-        {step === 0 ? (
-          <Link href="/orders" className={btnOutline}>{tn.cancel}</Link>
-        ) : (
-          <button onClick={prev} className={btnOutline}>{tn.back}</button>
-        )}
-        <div className="flex gap-2">
-          {step === 3 && (
-            <button onClick={hasStaffRoles ? skip : submit} disabled={!hasStaffRoles && saving} className={btnOutline}>{tn.skip}</button>
-          )}
-          {step === 4 && (
-            <button onClick={submit} disabled={saving} className={btnOutline} style={{ opacity: saving ? 0.7 : 1 }}>
-              {tn.skip}
-            </button>
-          )}
+      {isMobile ? (
+        <div className="flex flex-col gap-2 mt-6">
           {step < lastStep ? (
-            <button onClick={next} className={btnFilled}>{tn.continue}</button>
+            <button onClick={next} className={`${btnFilled} w-full justify-center`}>{tn.continue}</button>
           ) : (
-            <button onClick={submit} disabled={saving} className={btnFilled} style={{ opacity: saving ? 0.7 : 1 }}>
+            <button onClick={submit} disabled={saving} className={`${btnFilled} w-full justify-center`} style={{ opacity: saving ? 0.7 : 1 }}>
               {saving ? tn.creating : tn.create}
             </button>
           )}
+          {(step === 3 || step === 4) && (
+            <button
+              onClick={step === 3 ? (hasStaffRoles ? skip : submit) : submit}
+              disabled={step === 4 && saving}
+              className={`${btnOutline} w-full text-center`}
+              style={{ opacity: step === 4 && saving ? 0.7 : 1 }}
+            >
+              {tn.skip}
+            </button>
+          )}
+          {step === 0 ? (
+            <Link href="/orders" className={`${btnOutline} w-full text-center`}>{tn.cancel}</Link>
+          ) : (
+            <button onClick={prev} className={`${btnOutline} w-full text-center`}>{tn.back}</button>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="flex justify-between mt-6 gap-3">
+          {step === 0 ? (
+            <Link href="/orders" className={btnOutline}>{tn.cancel}</Link>
+          ) : (
+            <button onClick={prev} className={btnOutline}>{tn.back}</button>
+          )}
+          <div className="flex gap-2">
+            {step === 3 && (
+              <button onClick={hasStaffRoles ? skip : submit} disabled={!hasStaffRoles && saving} className={btnOutline}>{tn.skip}</button>
+            )}
+            {step === 4 && (
+              <button onClick={submit} disabled={saving} className={btnOutline} style={{ opacity: saving ? 0.7 : 1 }}>
+                {tn.skip}
+              </button>
+            )}
+            {step < lastStep ? (
+              <button onClick={next} className={btnFilled}>{tn.continue}</button>
+            ) : (
+              <button onClick={submit} disabled={saving} className={btnFilled} style={{ opacity: saving ? 0.7 : 1 }}>
+                {saving ? tn.creating : tn.create}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

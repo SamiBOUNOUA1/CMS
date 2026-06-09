@@ -24,10 +24,24 @@ const ModuleCheckSquareIcon = () => (
   </svg>
 );
 
+const ModuleWashingMachineIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm3-12H9V5h6v2zm-3 4c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+  </svg>
+);
+
+const ModuleChefHatIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2a5 5 0 0 0-5 5 5 5 0 0 0 .93 2.89A4 4 0 0 0 5 13.5V15h14v-1.5a4 4 0 0 0-2.93-3.61A5 5 0 0 0 17 7a5 5 0 0 0-5-5zm-5 14v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1H7z"/>
+  </svg>
+);
+
 const MODULE_ICON_MAP: Record<string, () => JSX.Element> = {
   ClipboardList: ModuleClipboardIcon,
   Warehouse: ModuleWarehouseIcon,
   CheckSquare: ModuleCheckSquareIcon,
+  WashingMachine: ModuleWashingMachineIcon,
+  ChefHat: ModuleChefHatIcon,
 };
 
 const SunIcon = () => (
@@ -171,8 +185,8 @@ export default function AppNav() {
           {themePill}
         </div>
 
-        {/* Language switcher */}
-        <div className="flex rounded-full border border-g-border overflow-hidden flex-shrink-0">
+        {/* Language switcher — desktop only */}
+        <div className="hidden sm:flex rounded-full border border-g-border overflow-hidden flex-shrink-0">
           {(['en', 'fr'] as const).map(l => (
             <button
               key={l}
@@ -188,12 +202,12 @@ export default function AppNav() {
           ))}
         </div>
 
-        {/* Settings gear */}
+        {/* Settings gear — desktop only */}
         {settingsHref && user && (
           <Link
             href={settingsHref}
             title={t.nav.settings}
-            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 no-underline transition-[background,color] duration-150"
+            className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center flex-shrink-0 no-underline transition-[background,color] duration-150"
             style={{
               background: pathname.startsWith('/settings') ? 'var(--google-blue-light)' : 'transparent',
               color: pathname.startsWith('/settings') ? '#1a73e8' : 'var(--google-text-secondary)',
@@ -346,6 +360,27 @@ export default function AppNav() {
                 {t.nav.settings}
               </Link>
             )}
+
+            {/* Language switcher in drawer */}
+            <div className="px-5 py-3 border-t border-g-border">
+              <p className="m-0 mb-2 text-xs text-g-text-3 font-sans font-medium uppercase tracking-[0.05em]">{lang === 'fr' ? 'Langue' : 'Language'}</p>
+              <div className="flex gap-1.5">
+                {(['en', 'fr'] as const).map(l => (
+                  <button
+                    key={l}
+                    onClick={() => switchLanguage(l)}
+                    className="flex-1 py-2 px-1 rounded-lg cursor-pointer font-sans text-[11px] font-medium flex items-center justify-center transition-[background,color,border-color] duration-150"
+                    style={{
+                      border: `1px solid ${lang === l ? '#1a73e8' : 'var(--google-border)'}`,
+                      background: lang === l ? '#1a73e8' : 'transparent',
+                      color: lang === l ? '#fff' : 'var(--google-text-secondary)',
+                    }}
+                  >
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Theme switcher in drawer */}
             <div className="px-5 py-3 border-t border-g-border">

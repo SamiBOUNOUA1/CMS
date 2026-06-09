@@ -18,7 +18,6 @@ export const MODULE_REGISTRY = [
     ],
     subRoutes: [
       { href: '/orders',         label: 'Orders',    labelFr: 'Commandes',       permission: 'view_orders' },
-      { href: '/quotes',         label: 'Quotes',    labelFr: 'Devis',           permission: null },
       { href: '/customers',      label: 'Customers', labelFr: 'Clients',         permission: 'view_customers' },
       { href: '/calendar',       label: 'Calendar',  labelFr: 'Calendrier',      permission: 'view_calendar' },
       { href: '/manager/events', label: 'My Events', labelFr: 'Mes événements',  permission: 'update_flow_status' },
@@ -72,6 +71,24 @@ export const MODULE_REGISTRY = [
     permissions: ['view_laundry', 'manage_laundry'],
     subRoutes: [
       { href: '/laundry', label: 'Batches', labelFr: 'Lots', permission: 'view_laundry' },
+    ],
+    builtIn: false,
+  },
+  {
+    id: 'kitchen',
+    name: 'Kitchen',
+    nameFr: 'Cuisine',
+    description: 'Manage kitchen stock, recipes, and ingredient costs.',
+    descriptionFr: 'Gérez le stock cuisine, les recettes et les coûts d\'ingrédients.',
+    icon: 'ChefHat',
+    color: '#e37400',
+    primaryRoute: '/kitchen',
+    routes: ['/kitchen'],
+    apiPrefixes: ['/api/kitchen'],
+    permissions: ['view_kitchen', 'manage_kitchen'],
+    subRoutes: [
+      { href: '/kitchen/stock',   label: 'Stock',   labelFr: 'Stock',    permission: 'view_kitchen' },
+      { href: '/kitchen/recipes', label: 'Recipes', labelFr: 'Recettes', permission: 'view_kitchen' },
     ],
     builtIn: false,
   },

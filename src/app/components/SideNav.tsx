@@ -35,11 +35,18 @@ const GearIcon = () => (
   </svg>
 );
 
+const ChefHatIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2a5 5 0 0 0-5 5 5 5 0 0 0 .93 2.89A4 4 0 0 0 5 13.5V15h14v-1.5a4 4 0 0 0-2.93-3.61A5 5 0 0 0 17 7a5 5 0 0 0-5-5zm-5 14v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1H7z"/>
+  </svg>
+);
+
 const ICON_MAP: Record<string, () => JSX.Element> = {
   ClipboardList: ClipboardListIcon,
   Warehouse: WarehouseIcon,
   CheckSquare: CheckSquareIcon,
   WashingMachine: WashingMachineIcon,
+  ChefHat: ChefHatIcon,
 };
 
 interface SubRoute {

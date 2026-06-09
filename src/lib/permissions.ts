@@ -26,6 +26,8 @@ export const ALL_PERMISSIONS = [
   'delete_tasks',
   'view_laundry',
   'manage_laundry',
+  'view_kitchen',
+  'manage_kitchen',
   'view_activities',
 ] as const;
 
@@ -61,6 +63,8 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     delete_tasks:           true,
     view_laundry:           true,
     manage_laundry:         true,
+    view_kitchen:           true,
+    manage_kitchen:         true,
     view_activities:        true,
   },
   manager: {
@@ -91,6 +95,8 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     delete_tasks:           false,
     view_laundry:           false,
     manage_laundry:         false,
+    view_kitchen:           true,
+    manage_kitchen:         false,
     view_activities:        false,
   },
   viewer: {
@@ -121,6 +127,8 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     delete_tasks:           false,
     view_laundry:           false,
     manage_laundry:         false,
+    view_kitchen:           false,
+    manage_kitchen:         false,
     view_activities:        false,
   },
 };

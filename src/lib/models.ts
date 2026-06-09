@@ -123,6 +123,7 @@ const productSchema = new Schema(
     unit: { type: String, default: 'item', trim: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
     subItems: [subItemSchema],
+    linkedRecipe: { type: Schema.Types.ObjectId, ref: 'KitchenRecipe', default: null },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
@@ -557,6 +558,7 @@ const activitySchema = new Schema(
       'order_created', 'customer_created', 'event_step_changed',
       'order_status_changed', 'payment_created', 'quote_generated',
       'inventory_adjusted', 'laundry_sent', 'laundry_received',
+      'kitchen_stock_adjusted', 'kitchen_recipe_saved',
     ]},
     entityType:  { type: String, required: true },
     entityId:    { type: Schema.Types.ObjectId, required: true },
@@ -568,3 +570,60 @@ const activitySchema = new Schema(
 );
 activitySchema.index({ createdAt: -1 });
 export const Activity = models.Activity || model('Activity', activitySchema);
+
+// ── KITCHEN STOCK ─────────────────────────────────────────────────────────────
+const kitchenStockItemSchema = new Schema(
+  {
+    name:         { type: String, required: true, trim: true },
+    category:     { type: String, default: 'other', trim: true, enum: ['vegetables', 'dairy', 'meat', 'dry', 'spices', 'beverages', 'other'] },
+    unit:         { type: String, default: 'kg', trim: true },
+    currentStock: { type: Number, default: 0, min: 0 },
+    minStock:     { type: Number, default: 0, min: 0 },
+    unitCost:     { type: Number, default: 0, min: 0 },
+    notes:        { type: String, default: '' },
+    isActive:     { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const KitchenStockItem = models.KitchenStockItem || model('KitchenStockItem', kitchenStockItemSchema);
+
+const kitchenStockAdjustmentSchema = new Schema(
+  {
+    item:           { type: Schema.Types.ObjectId, ref: 'KitchenStockItem', required: true },
+    adjustmentType: { type: String, enum: ['purchase', 'usage', 'write-off', 'return'], required: true },
+    quantity:       { type: Number, required: true },
+    date:           { type: Date, default: Date.now },
+    notes:          { type: String, default: '' },
+    performedBy:    { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  },
+  { timestamps: true }
+);
+kitchenStockAdjustmentSchema.index({ item: 1, createdAt: -1 });
+export const KitchenStockAdjustment = models.KitchenStockAdjustment || model('KitchenStockAdjustment', kitchenStockAdjustmentSchema);
+
+// ── KITCHEN RECIPES ───────────────────────────────────────────────────────────
+const recipeIngredientSchema = new Schema(
+  {
+    stockItem: { type: Schema.Types.ObjectId, ref: 'KitchenStockItem', required: true },
+    quantity:  { type: Number, required: true, min: 0 },
+    unit:      { type: String, default: '', trim: true },
+  },
+  { _id: false }
+);
+
+const kitchenRecipeSchema = new Schema(
+  {
+    name:         { type: String, required: true, trim: true },
+    nameFr:       { type: String, default: '', trim: true },
+    category:     { type: String, enum: ['starter', 'main', 'dessert', 'side', 'other'], default: 'other' },
+    servings:     { type: Number, default: 1, min: 1 },
+    description:  { type: String, default: '' },
+    instructions: { type: String, default: '' },
+    prepTime:     { type: Number, default: 0, min: 0 },
+    cookTime:     { type: Number, default: 0, min: 0 },
+    ingredients:  [recipeIngredientSchema],
+    isActive:     { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const KitchenRecipe = models.KitchenRecipe || model('KitchenRecipe', kitchenRecipeSchema);

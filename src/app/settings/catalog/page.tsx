@@ -9,6 +9,12 @@ interface Category {
   name: string;
 }
 
+interface Recipe {
+  _id: string;
+  name: string;
+  nameFr?: string;
+}
+
 interface SubItem {
   _id: string;
   name: string;
@@ -23,12 +29,14 @@ interface Product {
   unit?: string;
   category?: { _id: string; name: string };
   subItems?: SubItem[];
+  linkedRecipe?: { _id: string; name: string; nameFr?: string } | null;
 }
 
 interface EditFields {
   defaultPrice: number | string;
   shortDescription: string;
   category: string;
+  linkedRecipe: string;
   subItems: SubItem[];
   newSubItemInput: string;
 }
@@ -81,9 +89,14 @@ export default function CatalogPage() {
 function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnType<typeof useT>; tc: ReturnType<typeof useT>['catalog']; tp: ReturnType<typeof useT>['catalog']['products']; currency: string }) {
   const [products, setProducts]   = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [recipes, setRecipes]     = useState<Recipe[]>([]);
+  const [kitchenEnabled, setKitchenEnabled] = useState(false);
   const [loading, setLoading]     = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
+
+  const [typeFilter, setTypeFilter] = useState<'all' | 'simple' | 'bundle'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const [form, setForm] = useState({ name: '', shortDescription: '', productType: 'simple', defaultPrice: '', unit: '', category: '' });
   const [adding, setAdding]       = useState(false);
@@ -99,10 +112,22 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [pr, cr] = await Promise.all([fetch('/api/products'), fetch('/api/categories')]);
-      const [pd, cd] = await Promise.all([pr.json(), cr.json()]);
+      const [pr, cr, mr] = await Promise.all([
+        fetch('/api/products'),
+        fetch('/api/categories'),
+        fetch('/api/settings/modules'),
+      ]);
+      const [pd, cd, md] = await Promise.all([pr.json(), cr.json(), mr.ok ? mr.json() : { modules: [] }]);
       setProducts(pd.products || []);
       setCategories(cd.categories || []);
+      const km = (md.modules || []).find((m: { id: string; isEnabled: boolean }) => m.id === 'kitchen');
+      const kEnabled = km?.isEnabled ?? false;
+      setKitchenEnabled(kEnabled);
+      if (kEnabled) {
+        const rr = await fetch('/api/kitchen/recipes');
+        const rd = rr.ok ? await rr.json() : { recipes: [] };
+        setRecipes(rd.recipes || []);
+      }
     } catch {
       notify(tp.notifications.loadFailed, 'error');
     } finally {
@@ -162,6 +187,7 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
         defaultPrice: updated.defaultPrice ?? '',
         shortDescription: updated.shortDescription ?? '',
         category: updated.category?._id ?? '',
+        linkedRecipe: updated.linkedRecipe?._id ?? updated.linkedRecipe ?? '',
         subItems: updated.subItems ?? [],
         newSubItemInput: '',
       },
@@ -177,6 +203,7 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
         defaultPrice: product.defaultPrice ?? '',
         shortDescription: product.shortDescription ?? '',
         category: product.category?._id ?? '',
+        linkedRecipe: product.linkedRecipe?._id ?? '',
         subItems: product.subItems ?? [],
         newSubItemInput: '',
       },
@@ -210,9 +237,19 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
       defaultPrice: Number(ef.defaultPrice) || 0,
       shortDescription: (ef.shortDescription as string).trim(),
       category: ef.category || null,
+      linkedRecipe: ef.linkedRecipe || null,
       subItems: ef.subItems.map(s => ({ ...(s._id?.startsWith('new-') ? {} : { _id: s._id }), name: s.name })),
     }, tp.notifications.updated);
   };
+
+  const hasUncategorized = products.some(p => !p.category);
+
+  const filteredProducts = products.filter(p => {
+    if (typeFilter !== 'all' && p.productType !== typeFilter) return false;
+    if (categoryFilter === '__none__' && p.category) return false;
+    if (categoryFilter !== 'all' && categoryFilter !== '__none__' && p.category?._id !== categoryFilter) return false;
+    return true;
+  });
 
   return (
     <div>
@@ -288,14 +325,71 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
         </div>
       )}
 
+      {/* Filter bar */}
+      {!loading && products.length > 0 && (
+        <div className="mb-4 flex flex-col gap-2">
+          {/* Type filter */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+            <span className="text-[11px] font-medium text-[#5f6368] uppercase tracking-[0.04em] flex-shrink-0" style={{ fontFamily: "'Google Sans'" }}>
+              {tp.productType}
+            </span>
+            {(['all', 'simple', 'bundle'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setTypeFilter(type)}
+                className="py-1 px-3.5 rounded-full border text-xs font-medium cursor-pointer whitespace-nowrap flex-shrink-0"
+                style={{
+                  borderColor: typeFilter === type ? '#1a73e8' : '#dadce0',
+                  background: typeFilter === type ? '#e8f0fe' : '#fff',
+                  color: typeFilter === type ? '#1a73e8' : '#5f6368',
+                  fontFamily: "'Google Sans'",
+                }}
+              >
+                {type === 'all' ? tp.allTypes : type === 'simple' ? tp.simple : tp.bundle}
+              </button>
+            ))}
+          </div>
+
+          {/* Category filter */}
+          {categories.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+              <span className="text-[11px] font-medium text-[#5f6368] uppercase tracking-[0.04em] flex-shrink-0" style={{ fontFamily: "'Google Sans'" }}>
+                {tp.category}
+              </span>
+              {[
+                { val: 'all', label: tp.allCategories },
+                ...(hasUncategorized ? [{ val: '__none__', label: tp.uncategorized }] : []),
+                ...categories.map(c => ({ val: c._id, label: c.name })),
+              ].map(({ val, label }) => (
+                <button
+                  key={val}
+                  onClick={() => setCategoryFilter(val)}
+                  className="py-1 px-3.5 rounded-full border text-xs font-medium cursor-pointer whitespace-nowrap flex-shrink-0"
+                  style={{
+                    borderColor: categoryFilter === val ? '#1a73e8' : '#dadce0',
+                    background: categoryFilter === val ? '#e8f0fe' : '#fff',
+                    color: categoryFilter === val ? '#1a73e8' : '#5f6368',
+                    fontFamily: "'Google Sans'",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Product list */}
       {loading ? (
         <p className="text-[#5f6368] text-sm">Loading…</p>
       ) : products.length === 0 ? (
         <div className="text-center py-12 text-[#5f6368] text-sm">{tp.noProducts}</div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="text-center py-12 text-[#5f6368] text-sm">{tp.noProductsFiltered}</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {products.map(product => (
+          {filteredProducts.map(product => (
             <div key={product._id} className="bg-white rounded-xl border border-google-gray-200 shadow-google-1 overflow-hidden">
 
               {/* Product row */}
@@ -319,6 +413,11 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
                     {product.category?.name && (
                       <span className="bg-[#e6f4ea] text-[#137333] rounded-[10px] px-2 py-px text-[11px] font-medium" style={{ fontFamily: "'Google Sans'" }}>
                         {product.category.name}
+                      </span>
+                    )}
+                    {product.linkedRecipe?.name && (
+                      <span className="bg-[#fce8e6] text-[#c5221f] rounded-[10px] px-2 py-px text-[11px] font-medium" style={{ fontFamily: "'Google Sans'" }}>
+                        🍽 {product.linkedRecipe.name}
                       </span>
                     )}
                   </div>
@@ -382,6 +481,22 @@ function ProductsTab({ isMobile, tp, currency }: { isMobile: boolean; t: ReturnT
                         {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                       </select>
                     </div>
+
+                    {/* Linked recipe */}
+                    {kitchenEnabled && (
+                      <div className="mb-4">
+                        <label className={labelCls}>{tp.linkedRecipe}</label>
+                        <select
+                          value={ef.linkedRecipe}
+                          onChange={e => setEdit(product._id, { linkedRecipe: e.target.value })}
+                          className={inputCls}
+                          style={{ maxWidth: 280 }}
+                        >
+                          <option value="">{tp.linkedRecipeNone}</option>
+                          {recipes.map(r => <option key={r._id} value={r._id}>{r.name}</option>)}
+                        </select>
+                      </div>
+                    )}
 
                     {/* Sub-items */}
                     <div className="mb-5">

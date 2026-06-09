@@ -80,6 +80,9 @@ export default function OrderDetailPage() {
   const [selectedManagerId, setSelectedManagerId] = useState('');
   const [savingManager, setSavingManager] = useState(false);
 
+  const [kitchenEnabled, setKitchenEnabled] = useState(false);
+  const [kitchenDishes, setKitchenDishes] = useState([]);
+
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3500);
@@ -122,6 +125,13 @@ export default function OrderDetailPage() {
     fetch('/api/products').then(r => r.json()).then(d => setProducts((d.products || []).filter(p => p.isActive !== false)));
     fetch('/api/settings/staff-roles').then(r => r.json()).then(d => setStaffRolesConfig(d.roles || []));
     fetch('/api/admin/managers').then(r => r.ok ? r.json() : { managers: [] }).then(d => setManagers(d.managers || []));
+    fetch('/api/settings/modules').then(r => r.ok ? r.json() : { modules: [] }).then(d => {
+      const km = (d.modules || []).find(m => m.id === 'kitchen');
+      if (km?.isEnabled) {
+        setKitchenEnabled(true);
+        fetch(`/api/orders/${id}/kitchen-requirements`).then(r => r.ok ? r.json() : { requirements: [] }).then(d2 => setKitchenDishes(d2.dishes || []));
+      }
+    });
     loadData();
   }, [loadData]);
 
@@ -158,6 +168,9 @@ export default function OrderDetailPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setOrder(data.order); setEditingItems(false); showNotification(td.itemsSaved);
+      if (kitchenEnabled) {
+        fetch(`/api/orders/${id}/kitchen-requirements`).then(r => r.ok ? r.json() : { requirements: [] }).then(d2 => setKitchenDishes(d2.dishes || []));
+      }
     } catch { showNotification(td.saveFailed, 'error'); } finally { setSavingItems(false); }
   };
 
@@ -446,6 +459,54 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Kitchen Requirements */}
+      {kitchenEnabled && kitchenDishes.length > 0 && (
+        <div className={cardCls}>
+          <div className="py-4 px-6 border-b border-[#f1f3f4]">
+            <h2 className="text-base font-medium text-[#202124] m-0">🍽 {td.kitchenRequirementsSection}</h2>
+          </div>
+          <div className="py-2">
+            {kitchenDishes.map((dish, di) => (
+              <div key={dish.productId} style={{ borderTop: di > 0 ? '1px solid #f1f3f4' : undefined }}>
+                {/* Dish header */}
+                <div className="flex items-center gap-2 px-6 py-3">
+                  <span className="text-[13px] font-semibold text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>{dish.productName}</span>
+                  <span className="text-[11px] text-[#9aa0a6] bg-[#f1f3f4] rounded-full px-2 py-px">× {dish.count}</span>
+                </div>
+                {/* Ingredients table */}
+                <div className="px-6 pb-3 overflow-x-auto">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: "'Google Sans'" }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #f1f3f4' }}>
+                        <th style={{ textAlign: 'left', padding: '4px 8px 4px 0', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqIngredient}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 8px', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqNeeded}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 8px', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqInStock}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 0 4px 8px', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqToAdd}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dish.ingredients.map(ing => {
+                        const sufficient = ing.currentStock >= ing.needed;
+                        return (
+                          <tr key={ing.stockItemId} style={{ borderBottom: '1px solid #f8f9fa' }}>
+                            <td style={{ padding: '7px 8px 7px 0', color: '#202124' }}>{ing.name}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 8px', color: '#5f6368' }}>{ing.needed} {ing.unit}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 8px', color: sufficient ? '#137333' : '#f9ab00', fontWeight: 500 }}>{ing.currentStock} {ing.unit}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 0 7px 8px', color: ing.toAdd > 0 ? '#d93025' : '#137333', fontWeight: 600 }}>
+                              {ing.toAdd > 0 ? `+ ${ing.toAdd} ${ing.unit}` : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Staff */}
       <div className={cardCls}>
