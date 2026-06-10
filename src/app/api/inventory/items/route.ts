@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { InventoryItem, Supplier } from '@/lib/models';
+import { InventoryItem, Supplier, Warehouse } from '@/lib/models';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('category') ?? '';
     const lowStock = searchParams.get('lowStock') === 'true';
     const laundryEligible = searchParams.get('laundryEligible') === 'true';
+    const warehouseId = searchParams.get('warehouse') ?? '';
 
     const query = { isActive: true };
     if (search) {
@@ -20,10 +21,12 @@ export async function GET(request: NextRequest) {
     }
     if (categoryId) query.category = categoryId;
     if (laundryEligible) query.laundryEligible = true;
+    if (warehouseId) query.warehouse = warehouseId;
 
     let items = await InventoryItem.find(query)
       .populate('category', 'name color')
       .populate('supplier', 'name')
+      .populate('warehouse', 'name')
       .sort({ name: 1 });
 
     if (lowStock) {
@@ -49,6 +52,7 @@ export async function POST(request: NextRequest) {
     const item = await InventoryItem.create(body);
     await item.populate('category', 'name color');
     await item.populate('supplier', 'name');
+    await item.populate('warehouse', 'name');
     return NextResponse.json({ item }, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

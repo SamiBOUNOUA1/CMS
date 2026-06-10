@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activityLogger';
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
-    const item = await InventoryItem.findById(params.id).populate('category', 'name color').populate('supplier', 'name');
+    const item = await InventoryItem.findById(params.id).populate('category', 'name color').populate('supplier', 'name').populate('warehouse', 'name');
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ item });
   } catch (err: unknown) {
@@ -33,6 +33,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     // Normalize ObjectId fields: empty string → null (Mongoose rejects '' as ObjectId)
     if (fields.supplier === '') fields.supplier = null;
     if (fields.category === '') fields.category = null;
+    if (fields.warehouse === '') fields.warehouse = null;
 
     // Apply field updates
     Object.assign(item, fields);
@@ -62,6 +63,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     await item.save();
     await item.populate('category', 'name color');
     await item.populate('supplier', 'name');
+    await item.populate('warehouse', 'name');
     return NextResponse.json({ item });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

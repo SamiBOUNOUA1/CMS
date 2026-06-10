@@ -141,6 +141,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         return forbidden(request);
       }
 
+      if (pathname.startsWith('/api/inventory/warehouses')) {
+        if (method === 'POST'   && !permissions.edit_warehouses)   return forbidden(request);
+        if (method === 'PATCH'  && !permissions.edit_warehouses)   return forbidden(request);
+        if (method === 'DELETE' && !permissions.delete_warehouses) return forbidden(request);
+      }
+
       if (pathname.startsWith('/api/tasks')) {
         if (method === 'POST'   && !permissions.create_tasks) return forbidden(request);
         if (method === 'DELETE' && !permissions.delete_tasks) return forbidden(request);

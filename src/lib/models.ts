@@ -459,6 +459,29 @@ const supplierSchema = new Schema(
 );
 export const Supplier = models.Supplier || model('Supplier', supplierSchema);
 
+// ── WAREHOUSE ─────────────────────────────────────────────────────────────────
+const warehouseSchema = new Schema(
+  {
+    name:        { type: String, required: true, trim: true },
+    description: { type: String, default: '' },
+    address: {
+      street:     { type: String, default: '' },
+      city:       { type: String, default: '' },
+      postalCode: { type: String, default: '' },
+      state:      { type: String, default: '' },
+      country:    { type: String, default: 'FR' },
+    },
+    coordinates: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
+    notes:    { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const Warehouse = models.Warehouse || model('Warehouse', warehouseSchema);
+
 // ── INVENTORY ITEM ────────────────────────────────────────────────────────────
 const inventoryItemSchema = new Schema(
   {
@@ -469,6 +492,7 @@ const inventoryItemSchema = new Schema(
     minStock:     { type: Number, default: 0, min: 0 },
     unitCost:     { type: Number, default: 0, min: 0 },
     supplier:     { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
+    warehouse:    { type: Schema.Types.ObjectId, ref: 'Warehouse', default: null },
     notes:           { type: String, default: '' },
     imageUrl:        { type: String, default: '' },
     isActive:        { type: Boolean, default: true },

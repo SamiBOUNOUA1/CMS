@@ -21,6 +21,9 @@ export const ALL_PERMISSIONS = [
   'view_suppliers',
   'edit_suppliers',
   'delete_suppliers',
+  'view_warehouses',
+  'edit_warehouses',
+  'delete_warehouses',
   'view_tasks',
   'create_tasks',
   'delete_tasks',
@@ -29,6 +32,7 @@ export const ALL_PERMISSIONS = [
   'view_kitchen',
   'manage_kitchen',
   'view_activities',
+  'manage_data',
 ] as const;
 
 export type PermissionKey = typeof ALL_PERMISSIONS[number];
@@ -58,6 +62,9 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_suppliers:         true,
     edit_suppliers:         true,
     delete_suppliers:       true,
+    view_warehouses:        true,
+    edit_warehouses:        true,
+    delete_warehouses:      true,
     view_tasks:             true,
     create_tasks:           true,
     delete_tasks:           true,
@@ -66,6 +73,7 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_kitchen:           true,
     manage_kitchen:         true,
     view_activities:        true,
+    manage_data:            true,
   },
   manager: {
     view_orders:            false,
@@ -90,6 +98,9 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_suppliers:         false,
     edit_suppliers:         false,
     delete_suppliers:       false,
+    view_warehouses:        false,
+    edit_warehouses:        false,
+    delete_warehouses:      false,
     view_tasks:             true,
     create_tasks:           true,
     delete_tasks:           false,
@@ -98,6 +109,7 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_kitchen:           true,
     manage_kitchen:         false,
     view_activities:        false,
+    manage_data:            false,
   },
   viewer: {
     view_orders:            true,
@@ -122,6 +134,9 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_suppliers:         false,
     edit_suppliers:         false,
     delete_suppliers:       false,
+    view_warehouses:        false,
+    edit_warehouses:        false,
+    delete_warehouses:      false,
     view_tasks:             true,
     create_tasks:           true,
     delete_tasks:           false,
@@ -130,6 +145,7 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_kitchen:           false,
     manage_kitchen:         false,
     view_activities:        false,
+    manage_data:            false,
   },
 };
 

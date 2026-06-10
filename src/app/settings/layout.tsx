@@ -74,6 +74,11 @@ const IconModules = () => (
     <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z" />
   </svg>
 );
+const IconDataManagement = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 10v-2h2v2h-2zm-4 0v-2h2v2H7zm8 0v-2h2v2h-2zM5 20h14v2H5z" />
+  </svg>
+);
 const IconMenu = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
@@ -119,10 +124,11 @@ function useNavGroups(t: ReturnType<typeof useT>, perms: Record<string, boolean>
       key: 'administration',
       label: ts.nav.administration,
       items: [
-        { href: '/settings/modules',     label: ts.tabs.modules,     icon: <IconModules />,     perm: 'manage_users' },
-        { href: '/settings/users',       label: ts.tabs.users,       icon: <IconUsers />,       perm: 'manage_users' },
-        { href: '/settings/roles',       label: ts.tabs.roles,       icon: <IconRoles />,       perm: 'manage_users' },
-        { href: '/settings/permissions', label: ts.tabs.permissions, icon: <IconPermissions />, perm: 'manage_users' },
+        { href: '/settings/modules',         label: ts.tabs.modules,         icon: <IconModules />,         perm: 'manage_users' },
+        { href: '/settings/users',           label: ts.tabs.users,           icon: <IconUsers />,           perm: 'manage_users' },
+        { href: '/settings/roles',           label: ts.tabs.roles,           icon: <IconRoles />,           perm: 'manage_users' },
+        { href: '/settings/permissions',     label: ts.tabs.permissions,     icon: <IconPermissions />,     perm: 'manage_users' },
+        { href: '/settings/data-management', label: ts.tabs.dataManagement,  icon: <IconDataManagement />,  perm: 'manage_data' },
       ].filter(i => perms[i.perm]),
     },
   ].filter(g => g.items.length > 0);

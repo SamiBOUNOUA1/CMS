@@ -17,12 +17,13 @@ export default function InventoryItemPage({ params }) {
 
   const [item, setItem] = useState({
     name: '', category: '', unit: 'unit', currentStock: 0,
-    minStock: 0, unitCost: 0, supplier: '', notes: '', imageUrl: '', isActive: true, laundryEligible: false,
+    minStock: 0, unitCost: 0, supplier: '', warehouse: '', notes: '', imageUrl: '', isActive: true, laundryEligible: false,
   });
   const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef(null);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [adjustments, setAdjustments] = useState([]);
   const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
@@ -32,6 +33,7 @@ export default function InventoryItemPage({ params }) {
   const [adjSaving, setAdjSaving] = useState(false);
   const [toast, setToast] = useState('');
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [user, setUser] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
@@ -44,6 +46,9 @@ export default function InventoryItemPage({ params }) {
     fetch('/api/inventory/suppliers?isActive=true')
       .then(r => r.ok ? r.json() : { suppliers: [] })
       .then(d => setSuppliers(d.suppliers ?? []));
+    fetch('/api/inventory/warehouses?isActive=true')
+      .then(r => r.ok ? r.json() : { warehouses: [] })
+      .then(d => setWarehouses(d.warehouses ?? []));
   }, []);
 
   useEffect(() => {
@@ -52,7 +57,7 @@ export default function InventoryItemPage({ params }) {
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.item) {
-          setItem({ ...d.item, category: d.item.category?._id ?? '', supplier: d.item.supplier?._id ?? '' });
+          setItem({ ...d.item, category: d.item.category?._id ?? '', supplier: d.item.supplier?._id ?? '', warehouse: d.item.warehouse?._id ?? '' });
         }
         setLoading(false);
       });
@@ -60,6 +65,13 @@ export default function InventoryItemPage({ params }) {
       .then(r => r.ok ? r.json() : { adjustments: [] })
       .then(d => setAdjustments(d.adjustments ?? []));
   }, [params.id]);
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewOpen]);
 
   const canEdit = user?.permissions?.manage_inventory;
   const isLowStock = !isNew && item.currentStock <= item.minStock;
@@ -238,7 +250,14 @@ export default function InventoryItemPage({ params }) {
       {!isNew && (
         <div className="bg-g-surface border border-g-border rounded-2xl p-5 mb-4 flex items-center gap-5 flex-wrap shadow-google-1">
           {item.imageUrl ? (
-            <img src={item.imageUrl} alt={item.name} className="w-[112px] h-[112px] object-cover rounded-xl border border-g-border flex-shrink-0" />
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="p-0 border-0 bg-transparent cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-google-blue rounded-xl flex-shrink-0"
+              aria-label={ti.image.viewFull}
+            >
+              <img src={item.imageUrl} alt={item.name} className="w-[112px] h-[112px] object-cover rounded-xl border border-g-border block" />
+            </button>
           ) : (
             <div className="w-[112px] h-[112px] rounded-xl border-2 border-dashed border-g-border flex items-center justify-center bg-g-bg flex-shrink-0 text-g-text-3">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -313,6 +332,13 @@ export default function InventoryItemPage({ params }) {
             <select value={item.supplier} onChange={e => setItem(i => ({ ...i, supplier: e.target.value }))} disabled={!editing} className={inputCls}>
               <option value="">{ti.fields.noSupplier}</option>
               {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>{ti.fields.warehouse}</label>
+            <select value={item.warehouse} onChange={e => setItem(i => ({ ...i, warehouse: e.target.value }))} disabled={!editing} className={inputCls}>
+              <option value="">{ti.fields.noWarehouse}</option>
+              {warehouses.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
             </select>
           </div>
           <div className="col-span-2">
@@ -428,6 +454,26 @@ export default function InventoryItemPage({ params }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Image preview lightbox */}
+      {previewOpen && item.imageUrl && (
+        <>
+          <div onClick={() => setPreviewOpen(false)} className="fixed inset-0 bg-black/70 z-[199]" />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] flex flex-col items-center gap-3 max-w-[90vw] max-h-[90vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(false)}
+              className="self-end text-white bg-black/40 hover:bg-black/60 rounded-full w-8 h-8 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label={ti.image.closePreview}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+              </svg>
+            </button>
+            <img src={item.imageUrl} alt={item.name} className="max-w-[90vw] max-h-[80vh] object-contain rounded-xl shadow-google-3" />
+          </div>
+        </>
       )}
 
       {/* Delete dialog */}

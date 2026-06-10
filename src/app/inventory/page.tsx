@@ -57,26 +57,40 @@ export default function InventoryPage() {
 
   const [items, setItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [filterWarehouse, setFilterWarehouse] = useState('');
   const [filterLowStock, setFilterLowStock] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/inventory/categories')
       .then(r => r.ok ? r.json() : { categories: [] })
       .then((d: any) => setCategories(d.categories ?? []));
+    fetch('/api/inventory/warehouses?isActive=true')
+      .then(r => r.ok ? r.json() : { warehouses: [] })
+      .then((d: any) => setWarehouses(d.warehouses ?? []));
   }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (filterCategory) params.set('category', filterCategory);
+    if (filterWarehouse) params.set('warehouse', filterWarehouse);
     if (filterLowStock) params.set('lowStock', 'true');
     fetch(`/api/inventory/items?${params}`)
       .then(r => r.ok ? r.json() : { items: [] })
       .then((d: any) => { setItems(d.items ?? []); setLoading(false); });
-  }, [search, filterCategory, filterLowStock]);
+  }, [search, filterCategory, filterWarehouse, filterLowStock]);
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewUrl(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewUrl]);
 
   const isLow = (item: any) => item.currentStock <= item.minStock;
   const lowStockCount = items.filter(isLow).length;
@@ -197,6 +211,23 @@ export default function InventoryPage() {
           <AlertIcon />
           {ti.lowStock}
         </button>
+        {warehouses.map((w: any) => (
+          <button
+            key={w._id}
+            onClick={() => setFilterWarehouse(filterWarehouse === w._id ? '' : w._id)}
+            className="ripple py-1.5 px-4 rounded-full text-[13px] font-medium border cursor-pointer transition-colors flex items-center gap-1.5"
+            style={{
+              background: filterWarehouse === w._id ? '#e8f0fe' : 'transparent',
+              color: filterWarehouse === w._id ? '#1a73e8' : 'var(--google-text-secondary)',
+              borderColor: filterWarehouse === w._id ? '#c5d8fd' : 'var(--google-border)',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 8.5V8H4v.5L2 9v12h20V9l-2-.5zm-9 10.5H5v-7h6v7zm8 0h-6v-7h6v7zM22 7H2V5h20v2zM11 3H2v2h9V3zm11 0h-9v2h9V3z" />
+            </svg>
+            {w.name}
+          </button>
+        ))}
       </div>
 
       {/* Content */}
@@ -228,7 +259,7 @@ export default function InventoryPage() {
             <thead>
               <tr className="border-b border-g-border bg-g-bg">
                 <th className="w-[52px] py-3 px-3" />
-                {[ti.table.name, ti.table.category, ti.table.unit, ti.table.stock, ti.table.minStock, ti.table.unitCost, ti.table.supplier].map((h: string) => (
+                {[ti.table.name, ti.table.category, ti.table.unit, ti.table.stock, ti.table.minStock, ti.table.unitCost, ti.table.supplier, ti.table.warehouse].map((h: string) => (
                   <th key={h} className="py-3 px-3.5 text-left font-semibold text-[11px] text-g-text-2 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -244,7 +275,14 @@ export default function InventoryPage() {
                 >
                   <td className="py-2.5 pl-3.5 pr-1">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-g-border block" />
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setPreviewUrl(item.imageUrl); }}
+                        className="p-0 border-0 bg-transparent cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-google-blue rounded-lg"
+                        aria-label={ti.itemDetail.image.viewFull}
+                      >
+                        <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-g-border block" />
+                      </button>
                     ) : (
                       <div className="w-10 h-10 rounded-lg bg-g-bg border border-g-border flex items-center justify-center text-g-text-3">
                         <ImgPlaceholderIcon />
@@ -284,11 +322,33 @@ export default function InventoryPage() {
                   <td className="py-3 px-3.5 text-g-text-2 text-[13px] max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
                     {item.supplier?.name || '—'}
                   </td>
+                  <td className="py-3 px-3.5 text-g-text-2 text-[13px] max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap">
+                    {item.warehouse?.name || '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {previewUrl && (
+        <>
+          <div onClick={() => setPreviewUrl(null)} className="fixed inset-0 bg-black/70 z-[199]" />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] flex flex-col items-center gap-3 max-w-[90vw] max-h-[90vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewUrl(null)}
+              className="self-end text-white bg-black/40 hover:bg-black/60 rounded-full w-8 h-8 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label={ti.itemDetail.image.closePreview}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+              </svg>
+            </button>
+            <img src={previewUrl} alt="" className="max-w-[90vw] max-h-[80vh] object-contain rounded-xl shadow-google-3" />
+          </div>
+        </>
       )}
     </div>
   );
