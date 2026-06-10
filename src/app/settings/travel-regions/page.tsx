@@ -140,6 +140,11 @@ export default function TravelRegionsSettingsPage() {
     }
   }
 
+  const priceDisplay = (price: number) =>
+    price > 0
+      ? `${Number(price).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+      : tr.included;
+
   return (
     <div>
       {notification && (
@@ -161,14 +166,14 @@ export default function TravelRegionsSettingsPage() {
         <p className="text-sm font-medium text-[#202124] m-0 mb-4" style={{ fontFamily: "'Google Sans'" }}>
           {tr.addNew}
         </p>
-        <div className="grid gap-3 items-end" style={{ gridTemplateColumns: '1fr 160px auto' }}>
+        <div className="flex flex-col sm:grid gap-3 sm:items-end" style={{ gridTemplateColumns: '1fr 160px auto' }}>
           <div>
             <label className={labelCls}>{tr.label}</label>
             <input
               value={newLabel}
               onChange={e => setNewLabel(e.target.value)}
               placeholder={tr.labelPlaceholder}
-              className={inputCls}
+              className={`${inputCls} w-full`}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
             />
           </div>
@@ -184,7 +189,7 @@ export default function TravelRegionsSettingsPage() {
           <button
             onClick={handleAdd}
             disabled={adding || !newLabel.trim()}
-            className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium whitespace-nowrap"
+            className="text-white border-none rounded-lg py-3 sm:py-2.5 px-5 text-sm font-medium whitespace-nowrap"
             style={{
               fontFamily: "'Google Sans'",
               background: adding || !newLabel.trim() ? '#9aa0a6' : '#1a73e8',
@@ -203,98 +208,187 @@ export default function TravelRegionsSettingsPage() {
         ) : regions.length === 0 ? (
           <div className="p-10 text-center text-[#9aa0a6] text-sm">{tr.empty}</div>
         ) : (
-          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
-            <thead>
-              <tr className="border-b border-[#e8eaed] bg-[#f8f9fa]">
-                {[tr.table.label, tr.table.travelPrice, tr.table.default, tr.table.status, tr.table.actions].map((h, i) => (
-                  <th key={h} className="py-2.5 px-4 text-xs text-[#5f6368] font-medium"
-                    style={{ textAlign: i >= 2 ? 'center' : 'left', fontFamily: "'Google Sans'" }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Desktop table — hidden on small screens */}
+            <table className="hidden sm:table w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+              <thead>
+                <tr className="border-b border-[#e8eaed] bg-[#f8f9fa]">
+                  {[tr.table.label, tr.table.travelPrice, tr.table.default, tr.table.status, tr.table.actions].map((h, i) => (
+                    <th key={h} className="py-2.5 px-4 text-xs text-[#5f6368] font-medium"
+                      style={{ textAlign: i >= 2 ? 'center' : 'left', fontFamily: "'Google Sans'" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {regions.map(region => {
+                  const editing = edits[region._id];
+                  return (
+                    <tr key={region._id} className="border-b border-[#f1f3f4]">
+                      <td className="py-3 px-4 font-medium">
+                        {editing ? (
+                          <input
+                            value={editing.label}
+                            onChange={e => setEdits(es => ({ ...es, [region._id]: { ...es[region._id], label: e.target.value } }))}
+                            className={inputCls}
+                            style={{ width: 180 }}
+                          />
+                        ) : (
+                          <span>{region.label}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {editing ? (
+                          <input
+                            type="number" min="0" step="0.01"
+                            value={editing.travelPrice as string}
+                            onChange={e => setEdits(es => ({ ...es, [region._id]: { ...es[region._id], travelPrice: e.target.value } }))}
+                            className={inputCls}
+                            style={{ width: 120 }}
+                          />
+                        ) : (
+                          <span style={{ color: region.travelPrice > 0 ? '#202124' : '#9aa0a6' }}>
+                            {priceDisplay(region.travelPrice)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {region.isDefault ? (
+                          <span className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-semibold bg-[#e8f0fe] text-google-blue" style={{ fontFamily: "'Google Sans'" }}>
+                            {tr.isDefault}
+                          </span>
+                        ) : (
+                          <button onClick={() => handleSetDefault(region)}
+                            className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>
+                            {tr.setDefault}
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button onClick={() => handleToggleActive(region)}
+                          className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
+                          style={{
+                            fontFamily: "'Google Sans'",
+                            background: region.isActive ? '#e6f4ea' : '#f1f3f4',
+                            color: region.isActive ? '#137333' : '#5f6368',
+                          }}>
+                          {region.isActive ? tr.active : tr.inactive}
+                        </button>
+                      </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        {editing ? (
+                          <span className="inline-flex gap-2">
+                            <button onClick={() => saveEdit(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333', fontFamily: "'Google Sans'" }}>{tr.save}</button>
+                            <button onClick={() => cancelEdit(region._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>{tr.cancel}</button>
+                          </span>
+                        ) : (
+                          <span className="inline-flex gap-2">
+                            <button onClick={() => startEdit(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#1a73e8', fontFamily: "'Google Sans'" }}>{tr.edit}</button>
+                            <button onClick={() => handleDelete(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#d93025', fontFamily: "'Google Sans'" }}>{tr.delete}</button>
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Mobile cards — shown only on small screens */}
+            <div className="sm:hidden divide-y divide-[#f1f3f4]">
               {regions.map(region => {
                 const editing = edits[region._id];
                 return (
-                  <tr key={region._id} className="border-b border-[#f1f3f4]">
-                    {/* Label */}
-                    <td className="py-3 px-4 font-medium">
-                      {editing ? (
-                        <input
-                          value={editing.label}
-                          onChange={e => setEdits(es => ({ ...es, [region._id]: { ...es[region._id], label: e.target.value } }))}
-                          className={inputCls}
-                          style={{ width: 180 }}
-                        />
-                      ) : (
-                        <span>{region.label}</span>
-                      )}
-                    </td>
-                    {/* Travel price */}
-                    <td className="py-3 px-4">
-                      {editing ? (
-                        <input
-                          type="number" min="0" step="0.01"
-                          value={editing.travelPrice as string}
-                          onChange={e => setEdits(es => ({ ...es, [region._id]: { ...es[region._id], travelPrice: e.target.value } }))}
-                          className={inputCls}
-                          style={{ width: 120 }}
-                        />
-                      ) : (
-                        /* Dynamic color based on price value — keep inline */
-                        <span style={{ color: region.travelPrice > 0 ? '#202124' : '#9aa0a6' }}>
-                          {region.travelPrice > 0
-                            ? `${Number(region.travelPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
-                            : tr.included}
-                        </span>
-                      )}
-                    </td>
-                    {/* Default */}
-                    <td className="py-3 px-4 text-center">
-                      {region.isDefault ? (
-                        <span className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-semibold bg-[#e8f0fe] text-google-blue" style={{ fontFamily: "'Google Sans'" }}>
-                          {tr.isDefault}
-                        </span>
-                      ) : (
-                        <button onClick={() => handleSetDefault(region)}
-                          className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>
-                          {tr.setDefault}
-                        </button>
-                      )}
-                    </td>
-                    {/* Active toggle */}
-                    <td className="py-3 px-4 text-center">
-                      <button onClick={() => handleToggleActive(region)}
-                        className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
-                        style={{
-                          fontFamily: "'Google Sans'",
-                          background: region.isActive ? '#e6f4ea' : '#f1f3f4',
-                          color: region.isActive ? '#137333' : '#5f6368',
-                        }}>
-                        {region.isActive ? tr.active : tr.inactive}
-                      </button>
-                    </td>
-                    {/* Actions */}
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
-                      {editing ? (
-                        <span className="inline-flex gap-2">
-                          <button onClick={() => saveEdit(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333', fontFamily: "'Google Sans'" }}>{tr.save}</button>
-                          <button onClick={() => cancelEdit(region._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>{tr.cancel}</button>
-                        </span>
-                      ) : (
-                        <span className="inline-flex gap-2">
-                          <button onClick={() => startEdit(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#1a73e8', fontFamily: "'Google Sans'" }}>{tr.edit}</button>
-                          <button onClick={() => handleDelete(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#d93025', fontFamily: "'Google Sans'" }}>{tr.delete}</button>
-                        </span>
-                      )}
-                    </td>
-                  </tr>
+                  <div key={region._id} className="p-4">
+                    {editing ? (
+                      /* Edit mode card */
+                      <div className="flex flex-col gap-3">
+                        <div>
+                          <label className={labelCls}>{tr.label}</label>
+                          <input
+                            value={editing.label}
+                            onChange={e => setEdits(es => ({ ...es, [region._id]: { ...es[region._id], label: e.target.value } }))}
+                            className={`${inputCls} w-full`}
+                          />
+                        </div>
+                        <div>
+                          <label className={labelCls}>{tr.travelPrice}</label>
+                          <input
+                            type="number" min="0" step="0.01"
+                            value={editing.travelPrice as string}
+                            onChange={e => setEdits(es => ({ ...es, [region._id]: { ...es[region._id], travelPrice: e.target.value } }))}
+                            className={`${inputCls} w-full`}
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button onClick={() => saveEdit(region)}
+                            className="flex-1 py-2.5 rounded-lg text-sm font-medium border-none text-white"
+                            style={{ background: '#137333', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
+                            {tr.save}
+                          </button>
+                          <button onClick={() => cancelEdit(region._id)}
+                            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-[#dadce0] bg-white"
+                            style={{ color: '#5f6368', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
+                            {tr.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* View mode card */
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div>
+                            <p className="text-sm font-medium text-[#202124] m-0" style={{ fontFamily: "'Google Sans'" }}>
+                              {region.label}
+                            </p>
+                            <p className="text-sm m-0 mt-0.5" style={{ color: region.travelPrice > 0 ? '#202124' : '#9aa0a6' }}>
+                              {priceDisplay(region.travelPrice)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {region.isDefault && (
+                              <span className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-semibold bg-[#e8f0fe] text-google-blue" style={{ fontFamily: "'Google Sans'" }}>
+                                {tr.isDefault}
+                              </span>
+                            )}
+                            <button onClick={() => handleToggleActive(region)}
+                              className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
+                              style={{
+                                fontFamily: "'Google Sans'",
+                                background: region.isActive ? '#e6f4ea' : '#f1f3f4',
+                                color: region.isActive ? '#137333' : '#5f6368',
+                              }}>
+                              {region.isActive ? tr.active : tr.inactive}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => startEdit(region)}
+                            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-[#dadce0] bg-white"
+                            style={{ color: '#1a73e8', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
+                            {tr.edit}
+                          </button>
+                          {!region.isDefault && (
+                            <button onClick={() => handleSetDefault(region)}
+                              className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-[#dadce0] bg-white"
+                              style={{ color: '#5f6368', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
+                              {tr.setDefault}
+                            </button>
+                          )}
+                          <button onClick={() => handleDelete(region)}
+                            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-[#dadce0] bg-white"
+                            style={{ color: '#d93025', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
+                            {tr.delete}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

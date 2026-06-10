@@ -144,7 +144,7 @@ export default function CustomerTypesSettingsPage() {
         <p className="m-0 mb-3 text-[13px] font-semibold text-[#5f6368] uppercase tracking-[0.05em]" style={{ fontFamily: "'Google Sans'" }}>
           {tc.addNew}
         </p>
-        <div className="flex gap-2.5 items-center">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
           <input
             value={newLabel}
             onChange={e => setNewLabel(e.target.value)}
@@ -153,7 +153,7 @@ export default function CustomerTypesSettingsPage() {
             className="flex-1 py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
           />
           <button onClick={handleAdd} disabled={adding || !newLabel.trim()}
-            className="bg-google-blue text-white border-none rounded-lg py-[9px] px-[18px] text-sm font-medium cursor-pointer whitespace-nowrap"
+            className="bg-google-blue text-white border-none rounded-lg py-[9px] px-[18px] text-sm font-medium cursor-pointer whitespace-nowrap sm:w-auto w-full"
             style={{ fontFamily: "'Google Sans'", opacity: adding || !newLabel.trim() ? 0.6 : 1 }}>
             {adding ? tc.adding : tc.add}
           </button>
@@ -162,8 +162,8 @@ export default function CustomerTypesSettingsPage() {
 
       {/* Table */}
       <div className="bg-white border border-[#e8eaed] rounded-xl overflow-hidden">
-        {/* Header */}
-        <div className="flex bg-[#f8f9fa] border-b border-[#e8eaed] gap-2" style={{ padding: '10px 20px' }}>
+        {/* Header — hidden on mobile */}
+        <div className="hidden sm:flex bg-[#f8f9fa] border-b border-[#e8eaed] gap-2" style={{ padding: '10px 20px' }}>
           {[tc.table.label, tc.table.key, tc.table.status, tc.table.actions].map((h, i) => (
             <div key={i}
               className="text-[11px] font-semibold text-[#5f6368] uppercase tracking-[0.04em]"
@@ -189,67 +189,106 @@ export default function CustomerTypesSettingsPage() {
           const isEditing = !!edits[cfg._id];
           return (
             <div key={cfg._id}
-              className="flex items-center gap-2"
-              style={{ padding: '12px 20px', borderBottom: idx < configs.length - 1 ? '1px solid #f1f3f4' : 'none' }}>
-              {/* Label */}
-              <div className="flex-1">
-                {isEditing ? (
-                  <input
-                    value={edits[cfg._id].label}
-                    onChange={e => setEdits(ed => ({ ...ed, [cfg._id]: { ...ed[cfg._id], label: e.target.value } }))}
-                    onKeyDown={e => e.key === 'Enter' && handleSaveEdit(cfg._id)}
-                    className="w-full py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
-                    autoFocus
-                  />
-                ) : (
-                  <span className="text-sm text-[#202124] font-medium">
-                    {cfg.label}
-                  </span>
-                )}
+              style={{ borderBottom: idx < configs.length - 1 ? '1px solid #f1f3f4' : 'none' }}>
+
+              {/* Desktop row */}
+              <div className="hidden sm:flex items-center gap-2" style={{ padding: '12px 20px' }}>
+                <div className="flex-1">
+                  {isEditing ? (
+                    <input
+                      value={edits[cfg._id].label}
+                      onChange={e => setEdits(ed => ({ ...ed, [cfg._id]: { ...ed[cfg._id], label: e.target.value } }))}
+                      onKeyDown={e => e.key === 'Enter' && handleSaveEdit(cfg._id)}
+                      className="w-full py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="text-sm text-[#202124] font-medium">{cfg.label}</span>
+                  )}
+                </div>
+                <div className="text-xs text-[#9aa0a6] overflow-hidden text-ellipsis" style={{ flex: 0.8, fontFamily: 'monospace' }}>
+                  {cfg.key}
+                </div>
+                <div className="flex-1">
+                  <button
+                    onClick={() => handleToggleActive(cfg)}
+                    className="py-[3px] px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
+                    style={{ fontFamily: "'Google Sans'", background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}
+                  >
+                    {cfg.isActive ? tc.active : tc.inactive}
+                  </button>
+                </div>
+                <div className="flex justify-end gap-1.5" style={{ width: 140 }}>
+                  {isEditing ? (
+                    <>
+                      <button onClick={() => handleSaveEdit(cfg._id)}
+                        className="bg-google-blue text-white border-none rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.save}</button>
+                      <button onClick={() => cancelEdit(cfg._id)}
+                        className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.cancel}</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => startEdit(cfg)}
+                        className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.edit}</button>
+                      <button onClick={() => handleDelete(cfg)}
+                        className="bg-transparent text-google-red border border-[#fce8e6] rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.delete}</button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Key */}
-              <div className="text-xs text-[#9aa0a6] overflow-hidden text-ellipsis" style={{ flex: 0.8, fontFamily: 'monospace' }}>
-                {cfg.key}
+              {/* Mobile card */}
+              <div className="flex sm:hidden flex-col gap-2.5" style={{ padding: '14px 16px' }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    {isEditing ? (
+                      <input
+                        value={edits[cfg._id].label}
+                        onChange={e => setEdits(ed => ({ ...ed, [cfg._id]: { ...ed[cfg._id], label: e.target.value } }))}
+                        onKeyDown={e => e.key === 'Enter' && handleSaveEdit(cfg._id)}
+                        className="w-full py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-sm text-[#202124] font-medium block">{cfg.label}</span>
+                    )}
+                    <span className="text-[11px] text-[#9aa0a6] mt-0.5 block" style={{ fontFamily: 'monospace' }}>{cfg.key}</span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleActive(cfg)}
+                    className="shrink-0 py-[3px] px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
+                    style={{ fontFamily: "'Google Sans'", background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}
+                  >
+                    {cfg.isActive ? tc.active : tc.inactive}
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <button onClick={() => handleSaveEdit(cfg._id)}
+                        className="flex-1 bg-google-blue text-white border-none rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.save}</button>
+                      <button onClick={() => cancelEdit(cfg._id)}
+                        className="flex-1 bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.cancel}</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => startEdit(cfg)}
+                        className="flex-1 bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.edit}</button>
+                      <button onClick={() => handleDelete(cfg)}
+                        className="flex-1 bg-transparent text-google-red border border-[#fce8e6] rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
+                        style={{ fontFamily: "'Google Sans'" }}>{tc.delete}</button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Active toggle */}
-              <div className="flex-1">
-                <button
-                  onClick={() => handleToggleActive(cfg)}
-                  className="py-[3px] px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
-                  style={{
-                    fontFamily: "'Google Sans'",
-                    background: cfg.isActive ? '#e6f4ea' : '#f1f3f4',
-                    color: cfg.isActive ? '#137333' : '#5f6368',
-                  }}
-                >
-                  {cfg.isActive ? tc.active : tc.inactive}
-                </button>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-1.5" style={{ width: 140 }}>
-                {isEditing ? (
-                  <>
-                    <button onClick={() => handleSaveEdit(cfg._id)}
-                      className="bg-google-blue text-white border-none rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
-                      style={{ fontFamily: "'Google Sans'" }}>{tc.save}</button>
-                    <button onClick={() => cancelEdit(cfg._id)}
-                      className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
-                      style={{ fontFamily: "'Google Sans'" }}>{tc.cancel}</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => startEdit(cfg)}
-                      className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
-                      style={{ fontFamily: "'Google Sans'" }}>{tc.edit}</button>
-                    <button onClick={() => handleDelete(cfg)}
-                      className="bg-transparent text-google-red border border-[#fce8e6] rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
-                      style={{ fontFamily: "'Google Sans'" }}>{tc.delete}</button>
-                  </>
-                )}
-              </div>
             </div>
           );
         })}

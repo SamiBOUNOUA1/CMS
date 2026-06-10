@@ -38,6 +38,14 @@ export default function KitchenStockPage() {
   const [user, setUser] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -84,14 +92,14 @@ export default function KitchenStockPage() {
     new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + currency;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#202124', margin: 0 }}>{tk.title}</h1>
+        <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#202124', margin: 0 }}>{tk.title}</h1>
         {canManage && (
           <button
             onClick={() => router.push('/kitchen/stock/new')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: ACCENT, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: ACCENT, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 14, ...(isMobile ? { width: '100%', justifyContent: 'center' } : {}) }}
           >
             <PlusIcon /> {tk.newItem}
           </button>
@@ -99,23 +107,23 @@ export default function KitchenStockPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
         {[
           { label: tk.stats.total, value: items.length, color: ACCENT },
           { label: tk.stats.lowStock, value: lowStockCount, color: '#d93025' },
           { label: tk.stats.totalValue, value: fmt(totalValue), color: '#137333' },
           { label: tk.stats.active, value: items.length, color: '#1a73e8' },
         ].map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 2px rgba(60,64,67,.3)' }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: '#5f6368', marginTop: 2 }}>{s.label}</div>
+          <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: isMobile ? '12px 14px' : '16px 20px', boxShadow: '0 1px 2px rgba(60,64,67,.3)' }}>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: isMobile ? 11 : 13, color: '#5f6368', marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#5f6368' }}><SearchIcon /></span>
           <input
             value={search}
@@ -127,7 +135,7 @@ export default function KitchenStockPage() {
         <select
           value={filterCategory}
           onChange={e => setFilterCategory(e.target.value)}
-          style={{ padding: '9px 12px', border: '1px solid #dadce0', borderRadius: 8, fontSize: 14, background: '#fff', cursor: 'pointer' }}
+          style={{ padding: '9px 12px', border: '1px solid #dadce0', borderRadius: 8, fontSize: 14, background: '#fff', cursor: 'pointer', flex: isMobile ? '1 1 auto' : '0 0 auto' }}
         >
           <option value="">{tk.allCategories}</option>
           {(['vegetables', 'dairy', 'meat', 'dry', 'spices', 'beverages', 'other'] as const).map(c => (
@@ -141,13 +149,14 @@ export default function KitchenStockPage() {
             background: filterLowStock ? '#d93025' : '#fff',
             color: filterLowStock ? '#fff' : '#d93025',
             borderColor: '#d93025',
+            whiteSpace: 'nowrap',
           }}
         >
           {tk.lowStock}
         </button>
       </div>
 
-      {/* Table */}
+      {/* Content */}
       <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#5f6368' }}>{tk.loading}</div>
@@ -157,7 +166,70 @@ export default function KitchenStockPage() {
             <div style={{ fontWeight: 600, color: '#202124', marginBottom: 4 }}>{tk.empty.title}</div>
             <div style={{ color: '#5f6368', fontSize: 14 }}>{tk.empty.body}</div>
           </div>
+        ) : isMobile ? (
+          /* Mobile card list */
+          <div>
+            {items.map((item, idx) => {
+              const isLow = item.currentStock < item.minStock;
+              return (
+                <div
+                  key={item._id}
+                  onClick={() => router.push(`/kitchen/stock/${item._id}`)}
+                  style={{
+                    padding: '14px 16px',
+                    borderBottom: idx < items.length - 1 ? '1px solid #f1f3f4' : 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    background: '#fff',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  {/* Row 1: name + delete */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ fontWeight: 700, color: '#202124', fontSize: 15 }}>{item.name}</div>
+                    {canManage && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setDeleteId(item._id); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5f6368', padding: 4, flexShrink: 0 }}
+                      >
+                        <TrashIcon />
+                      </button>
+                    )}
+                  </div>
+                  {/* Row 2: category badge */}
+                  <div>
+                    <span style={{ background: '#f1f3f4', borderRadius: 12, padding: '3px 10px', fontSize: 12, color: '#5f6368' }}>
+                      {tk.categories[item.category as keyof typeof tk.categories] || item.category}
+                    </span>
+                    {isLow && (
+                      <span style={{ marginLeft: 8, background: '#fce8e6', color: '#d93025', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                        ↓ low
+                      </span>
+                    )}
+                  </div>
+                  {/* Row 3: stats grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#80868b', textTransform: 'uppercase', letterSpacing: 0.3 }}>{tk.table.stock}</div>
+                      <div style={{ fontWeight: 700, color: isLow ? '#d93025' : '#202124', fontSize: 14 }}>{item.currentStock} {item.unit}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#80868b', textTransform: 'uppercase', letterSpacing: 0.3 }}>{tk.table.minStock}</div>
+                      <div style={{ color: '#5f6368', fontSize: 14 }}>{item.minStock} {item.unit}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#80868b', textTransform: 'uppercase', letterSpacing: 0.3 }}>{tk.table.unitCost}</div>
+                      <div style={{ color: '#5f6368', fontSize: 14 }}>{fmt(item.unitCost)}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
+          /* Desktop table */
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e8eaed' }}>
@@ -216,7 +288,7 @@ export default function KitchenStockPage() {
       {/* Delete Dialog */}
       {deleteId && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: isMobile ? '24px 20px' : '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
             <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: '#202124' }}>{tk.deleteDialog.title}</div>
             <div style={{ color: '#5f6368', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
@@ -229,7 +301,7 @@ export default function KitchenStockPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#202124', color: '#fff', borderRadius: 8, padding: '12px 24px', fontSize: 14, zIndex: 2000, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#202124', color: '#fff', borderRadius: 8, padding: '12px 24px', fontSize: 14, zIndex: 2000, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', whiteSpace: 'nowrap' }}>
           {toast}
         </div>
       )}
