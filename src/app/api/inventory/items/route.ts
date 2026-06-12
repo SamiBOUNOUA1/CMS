@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
     const body = await request.json();
+    for (const f of ['category', 'supplier', 'warehouse']) {
+      if (body[f] === '' || body[f] === undefined) body[f] = null;
+    }
     const item = await InventoryItem.create(body);
     await item.populate('category', 'name color');
     await item.populate('supplier', 'name');
