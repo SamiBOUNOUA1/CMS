@@ -41,22 +41,22 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
-    if (!email?.trim()) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (!phone?.trim()) {
+      return NextResponse.json({ error: 'Phone is required' }, { status: 400 });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
 
-    const existing = await Client.findOne({ email: email.trim().toLowerCase() });
+    const existing = await Client.findOne({ phone: phone.trim() });
     if (existing) {
-      return NextResponse.json({ error: 'A customer with this email already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'A customer with this phone number already exists' }, { status: 409 });
     }
 
     const client = await Client.create({
       name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone?.trim() || '',
+      email: email?.trim().toLowerCase() || '',
+      phone: phone.trim(),
       billingAddress: billingAddress || {},
       notes: notes?.trim() || '',
       customerType: customerType?.trim() || '',

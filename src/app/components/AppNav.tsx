@@ -247,6 +247,14 @@ export default function AppNav() {
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                   </div>
+                  <Link
+                    href="/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="w-full px-4 py-3 border-b border-g-border bg-transparent text-left text-sm text-g-text no-underline cursor-pointer font-sans flex items-center gap-2"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
+                    {t.nav.profile}
+                  </Link>
                   <button
                     onClick={logout}
                     className="w-full px-4 py-3 border-none bg-transparent text-left text-sm text-google-red cursor-pointer font-sans flex items-center gap-2"
@@ -416,6 +424,14 @@ export default function AppNav() {
                     <p className="m-0 mt-px text-xs text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{user.email}</p>
                   </div>
                 </div>
+                <Link
+                  href="/profile"
+                  onClick={() => setDrawerOpen(false)}
+                  className="w-full mb-2 p-2.5 border border-g-border rounded-lg bg-transparent text-g-text no-underline cursor-pointer font-sans text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
+                  {t.nav.profile}
+                </Link>
                 <button
                   onClick={logout}
                   className="w-full p-2.5 border border-g-border rounded-lg bg-transparent text-google-red cursor-pointer font-sans text-sm font-medium flex items-center justify-center gap-2"

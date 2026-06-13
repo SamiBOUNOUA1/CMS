@@ -35,7 +35,7 @@ export default function NewCustomerPage() {
 
   const handleSubmit = async () => {
     if (!form.name.trim()) { showNotification('Name is required', 'error'); return; }
-    if (!form.email.trim()) { showNotification('Email is required', 'error'); return; }
+    if (!form.phone.trim()) { showNotification('Phone is required', 'error'); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/clients', {

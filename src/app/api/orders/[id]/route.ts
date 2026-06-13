@@ -110,12 +110,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
 
 async function ensureClient(order) {
   const { Client } = await import('@/lib/models');
-  let client = await Client.findOne({ email: order.clientEmail });
+  let client = await Client.findOne({ phone: order.clientPhone });
   if (!client) {
     client = await Client.create({
       name: order.clientName,
-      email: order.clientEmail,
-      phone: order.clientPhone || '',
+      email: order.clientEmail || '',
+      phone: order.clientPhone,
     });
   }
   return client._id;

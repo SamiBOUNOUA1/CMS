@@ -97,6 +97,7 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true },
     role: { type: String, required: true, default: 'viewer' },
     isActive: { type: Boolean, default: true },
+    preferredLanguage: { type: String, enum: ['en', 'fr'], default: 'en' },
   },
   { timestamps: true }
 );
@@ -134,8 +135,8 @@ export const Product = models.Product || model('Product', productSchema);
 const clientSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, lowercase: true, trim: true },
-    phone: { type: String, trim: true },
+    email: { type: String, lowercase: true, trim: true },
+    phone: { type: String, required: true, trim: true },
     billingAddress: {
       street: String,
       city: String,
@@ -285,8 +286,8 @@ const orderLineGroupSchema = new Schema({
 const orderSchema = new Schema(
   {
     clientName:  { type: String, required: true, trim: true },
-    clientEmail: { type: String, required: true, lowercase: true, trim: true },
-    clientPhone: { type: String, trim: true },
+    clientEmail: { type: String, lowercase: true, trim: true },
+    clientPhone: { type: String, required: true, trim: true },
     eventDate:   { type: Date, required: true },
     eventType: {
       type: String,

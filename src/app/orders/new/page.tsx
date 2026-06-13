@@ -84,7 +84,8 @@ export default function NewOrderPage() {
     const e: Record<string, string> = {};
     if (step === 0) {
       if (!form.clientName.trim()) e.clientName = tn.validation.required;
-      if (!form.clientEmail.trim() || !/\S+@\S+\.\S+/.test(form.clientEmail)) e.clientEmail = tn.validation.validEmail;
+      if (!form.clientPhone.trim()) e.clientPhone = tn.validation.required;
+      if (form.clientEmail.trim() && !/\S+@\S+\.\S+/.test(form.clientEmail)) e.clientEmail = tn.validation.validEmail;
     }
     if (step === 1) {
       if (!form.eventDate) e.eventDate = tn.validation.required;
@@ -267,11 +268,11 @@ export default function NewOrderPage() {
           <Field label={`${tn.client.fullName} *`} error={errors.clientName}>
             <FormInput value={form.clientName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientName', e.target.value)} error={errors.clientName} />
           </Field>
-          <Field label={`${tn.client.email} *`} error={errors.clientEmail}>
-            <FormInput type="email" value={form.clientEmail} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientEmail', e.target.value)} error={errors.clientEmail} />
+          <Field label={`${tn.client.phone} *`} error={errors.clientPhone}>
+            <FormInput type="tel" value={form.clientPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientPhone', e.target.value)} error={errors.clientPhone} />
           </Field>
-          <Field label={tn.client.phone}>
-            <FormInput type="tel" value={form.clientPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientPhone', e.target.value)} />
+          <Field label={tn.client.email} error={errors.clientEmail}>
+            <FormInput type="email" value={form.clientEmail} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientEmail', e.target.value)} error={errors.clientEmail} />
           </Field>
         </div>
       )}
