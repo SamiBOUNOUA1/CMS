@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
+import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
 
 function formatCurrency(n: number | null | undefined, cur = '€') {
   if (n == null) return '—';
@@ -114,13 +115,16 @@ export default function PaymentReceiptPage() {
         <Link href={`/orders/${orderId}`} className="text-sm text-google-blue no-underline" style={{ fontFamily: "'Google Sans', Arial" }}>
           {tr.backToOrder}
         </Link>
-        <button
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 bg-google-blue text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" /></svg>
-          {tr.print}
-        </button>
+        <div className="flex items-center gap-2.5">
+          <SendWhatsAppButton endpoint={`/api/orders/${orderId}/payments/${paymentId}/send-whatsapp`} defaultPhone={clientPhone} />
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 bg-google-blue text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" /></svg>
+            {tr.print}
+          </button>
+        </div>
       </div>
 
       {/* Document header */}

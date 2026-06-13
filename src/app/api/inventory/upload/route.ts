@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { getBucket } from '@/lib/storage';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -34,12 +33,18 @@ export async function POST(request: NextRequest) {
 
     const ext = EXT_MAP[file.type];
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'inventory');
+    const objectPath = `inventory/${filename}`;
 
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, filename), buffer);
+    // Store in Cloud Storage — the local container filesystem is ephemeral on
+    // Firebase App Hosting (Cloud Run) and is not served as static content.
+    await getBucket().file(objectPath).save(buffer, {
+      resumable: false,
+      contentType: file.type,
+      metadata: { cacheControl: 'public, max-age=31536000, immutable' },
+    });
 
-    return NextResponse.json({ url: `/uploads/inventory/${filename}` });
+    // Served back through our streaming route (keeps the bucket private).
+    return NextResponse.json({ url: `/api/inventory/image/${filename}` });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }

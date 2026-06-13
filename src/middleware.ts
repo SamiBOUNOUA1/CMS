@@ -84,13 +84,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (!permissions.manage_flow_templates) return forbidden(request);
     }
 
+    if (pathname.startsWith('/settings/whatsapp')) {
+      if (!permissions.manage_integrations) return forbidden(request);
+    }
+
     if (pathname.startsWith('/calendar') || pathname.startsWith('/api/calendar')) {
       if (!permissions.view_calendar) return forbidden(request);
     }
 
     // ── API mutation guards ──────────────────────────────────────────────────
     if (pathname.startsWith('/api/') && isMutating) {
-      if (pathname.startsWith('/api/orders')) {
+      // WhatsApp send endpoints (under /api/orders and /api/quotes) — require
+      // edit_orders and bypass the create_* guards below.
+      const isSendWhatsapp = /\/send-whatsapp$/.test(pathname);
+      if (isSendWhatsapp && !permissions.edit_orders) return forbidden(request);
+
+      if (pathname.startsWith('/api/orders') && !isSendWhatsapp) {
         if (method === 'POST'   && !permissions.create_orders) return forbidden(request);
         if (method === 'DELETE' && !permissions.delete_orders) return forbidden(request);
         if (method === 'PATCH') {
@@ -102,9 +111,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         }
       }
 
-      if (pathname.startsWith('/api/quotes')) {
+      if (pathname.startsWith('/api/quotes') && !isSendWhatsapp) {
         if (method === 'POST'   && !permissions.create_quotes) return forbidden(request);
         if (method === 'DELETE' && !permissions.delete_quotes) return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/settings/whatsapp') && !permissions.manage_integrations) {
+        return forbidden(request);
       }
 
       if (pathname.startsWith('/api/settings/order-statuses') && !permissions.manage_order_statuses) {

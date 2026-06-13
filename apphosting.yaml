@@ -4,12 +4,20 @@ runConfig:
   minInstances: 0
   # maxInstances: 100
   # concurrency: 80
-  # cpu: 1
-  # memoryMiB: 512
+  # Chromium (used for WhatsApp PDF generation) needs more CPU/memory than the default.
+  cpu: 1
+  memoryMiB: 1024
 
 # Environment variables and secrets.
-# env:
-  # Configure environment variables.
+env:
+  # Cloud Storage bucket used for inventory image uploads.
+  # Verify the exact name in Firebase Console → Storage (the gs:// bucket).
+  # Modern projects use <project>.firebasestorage.app; older ones use <project>.appspot.com.
+  - variable: STORAGE_BUCKET
+    value: catero-10f39.firebasestorage.app
+    availability:
+      - RUNTIME
+
   # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
   # - variable: MESSAGE
   #   value: Hello world!

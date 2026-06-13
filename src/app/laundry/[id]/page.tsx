@@ -354,20 +354,6 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
               )}
             </>
           )}
-          {(isNew || editing) && (
-            <>
-              {!isNew && (
-                <button onClick={() => setEditing(false)} style={btnSecondaryStyle}>{td.cancel}</button>
-              )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                style={{ ...btnPrimaryStyle, background: saving ? '#9aa0a6' : '#1a73e8', cursor: saving ? 'default' : 'pointer' }}
-              >
-                {saving ? td.saving : td.save}
-              </button>
-            </>
-          )}
         </div>
       </div>
 
@@ -692,6 +678,28 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
           </div>
         )}
       </div>
+
+      {/* Form actions — bottom */}
+      {(isNew || editing) && (
+        <div style={{
+          position: 'sticky', bottom: 0, zIndex: 10,
+          display: 'flex', justifyContent: 'flex-end', gap: 8,
+          padding: '14px 16px', marginTop: 4,
+          background: '#fff', borderRadius: 12,
+          boxShadow: '0 -1px 2px rgba(60,64,67,.15), 0 1px 3px 1px rgba(60,64,67,.15)',
+        }}>
+          {!isNew && (
+            <button onClick={() => setEditing(false)} style={btnSecondaryStyle}>{td.cancel}</button>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{ ...btnPrimaryStyle, background: saving ? '#9aa0a6' : '#1a73e8', cursor: saving ? 'default' : 'pointer' }}
+          >
+            {saving ? td.saving : td.save}
+          </button>
+        </div>
+      )}
 
       {/* Status advance actions */}
       {!isNew && canManage && !editing && !recordingReturns && status !== 'completed' && (

@@ -33,6 +33,7 @@ export const ALL_PERMISSIONS = [
   'manage_kitchen',
   'view_activities',
   'manage_data',
+  'manage_integrations',
 ] as const;
 
 export type PermissionKey = typeof ALL_PERMISSIONS[number];
@@ -74,6 +75,7 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     manage_kitchen:         true,
     view_activities:        true,
     manage_data:            true,
+    manage_integrations:    true,
   },
   manager: {
     view_orders:            false,
@@ -110,6 +112,7 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     manage_kitchen:         false,
     view_activities:        false,
     manage_data:            false,
+    manage_integrations:    false,
   },
   viewer: {
     view_orders:            true,
@@ -146,6 +149,7 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     manage_kitchen:         false,
     view_activities:        false,
     manage_data:            false,
+    manage_integrations:    false,
   },
 };
 

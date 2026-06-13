@@ -8,6 +8,8 @@ export const ACTION_LABELS: Record<string, string> = {
   inventory_adjusted:   'Inventory adjusted',
   laundry_sent:         'Laundry batch sent',
   laundry_received:     'Laundry batch received',
+  quote_sent:           'Quote sent on WhatsApp',
+  receipt_sent:         'Receipt sent on WhatsApp',
 };
 
 export function ActivityIcon({ action }: { action: string }) {

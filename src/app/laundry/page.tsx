@@ -56,11 +56,20 @@ export default function LaundryPage() {
   const [user, setUser] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setUser(d.user));
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
   }, []);
 
   useEffect(() => {
@@ -105,7 +114,7 @@ export default function LaundryPage() {
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
+    <main style={{ maxWidth: 1100, margin: '0 auto', padding: 'clamp(16px, 5vw, 32px) clamp(12px, 4vw, 24px)' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
@@ -237,6 +246,60 @@ export default function LaundryPage() {
           </div>
           <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 15, color: '#202124' }}>{tl.empty.title}</p>
           <p style={{ margin: 0, fontSize: 13, color: '#5f6368' }}>{tl.empty.body}</p>
+        </div>
+      ) : isMobile ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {batches.map(batch => {
+            const cfg = STATUS_CONFIG[batch.status] ?? STATUS_CONFIG.draft;
+            return (
+              <div
+                key={batch._id}
+                onClick={() => router.push(`/laundry/${batch._id}`)}
+                style={{
+                  background: '#fff', borderRadius: 12, padding: '14px 16px',
+                  boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
+                  cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ fontWeight: 600, color: '#202124', fontFamily: 'monospace', fontSize: 14 }}>
+                    {batch.batchNumber}
+                  </span>
+                  <span style={{
+                    display: 'inline-block', padding: '3px 10px', borderRadius: 12,
+                    fontSize: 12, fontWeight: 600, background: cfg.bg, color: cfg.color,
+                  }}>
+                    {tl.status[batch.status as keyof typeof tl.status] ?? batch.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, color: batch.order?.clientName ? '#202124' : '#9aa0a6' }}>
+                  {batch.order?.clientName ?? tl.table.noOrder}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ fontSize: 13, color: '#5f6368' }}>{formatDate(batch.date)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 12, color: '#5f6368' }}>
+                      {batch.items?.length ?? 0} {tl.table.items.toLowerCase()}
+                    </span>
+                    {canManage && batch.status === 'draft' && (
+                      <button
+                        title={tl.deleteDialog.delete}
+                        onClick={e => { e.stopPropagation(); setDeleteId(batch._id); }}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          padding: 6, borderRadius: 6, color: '#d93025',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        <TrashIcon />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div style={{

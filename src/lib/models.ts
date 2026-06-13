@@ -561,6 +561,23 @@ const companySettingsSchema = new Schema(
 );
 export const CompanySettings = models.CompanySettings || model('CompanySettings', companySettingsSchema);
 
+// ── WHATSAPP SETTINGS ─────────────────────────────────────────────────────────
+const whatsappSettingsSchema = new Schema(
+  {
+    enabled:             { type: Boolean, default: false },
+    phoneNumberId:       { type: String, default: '', trim: true },
+    accessToken:         { type: String, default: '', trim: true },
+    businessAccountId:   { type: String, default: '', trim: true },
+    defaultCountryCode:  { type: String, default: '', trim: true },
+    quoteTemplateName:   { type: String, default: '', trim: true },
+    quoteTemplateLang:   { type: String, default: 'fr', trim: true },
+    receiptTemplateName: { type: String, default: '', trim: true },
+    receiptTemplateLang: { type: String, default: 'fr', trim: true },
+  },
+  { timestamps: true }
+);
+export const WhatsAppSettings = models.WhatsAppSettings || model('WhatsAppSettings', whatsappSettingsSchema);
+
 // ── TASK ──────────────────────────────────────────────────────────────────────
 const taskSchema = new Schema(
   {
@@ -583,6 +600,7 @@ const activitySchema = new Schema(
       'order_status_changed', 'payment_created', 'quote_generated',
       'inventory_adjusted', 'laundry_sent', 'laundry_received',
       'kitchen_stock_adjusted', 'kitchen_recipe_saved',
+      'quote_sent', 'receipt_sent',
     ]},
     entityType:  { type: String, required: true },
     entityId:    { type: Schema.Types.ObjectId, required: true },
