@@ -2,6 +2,9 @@
 
 import type { ReactNode, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, CSSProperties } from 'react';
 
+// Standard page wrapper — replaces isMobile-based inline padding
+export const formPageCls = 'mx-auto max-w-[700px] px-4 py-5 sm:px-6 sm:py-8';
+
 interface SectionTitleProps {
   icon: string;
   title: string;
@@ -12,6 +15,33 @@ export function SectionTitle({ icon, title }: SectionTitleProps) {
     <h2 className="font-sans text-[17px] font-medium text-g-text m-0 mb-[18px] flex items-center gap-2.5">
       <span>{icon}</span>{title}
     </h2>
+  );
+}
+
+// Standardized card wrapper for form sections
+export function FormCard({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`bg-g-surface border border-g-border rounded-2xl p-4 sm:p-6 mb-4 shadow-google-1 ${className ?? ''}`}>
+      {children}
+    </div>
+  );
+}
+
+// Standardized section heading
+export function FormSectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-[11px] font-semibold text-g-text-2 uppercase tracking-wider block mb-4">
+      {children}
+    </span>
+  );
+}
+
+// Responsive 2-column grid — replaces gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr'
+export function FormGrid({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 ${className ?? ''}`}>
+      {children}
+    </div>
   );
 }
 
@@ -110,7 +140,7 @@ export function fmt(n: number | undefined, cur = '€'): string {
 
 // Tailwind className strings for common button variants
 export const btnFilled =
-  'bg-google-blue text-white border-none rounded-full py-2.5 px-7 text-sm font-sans font-medium cursor-pointer inline-flex items-center';
+  'bg-google-blue text-white border-none rounded-full py-2.5 px-7 text-sm font-sans font-medium cursor-pointer inline-flex items-center shadow-google-1 transition-google disabled:opacity-60';
 
 export const btnOutline =
   'bg-transparent text-google-blue border border-g-border rounded-full py-2.5 px-6 text-sm font-sans font-medium cursor-pointer';

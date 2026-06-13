@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT } from '@/lib/LanguageContext';
 
 interface User {
@@ -34,7 +33,7 @@ interface UserForm {
 const SYSTEM_COLORS: Record<string, { bg: string; color: string }> = {
   admin:   { bg: '#fce8e6', color: '#d93025' },
   manager: { bg: '#e8f0fe', color: '#1a73e8' },
-  viewer:  { bg: '#f1f3f4', color: '#5f6368' },
+  viewer:  { bg: '#f1f3f4', color: '#5f6368' }
 };
 const FALLBACK_COLOR = { bg: '#f1f3f4', color: '#5f6368' };
 
@@ -43,7 +42,6 @@ function roleColor(name: string) {
 }
 
 export default function UsersPage() {
-  const isMobile = useIsMobile();
   const t = useT();
   const tu = t.users;
   const [users, setUsers] = useState<User[]>([]);
@@ -105,7 +103,7 @@ export default function UsersPage() {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(form)
       });
       const data = await res.json();
       if (!res.ok) { setFormError(data.error); return; }
@@ -122,7 +120,7 @@ export default function UsersPage() {
     const res = await fetch(`/api/admin/users/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patch),
+      body: JSON.stringify(patch)
     });
     const data = await res.json();
     if (!res.ok) { notify(data.error, 'error'); return; }
@@ -146,7 +144,7 @@ export default function UsersPage() {
     <div>
       {notification && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#202124', zIndex: 1000, fontFamily: "'Google Sans'" }}>
+          style={{ background: notification.type === 'error' ? '#d93025' : '#202124', zIndex: 1000}}>
           {notification.msg}
         </div>
       )}
@@ -155,24 +153,24 @@ export default function UsersPage() {
       {deleteId && (
         <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.4)', zIndex: 200 }}>
           <div className="bg-white rounded-2xl w-full max-w-[360px]" style={{ padding: '24px 28px', boxShadow: '0 24px 38px rgba(0,0,0,.14)' }}>
-            <h3 className="text-lg font-medium m-0 mb-2.5" style={{ fontFamily: "'Google Sans'" }}>{tu.deleteDialog.title}</h3>
-            <p className="text-sm text-[#5f6368] m-0 mb-6">{tu.deleteDialog.body}</p>
+            <h3 className="text-lg font-medium m-0 mb-2.5">{tu.deleteDialog.title}</h3>
+            <p className="text-sm text-g-text-2 m-0 mb-6">{tu.deleteDialog.body}</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setDeleteId(null)}
-                className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-                style={{ fontFamily: "'Google Sans'" }}>{tu.deleteDialog.cancel}</button>
+                className="bg-transparent text-google-blue border border-g-border rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
+               >{tu.deleteDialog.cancel}</button>
               <button onClick={() => deleteUser(deleteId)}
                 className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-                style={{ background: '#d93025', fontFamily: "'Google Sans'" }}>{tu.deleteDialog.delete}</button>
+                style={{ background: '#d93025'}}>{tu.deleteDialog.delete}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit modal — mobile */}
-      {editUser && isMobile && (
-        <div className="fixed inset-0 flex items-end justify-center" style={{ background: 'rgba(0,0,0,.4)', zIndex: 200 }}>
-          <div className="bg-white rounded-t-2xl w-full" style={{ padding: '24px 20px', boxShadow: '0 -4px 20px rgba(0,0,0,.15)' }}>
+      {/* Edit modal */}
+      {editUser && (
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 z-[200]">
+          <div className="bg-g-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] p-5 sm:p-6 shadow-google-3">
             <EditForm user={users.find(u => u._id === editUser)!} roles={roles} onSave={patch => updateUser(editUser, patch)} onCancel={() => setEditUser(null)} tu={tu} />
           </div>
         </div>
@@ -180,21 +178,18 @@ export default function UsersPage() {
 
       {/* Header */}
       <div className="flex justify-between items-start mb-6 gap-3">
-        <p className="text-[13px] text-[#5f6368] m-0">{tu.userCount(users.length)}</p>
-        <button onClick={() => { setShowForm(true); resetForm(); }}
-          className="bg-google-blue text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer flex-shrink-0"
-          style={{ fontFamily: "'Google Sans'" }}>
+        <p className="text-[13px] text-g-text-2 m-0">{tu.userCount(users.length)}</p>
+        <button onClick={() => { setShowForm(true); resetForm(); }} className="bg-google-blue text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer flex-shrink-0 shadow-google-1">
           {tu.addUser}
         </button>
       </div>
 
       {/* Create user form */}
       {showForm && (
-        <div className="bg-white rounded-xl border border-[#e8eaed] mb-6 shadow-[0_2px_8px_rgba(60,64,67,.1)]"
-          style={{ padding: isMobile ? '20px 16px' : '24px 28px' }}>
-          <h2 className="text-base font-medium text-[#202124] m-0 mb-5" style={{ fontFamily: "'Google Sans'" }}>{tu.newUser}</h2>
+        <div className="bg-g-surface rounded-2xl border border-g-border mb-6 shadow-google-1 p-4 sm:p-6">
+          <h2 className="text-base font-medium text-g-text m-0 mb-5">{tu.newUser}</h2>
           <form onSubmit={createUser}>
-            <div className="grid gap-3.5 mb-3.5" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-3.5">
               <div>
                 <label className={labelCls}>{tu.fullName}</label>
                 <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Jane Doe" className={inputCls} />
@@ -216,12 +211,8 @@ export default function UsersPage() {
             </div>
             {formError && <p className="text-google-red text-[13px] m-0 mb-3">{formError}</p>}
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowForm(false)}
-                className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-                style={{ fontFamily: "'Google Sans'" }}>{tu.cancel}</button>
-              <button type="submit" disabled={saving}
-                className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-                style={{ background: saving ? '#9aa0a6' : '#1a73e8', fontFamily: "'Google Sans'" }}>
+              <button type="button" onClick={() => setShowForm(false)} className="bg-transparent text-google-blue border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer">{tu.cancel}</button>
+              <button type="submit" disabled={saving} className="text-white bg-google-blue border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer shadow-google-1 disabled:opacity-60">
                 {saving ? tu.creating : tu.createUser}
               </button>
             </div>
@@ -240,18 +231,20 @@ export default function UsersPage() {
 
       {/* Users list */}
       {loading ? (
-        <p className="text-[#5f6368] text-sm">{tu.loading}</p>
-      ) : isMobile ? (
-        <div className="flex flex-col gap-2.5">
+        <p className="text-g-text-2 text-sm">{tu.loading}</p>
+      ) : (
+        <>
+        {/* Mobile cards */}
+        <div className="flex sm:hidden flex-col gap-2.5">
           {users.map(u => (
-            <div key={u._id} className="bg-white rounded-xl border border-[#e8eaed] p-4 shadow-google-1">
+            <div key={u._id} className="bg-g-surface rounded-2xl border border-g-border p-4 shadow-google-1">
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-google-blue text-white flex items-center justify-center font-medium text-base" style={{ fontFamily: "'Google Sans'" }}>
+                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-google-blue text-white flex items-center justify-center font-medium text-base">
                   {u.name[0].toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>{u.name}</div>
-                  <div className="text-xs text-[#5f6368] overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</div>
+                  <div className="font-medium text-sm text-g-text">{u.name}</div>
+                  <div className="text-xs text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</div>
                 </div>
                 <RoleBadge roleName={u.role} label={roleLabel(u.role)} />
               </div>
@@ -259,13 +252,13 @@ export default function UsersPage() {
                 <button
                   onClick={() => updateUser(u._id, { isActive: !u.isActive })}
                   className="border-none rounded-xl py-[3px] px-2.5 text-xs font-medium cursor-pointer"
-                  style={{ background: u.isActive ? '#e6f4ea' : '#f1f3f4', color: u.isActive ? '#137333' : '#5f6368', fontFamily: "'Google Sans'" }}
+                  style={{ background: u.isActive ? '#e6f4ea' : '#f1f3f4', color: u.isActive ? '#137333' : '#5f6368'}}
                 >
                   {u.isActive ? tu.active : tu.inactive}
                 </button>
                 <div className="flex gap-1">
                   <button onClick={() => setEditUser(u._id)}
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-full border-none bg-transparent text-[#5f6368] cursor-pointer" title="Edit">
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-full border-none bg-transparent text-g-text-2 cursor-pointer" title="Edit">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
                   </button>
                   <button onClick={() => setDeleteId(u._id)}
@@ -277,13 +270,13 @@ export default function UsersPage() {
             </div>
           ))}
         </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-[#e8eaed] overflow-hidden shadow-google-1">
-          <div className="flex items-center bg-[#f8f9fa] border-b border-[#e8eaed]" style={{ padding: '14px 20px', gap: 12 }}>
+        {/* Desktop table */}
+        <div className="hidden sm:block bg-g-surface rounded-2xl border border-g-border overflow-hidden shadow-google-1">
+          <div className="flex items-center bg-g-bg border-b border-g-border" style={{ padding: '14px 20px', gap: 12 }}>
             {[tu.table.user, tu.table.email, tu.table.role, tu.table.status, ''].map((h, idx) => (
               <div key={h + idx}
                 style={{ flex: idx === 4 ? undefined : idx === 0 ? 3 : idx === 1 ? 2 : 1, width: idx === 4 ? 100 : undefined, textAlign: idx === 4 ? 'right' : 'left' }}
-                className="text-[11px] font-medium text-[#5f6368] uppercase tracking-[0.06em]">{h}</div>
+                className="text-[11px] font-medium text-g-text-2 uppercase tracking-[0.06em]">{h}</div>
             ))}
           </div>
           {users.map((u, i) => (
@@ -295,25 +288,25 @@ export default function UsersPage() {
               ) : (
                 <>
                   <div style={{ flex: 3 }} className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full flex-shrink-0 bg-google-blue text-white flex items-center justify-center font-medium text-sm" style={{ fontFamily: "'Google Sans'" }}>
+                    <div className="w-9 h-9 rounded-full flex-shrink-0 bg-google-blue text-white flex items-center justify-center font-medium text-sm">
                       {u.name[0].toUpperCase()}
                     </div>
-                    <span className="text-sm font-medium text-[#202124]">{u.name}</span>
+                    <span className="text-sm font-medium text-g-text">{u.name}</span>
                   </div>
-                  <div style={{ flex: 2 }} className="text-[13px] text-[#5f6368] overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</div>
+                  <div style={{ flex: 2 }} className="text-[13px] text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</div>
                   <div style={{ flex: 1 }}><RoleBadge roleName={u.role} label={roleLabel(u.role)} /></div>
                   <div style={{ flex: 1 }}>
                     <button
                       onClick={() => updateUser(u._id, { isActive: !u.isActive })}
                       className="border-none rounded-xl py-[3px] px-2.5 text-xs font-medium cursor-pointer"
-                      style={{ background: u.isActive ? '#e6f4ea' : '#f1f3f4', color: u.isActive ? '#137333' : '#5f6368', fontFamily: "'Google Sans'" }}
+                      style={{ background: u.isActive ? '#e6f4ea' : '#f1f3f4', color: u.isActive ? '#137333' : '#5f6368'}}
                     >
                       {u.isActive ? tu.active : tu.inactive}
                     </button>
                   </div>
                   <div style={{ width: 100 }} className="flex justify-end gap-1">
                     <button onClick={() => setEditUser(u._id)}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-full border-none bg-transparent text-[#5f6368] cursor-pointer" title="Edit">
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-full border-none bg-transparent text-g-text-2 cursor-pointer" title="Edit">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
                     </button>
                     <button onClick={() => setDeleteId(u._id)}
@@ -326,6 +319,7 @@ export default function UsersPage() {
             </div>
           ))}
         </div>
+        </>
       )}
     </div>
   );
@@ -367,10 +361,10 @@ function EditForm({ user, roles, onSave, onCancel, inline, tu }: {
       <div className="flex gap-2" style={{ marginTop: inline ? 0 : 4 }}>
         <button onClick={save}
           className="bg-google-blue text-white border-none rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
-          style={{ fontFamily: "'Google Sans'" }}>{tu.save}</button>
+         >{tu.save}</button>
         <button onClick={onCancel}
-          className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
-          style={{ fontFamily: "'Google Sans'" }}>{tu.cancel}</button>
+          className="bg-transparent text-google-blue border border-g-border rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
+         >{tu.cancel}</button>
       </div>
     </div>
   );
@@ -379,11 +373,11 @@ function EditForm({ user, roles, onSave, onCancel, inline, tu }: {
 function RoleBadge({ roleName, label }: { roleName: string; label: string }) {
   const s = roleColor(roleName);
   return (
-    <span className="rounded-xl py-[3px] px-2.5 text-xs font-medium whitespace-nowrap" style={{ background: s.bg, color: s.color, fontFamily: "'Google Sans'" }}>
+    <span className="rounded-xl py-[3px] px-2.5 text-xs font-medium whitespace-nowrap" style={{ background: s.bg, color: s.color}}>
       {label}
     </span>
   );
 }
 
-const labelCls = 'block text-[11px] font-medium text-[#5f6368] mb-[5px] uppercase tracking-[0.04em]';
-const inputCls = 'w-full py-[9px] px-3 rounded-lg box-border border border-[#dadce0] text-[13px] text-[#202124] outline-none';
+const labelCls = 'block text-[11px] font-medium text-g-text-2 mb-[5px] uppercase tracking-[0.04em]';
+const inputCls = 'w-full py-[9px] px-3 rounded-lg box-border border border-g-border text-[13px] text-g-text outline-none';

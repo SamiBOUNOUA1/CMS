@@ -173,7 +173,7 @@ export default function AppNav() {
           <path d="M8 14h12M14 8v12" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
         <span className="font-sans text-lg font-normal text-g-text-2 tracking-[-0.01em] whitespace-nowrap">
-          Catering<span className="text-google-blue font-medium">Quotes</span>
+          Cat<span className="text-google-blue font-medium">ero</span>
         </span>
       </Link>
 

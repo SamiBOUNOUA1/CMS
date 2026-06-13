@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useIsMobile } from '@/lib/useIsMobile';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -27,7 +26,6 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export default function ManagerEventDetailPage() {
   const { id } = useParams() as { id: string };
-  const isMobile = useIsMobile();
   const [order, setOrder] = useState<any>(null);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +67,7 @@ export default function ManagerEventDetailPage() {
   const statusFg = sc?.color || '#5f6368';
 
   return (
-    <div className="max-w-[720px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[720px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       <Link href="/manager/events" className="text-[13px] text-google-blue no-underline inline-flex items-center gap-1 mb-5">
         ← My Events
       </Link>
@@ -91,13 +89,13 @@ export default function ManagerEventDetailPage() {
 
       {/* Event details */}
       <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 mb-4 py-5 px-6">
-        <div className="grid gap-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px 24px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
           <Field label="Event type" value={`${EVENT_TYPE_ICONS[order.eventType] || ''} ${EVENT_TYPE_LABELS[order.eventType] || order.eventType}`} />
           <Field label="Event date" value={order.eventDate ? format(new Date(order.eventDate), 'EEEE, dd MMM yyyy') : '—'} />
           <Field label="Guests" value={order.tableCount ? `${order.tableCount} tables (~${order.guestCount} guests)` : `${order.guestCount} guests`} />
           <Field label="Start time" value={order.startTime || '—'} />
           {order.notes && (
-            <div style={{ gridColumn: isMobile ? undefined : '1 / -1' }}>
+            <div className="sm:col-span-2">
               <Field label="Notes" value={order.notes} />
             </div>
           )}

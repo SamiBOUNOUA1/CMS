@@ -88,7 +88,7 @@ export default function FlowTemplatesSettingsPage() {
       const res = await fetch('/api/settings/flow-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), eventTypeKey: newEventTypeKey }),
+        body: JSON.stringify({ name: newName.trim(), eventTypeKey: newEventTypeKey })
       });
       if (!res.ok) throw new Error((await res.json()).error);
       setNewName('');
@@ -107,7 +107,7 @@ export default function FlowTemplatesSettingsPage() {
       await fetch(`/api/settings/flow-templates/${tmpl._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !tmpl.isActive }),
+        body: JSON.stringify({ isActive: !tmpl.isActive })
       });
       setTemplates(ts => ts.map(t => t._id === tmpl._id ? { ...t, isActive: !t.isActive } : t));
     } catch {
@@ -131,7 +131,7 @@ export default function FlowTemplatesSettingsPage() {
     const res = await fetch(`/api/settings/flow-templates/${templateId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ steps }),
+      body: JSON.stringify({ steps })
     });
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
@@ -208,17 +208,17 @@ export default function FlowTemplatesSettingsPage() {
     <div className="max-w-[860px]">
       {/* Header */}
       <div className="mb-7">
-        <h2 className="text-[22px] font-medium text-[#202124] m-0 mb-1.5" style={{ fontFamily: "'Google Sans'" }}>
+        <h2 className="text-[22px] font-medium text-g-text m-0 mb-1.5">
           {tf.title}
         </h2>
-        <p className="text-sm text-[#5f6368] m-0" style={{ fontFamily: "'Google Sans'" }}>
+        <p className="text-sm text-g-text-2 m-0">
           {tf.subtitle}
         </p>
       </div>
 
       {/* Add template */}
-      <div className="bg-white border border-[#e8eaed] rounded-xl p-5 mb-6">
-        <p className="text-[12px] font-medium uppercase tracking-[0.04em] text-[#5f6368] mb-3.5" style={{ fontFamily: "'Google Sans'" }}>{tf.addNew}</p>
+      <div className="bg-g-surface border border-g-border rounded-2xl shadow-google-1 p-5 mb-6">
+        <p className="text-[12px] font-medium uppercase tracking-[0.04em] text-g-text-2 mb-3.5">{tf.addNew}</p>
         <div className="grid gap-3 items-end" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
           <div>
             <label className={lblCls}>{tf.eventType}</label>
@@ -249,22 +249,22 @@ export default function FlowTemplatesSettingsPage() {
             onClick={handleAdd}
             disabled={adding || !newName.trim() || !newEventTypeKey}
             className="py-[9px] px-5 bg-google-blue text-white border-none rounded-lg text-sm font-medium cursor-pointer whitespace-nowrap"
-            style={{ fontFamily: "'Google Sans'", opacity: (adding || !newName.trim() || !newEventTypeKey) ? 0.6 : 1 }}
+            style={{ opacity: (adding || !newName.trim() || !newEventTypeKey) ? 0.6 : 1 }}
           >
             {adding ? tf.adding : tf.add}
           </button>
         </div>
-        <p className="text-xs text-[#9aa0a6] mt-2.5 mb-0" style={{ fontFamily: "'Google Sans'" }}>
+        <p className="text-xs text-g-text-3 mt-2.5 mb-0">
           {tf.hint}
         </p>
       </div>
 
       {/* Template list */}
-      <div className="bg-white border border-[#e8eaed] rounded-xl overflow-hidden">
+      <div className="bg-g-surface border border-g-border rounded-2xl shadow-google-1 overflow-hidden">
         {loading ? (
-          <div className="p-6 text-center text-[#9aa0a6] text-sm" style={{ fontFamily: "'Google Sans'" }}>{tf.loading}</div>
+          <div className="p-6 text-center text-g-text-3 text-sm">{tf.loading}</div>
         ) : templates.length === 0 ? (
-          <div className="p-6 text-center text-[#9aa0a6] text-sm" style={{ fontFamily: "'Google Sans'" }}>{tf.noTemplates}</div>
+          <div className="p-6 text-center text-g-text-3 text-sm">{tf.noTemplates}</div>
         ) : (
           templates.map((tmpl, tmplIdx) => {
             const isOpen = expanded === tmpl._id;
@@ -278,7 +278,7 @@ export default function FlowTemplatesSettingsPage() {
                 <div className="flex items-center gap-3" style={{ padding: '14px 20px' }}>
                   <button
                     onClick={() => setExpanded(isOpen ? null : tmpl._id)}
-                    className="bg-transparent border-none cursor-pointer p-1 text-[#5f6368] flex flex-shrink-0"
+                    className="bg-transparent border-none cursor-pointer p-1 text-g-text-2 flex flex-shrink-0"
                     title={isOpen ? 'Collapse' : 'Expand'}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"
@@ -287,13 +287,13 @@ export default function FlowTemplatesSettingsPage() {
                     </svg>
                   </button>
                   <div className="flex-1 min-w-0">
-                    <span className="text-[15px] font-medium text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>
+                    <span className="text-[15px] font-medium text-g-text">
                       {tmpl.name}
                     </span>
-                    <span className="ml-2.5 text-[11px] py-[2px] px-2 rounded-xl bg-[#e8f0fe] text-google-blue font-medium" style={{ fontFamily: "'Google Sans'" }}>
+                    <span className="ml-2.5 text-[11px] py-[2px] px-2 rounded-xl bg-[#e8f0fe] text-google-blue font-medium">
                       {etLabel}
                     </span>
-                    <span className="ml-2 text-xs text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>
+                    <span className="ml-2 text-xs text-g-text-3">
                       {steps.length} {tf.stepsTitle.toLowerCase()}
                     </span>
                   </div>
@@ -302,18 +302,17 @@ export default function FlowTemplatesSettingsPage() {
                       onClick={() => handleToggleActive(tmpl)}
                       className="py-[7px] px-3.5 border rounded-md cursor-pointer text-xs"
                       style={{
-                        fontFamily: "'Google Sans'",
-                        background: 'none',
+                                                background: 'none',
                         color: tmpl.isActive ? '#137333' : '#9aa0a6',
                         borderColor: tmpl.isActive ? '#a8d5b5' : '#dadce0',
-                        backgroundColor: tmpl.isActive ? '#e6f4ea' : 'transparent',
+                        backgroundColor: tmpl.isActive ? '#e6f4ea' : 'transparent'
                       }}
                     >
                       {tmpl.isActive ? tf.active : tf.inactive}
                     </button>
                     <button onClick={() => handleDelete(tmpl)}
                       className="py-[7px] px-3.5 bg-transparent text-google-red border border-[#f5c6c4] rounded-lg cursor-pointer text-[13px]"
-                      style={{ fontFamily: "'Google Sans'" }}>
+                     >
                       {tf.delete}
                     </button>
                   </div>
@@ -321,21 +320,21 @@ export default function FlowTemplatesSettingsPage() {
 
                 {/* Expanded steps panel */}
                 {isOpen && (
-                  <div className="border-t border-[#f1f3f4] bg-[#fafafa]" style={{ padding: '16px 20px 20px' }}>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#5f6368] mb-3" style={{ fontFamily: "'Google Sans'" }}>{tf.stepsTitle}</p>
+                  <div className="border-t border-g-border bg-g-bg" style={{ padding: '16px 20px 20px' }}>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-g-text-2 mb-3">{tf.stepsTitle}</p>
 
                     {steps.length === 0 ? (
-                      <p className="text-[13px] text-[#9aa0a6] mb-4" style={{ fontFamily: "'Google Sans'" }}>{tf.noSteps}</p>
+                      <p className="text-[13px] text-g-text-3 mb-4">{tf.noSteps}</p>
                     ) : (
                       <div className="flex flex-col gap-2 mb-4">
                         {steps.map((step, idx) => {
                           const editing = stepEdits[step._id];
                           return (
                             <div key={step._id}
-                              className="bg-white border border-[#e8eaed] rounded-lg flex gap-2.5 items-start"
+                              className="bg-white border border-g-border rounded-lg flex gap-2.5 items-start"
                               style={{ padding: '10px 14px' }}
                             >
-                              <span className="min-w-[24px] h-6 rounded-full bg-[#e8eaed] flex items-center justify-center text-[11px] font-semibold text-[#5f6368] flex-shrink-0" style={{ fontFamily: "'Google Sans'" }}>
+                              <span className="min-w-[24px] h-6 rounded-full bg-[#e8eaed] flex items-center justify-center text-[11px] font-semibold text-g-text-2 flex-shrink-0">
                                 {idx + 1}
                               </span>
                               <div className="flex-1 min-w-0">
@@ -355,19 +354,19 @@ export default function FlowTemplatesSettingsPage() {
                                     <div className="flex gap-2">
                                       <button onClick={() => saveEditStep(tmpl, step)}
                                         className="bg-google-blue text-white border-none rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
-                                        style={{ fontFamily: "'Google Sans'" }}>{tf.save}</button>
+                                       >{tf.save}</button>
                                       <button onClick={() => cancelEditStep(step._id)}
-                                        className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-1.5 px-3.5 text-[13px] cursor-pointer"
-                                        style={{ fontFamily: "'Google Sans'" }}>{tf.cancel}</button>
+                                        className="bg-transparent text-google-blue border border-g-border rounded-lg py-1.5 px-3.5 text-[13px] cursor-pointer"
+                                       >{tf.cancel}</button>
                                     </div>
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="text-sm font-medium text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>
+                                    <div className="text-sm font-medium text-g-text">
                                       {step.label}
                                     </div>
                                     {step.description && (
-                                      <div className="text-xs text-[#5f6368] mt-0.5" style={{ fontFamily: "'Google Sans'" }}>
+                                      <div className="text-xs text-g-text-2 mt-0.5">
                                         {step.description}
                                       </div>
                                     )}
@@ -377,17 +376,17 @@ export default function FlowTemplatesSettingsPage() {
                               {!editing && (
                                 <div className="flex gap-1.5 flex-shrink-0">
                                   <button onClick={() => handleMoveStep(tmpl, idx, -1)} disabled={idx === 0}
-                                    className="py-1 px-2 bg-transparent border border-[#dadce0] rounded-md cursor-pointer text-[#5f6368] text-xs"
-                                    style={{ opacity: idx === 0 ? 0.4 : 1, fontFamily: "'Google Sans'" }} title={tf.moveUp}>↑</button>
+                                    className="py-1 px-2 bg-transparent border border-g-border rounded-md cursor-pointer text-g-text-2 text-xs"
+                                    style={{ opacity: idx === 0 ? 0.4 : 1}} title={tf.moveUp}>↑</button>
                                   <button onClick={() => handleMoveStep(tmpl, idx, 1)} disabled={idx === steps.length - 1}
-                                    className="py-1 px-2 bg-transparent border border-[#dadce0] rounded-md cursor-pointer text-[#5f6368] text-xs"
-                                    style={{ opacity: idx === steps.length - 1 ? 0.4 : 1, fontFamily: "'Google Sans'" }} title={tf.moveDown}>↓</button>
+                                    className="py-1 px-2 bg-transparent border border-g-border rounded-md cursor-pointer text-g-text-2 text-xs"
+                                    style={{ opacity: idx === steps.length - 1 ? 0.4 : 1}} title={tf.moveDown}>↓</button>
                                   <button onClick={() => startEditStep(step)}
-                                    className="py-1 px-2 bg-transparent border border-[#dadce0] rounded-md cursor-pointer text-[#5f6368] text-xs"
-                                    style={{ fontFamily: "'Google Sans'" }}>{tf.edit}</button>
+                                    className="py-1 px-2 bg-transparent border border-g-border rounded-md cursor-pointer text-g-text-2 text-xs"
+                                   >{tf.edit}</button>
                                   <button onClick={() => handleDeleteStep(tmpl, step._id)}
                                     className="py-1 px-2 bg-transparent border border-[#f5c6c4] rounded-md cursor-pointer text-google-red text-xs"
-                                    style={{ fontFamily: "'Google Sans'" }}>{tf.delete}</button>
+                                   >{tf.delete}</button>
                                 </div>
                               )}
                             </div>
@@ -398,7 +397,7 @@ export default function FlowTemplatesSettingsPage() {
 
                     {/* Add step form */}
                     <div className="border border-dashed border-[#dadce0] rounded-lg p-3.5 bg-white">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#5f6368] mb-2.5" style={{ fontFamily: "'Google Sans'" }}>{tf.addStep}</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-g-text-2 mb-2.5">{tf.addStep}</p>
                       <div className="flex flex-col gap-2">
                         <input
                           type="text"
@@ -419,7 +418,7 @@ export default function FlowTemplatesSettingsPage() {
                             onClick={() => handleAddStep(tmpl)}
                             disabled={!form.newLabel?.trim()}
                             className="bg-google-blue text-white border-none rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
-                            style={{ fontFamily: "'Google Sans'", opacity: !form.newLabel?.trim() ? 0.6 : 1 }}
+                            style={{ opacity: !form.newLabel?.trim() ? 0.6 : 1 }}
                           >
                             {tf.addStep}
                           </button>
@@ -437,7 +436,7 @@ export default function FlowTemplatesSettingsPage() {
       {/* Toast */}
       {notification && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-2.5 px-5 rounded-lg text-sm whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#202124', fontFamily: "'Google Sans'", zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,.2)' }}>
+          style={{ background: notification.type === 'error' ? '#d93025' : '#202124', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,.2)' }}>
           {notification.msg}
         </div>
       )}
@@ -445,5 +444,5 @@ export default function FlowTemplatesSettingsPage() {
   );
 }
 
-const inpCls = 'py-[9px] px-3 border border-[#dadce0] rounded-lg text-sm outline-none bg-white w-full box-border';
-const lblCls = 'text-[11px] font-medium uppercase tracking-[0.04em] text-[#5f6368] block mb-1';
+const inpCls = 'py-[9px] px-3 border border-g-border rounded-lg text-sm outline-none bg-white w-full box-border';
+const lblCls = 'text-[11px] font-medium uppercase tracking-[0.04em] text-g-text-2 block mb-1';

@@ -4,9 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT } from '@/lib/LanguageContext';
-import { Field, FormInput, FormTextarea } from '@/app/components/FormPrimitives';
+import { btnFilled, btnOutline, Field, FormInput, FormTextarea, FormCard, FormSectionLabel, FormGrid } from '@/app/components/FormPrimitives';
 import dynamic from 'next/dynamic';
 
 const WarehouseMap = dynamic(() => import('@/app/components/WarehouseMap'), { ssr: false });
@@ -27,7 +26,6 @@ const EMPTY_FORM = {
 export default function WarehouseDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const isMobile = useIsMobile();
   const t = useT();
   const tp = t.warehouseDetail;
 
@@ -118,8 +116,6 @@ export default function WarehouseDetailPage() {
     }
   };
 
-  const cardCls = `bg-g-surface border border-g-border rounded-2xl mb-4 shadow-google-1 ${isMobile ? 'p-[18px]' : 'p-6'}`;
-  const sectionLabelCls = 'text-[11px] font-semibold text-g-text-2 uppercase tracking-wider block mb-4';
   const fieldLabelCls = 'text-[12px] text-g-text-3 mb-0.5';
   const fieldValueCls = 'text-sm text-g-text';
 
@@ -145,7 +141,7 @@ export default function WarehouseDetailPage() {
     .filter(Boolean).join(', ');
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[800px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       {/* Toast */}
       {notification && (
         <div
@@ -163,18 +159,8 @@ export default function WarehouseDetailPage() {
             <h3 className="m-0 mb-2 text-lg font-medium text-g-text">{tp.deleteDialog.title}</h3>
             <p className="m-0 mt-2 mb-6 text-sm text-g-text-2 leading-relaxed">{tp.deleteDialog.body}</p>
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setDeleteOpen(false)}
-                className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
-              >
-                {tp.deleteDialog.cancel}
-              </button>
-              <button
-                onClick={handleDelete}
-                className="ripple bg-google-red text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
-              >
-                {tp.deleteDialog.delete}
-              </button>
+              <button onClick={() => setDeleteOpen(false)} className={btnOutline}>{tp.deleteDialog.cancel}</button>
+              <button onClick={handleDelete} className={btnFilled} style={{ background: '#d93025' }}>{tp.deleteDialog.delete}</button>
             </div>
           </div>
         </div>
@@ -187,7 +173,7 @@ export default function WarehouseDetailPage() {
       </Link>
 
       {/* Header card */}
-      <div className={`${cardCls} flex items-start justify-between gap-4 flex-wrap`}>
+      <FormCard className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div
             className="rounded-full flex-shrink-0 flex items-center justify-center text-white"
@@ -198,7 +184,7 @@ export default function WarehouseDetailPage() {
             </svg>
           </div>
           <div>
-            <h1 className="m-0 font-medium text-g-text" style={{ fontSize: isMobile ? 20 : 24 }}>
+            <h1 className="m-0 text-xl sm:text-2xl font-medium text-g-text">
               {warehouse.name}
             </h1>
             {(warehouse.address?.city || warehouse.address?.country) && (
@@ -216,26 +202,16 @@ export default function WarehouseDetailPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           {perms.edit_warehouses && !editing && (
-            <button
-              onClick={() => setEditing(true)}
-              className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2 px-4 text-sm font-medium cursor-pointer transition-google"
-            >
-              {tp.editWarehouse}
-            </button>
+            <button onClick={() => setEditing(true)} className={btnOutline}>{tp.editWarehouse}</button>
           )}
           {perms.delete_warehouses && !editing && (
-            <button
-              onClick={() => setDeleteOpen(true)}
-              className="ripple bg-google-red text-white border-none rounded-full py-2 px-4 text-sm font-medium cursor-pointer transition-google"
-            >
-              {tp.deleteWarehouse}
-            </button>
+            <button onClick={() => setDeleteOpen(true)} className={btnFilled} style={{ background: '#d93025' }}>{tp.deleteWarehouse}</button>
           )}
         </div>
-      </div>
+      </FormCard>
 
       {/* Items count */}
-      <div className={`${cardCls} flex items-center justify-between`}>
+      <FormCard className="flex items-center justify-between">
         <div>
           <p className={`m-0 ${fieldLabelCls}`}>Stored items</p>
           <p className={`m-0 mt-0.5 text-base font-medium text-g-text`}>{tp.itemsCount(itemCount)}</p>
@@ -249,11 +225,11 @@ export default function WarehouseDetailPage() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
           </Link>
         )}
-      </div>
+      </FormCard>
 
       {/* Info section */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.infoSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.infoSection}</FormSectionLabel>
         {!editing ? (
           <div className="flex flex-col gap-3">
             <div>
@@ -287,24 +263,19 @@ export default function WarehouseDetailPage() {
             </div>
           </div>
         )}
-      </div>
+      </FormCard>
 
       {/* Address & Location */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.addressSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.addressSection}</FormSectionLabel>
         {!editing ? (
           <>
             {(() => {
               const addr = warehouse.address || {};
               const hasAddr = addr.street || addr.city || addr.postalCode || addr.state || addr.country;
               return hasAddr ? (
-                <div className="grid gap-x-6 gap-y-3 mb-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
-                  {addr.street && (
-                    <div style={{ gridColumn: isMobile ? undefined : '1 / -1' }}>
-                      <p className={`m-0 ${fieldLabelCls}`}>{tp.fields.street}</p>
-                      <p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.street}</p>
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mb-4">
+                  {addr.street && <div className="sm:col-span-2"><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.street}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.street}</p></div>}
                   {addr.city && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.city}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.city}</p></div>}
                   {addr.postalCode && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.postalCode}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.postalCode}</p></div>}
                   {addr.state && <div><p className={`m-0 ${fieldLabelCls}`}>{tp.fields.state}</p><p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.state}</p></div>}
@@ -315,10 +286,7 @@ export default function WarehouseDetailPage() {
               );
             })()}
             {hasCoords ? (
-              <WarehouseMap
-                lat={warehouse.coordinates.lat}
-                lng={warehouse.coordinates.lng}
-              />
+              <WarehouseMap lat={warehouse.coordinates.lat} lng={warehouse.coordinates.lng} />
             ) : (
               <p className="m-0 text-sm text-g-text-3">No location pin set.</p>
             )}
@@ -328,7 +296,7 @@ export default function WarehouseDetailPage() {
             <Field label={tp.fields.street}>
               <FormInput value={editForm.address.street} onChange={e => setAddr('street', e.target.value)} />
             </Field>
-            <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+            <FormGrid>
               <Field label={tp.fields.city}>
                 <FormInput value={editForm.address.city} onChange={e => setAddr('city', e.target.value)} />
               </Field>
@@ -341,7 +309,7 @@ export default function WarehouseDetailPage() {
               <Field label={tp.fields.country}>
                 <FormInput value={editForm.address.country} onChange={e => setAddr('country', e.target.value)} />
               </Field>
-            </div>
+            </FormGrid>
             <div className="mt-2">
               <WarehouseMap
                 lat={editForm.coordinates.lat}
@@ -352,11 +320,11 @@ export default function WarehouseDetailPage() {
             </div>
           </div>
         )}
-      </div>
+      </FormCard>
 
       {/* Notes */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.notesSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.notesSection}</FormSectionLabel>
         {!editing ? (
           <p className={`m-0 text-sm leading-relaxed whitespace-pre-wrap ${warehouse.notes ? 'text-g-text' : 'text-g-text-3'}`}>
             {warehouse.notes || tp.noNotes}
@@ -366,23 +334,15 @@ export default function WarehouseDetailPage() {
             <FormTextarea rows={4} value={editForm.notes} onChange={e => set('notes', e.target.value)} />
           </Field>
         )}
-      </div>
+      </FormCard>
 
       {/* Save / Cancel */}
       {editing && (
         <div className="flex justify-end gap-2">
-          <button
-            onClick={() => { setEditing(false); seedEditForm(warehouse); }}
-            disabled={saving}
-            className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
-          >
+          <button onClick={() => { setEditing(false); seedEditForm(warehouse); }} disabled={saving} className={btnOutline}>
             {tp.cancelEdit}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="ripple bg-google-blue text-white border-none rounded-full py-2.5 px-6 text-sm font-medium cursor-pointer shadow-google-1 transition-google"
-          >
+          <button onClick={handleSave} disabled={saving} className={btnFilled}>
             {saving ? '…' : tp.saveWarehouse}
           </button>
         </div>

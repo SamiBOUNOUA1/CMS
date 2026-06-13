@@ -238,11 +238,6 @@ export default function InventoryItemPage({ params }) {
               </>
             )
           )}
-          {isNew && (
-            <button onClick={handleSave} disabled={saving} className="ripple py-2 px-5 rounded-full border-none bg-google-blue text-white text-sm font-medium cursor-pointer shadow-google-1 transition-google">
-              {saving ? '…' : ti.saveItem}
-            </button>
-          )}
         </div>
       </div>
 
@@ -360,6 +355,18 @@ export default function InventoryItemPage({ params }) {
           </div>
         </div>
       </div>
+
+      {/* Save button for new items */}
+      {isNew && (
+        <div className="flex justify-end gap-2 mt-2">
+          <Link href="/inventory" className="ripple py-2 px-4 rounded-full border border-g-border bg-transparent text-sm font-medium cursor-pointer text-g-text-2 transition-google no-underline flex items-center">
+            {ti.cancelEdit}
+          </Link>
+          <button onClick={handleSave} disabled={saving} className="ripple py-2 px-5 rounded-full border-none bg-google-blue text-white text-sm font-medium cursor-pointer shadow-google-1 transition-google">
+            {saving ? '…' : ti.saveItem}
+          </button>
+        </div>
+      )}
 
       {/* Adjust Stock */}
       {!isNew && canEdit && (

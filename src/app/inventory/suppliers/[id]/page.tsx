@@ -4,9 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT } from '@/lib/LanguageContext';
-import { Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
+import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea, FormCard, FormSectionLabel, FormGrid } from '@/app/components/FormPrimitives';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -31,7 +30,6 @@ const typeBadgeStyle = (type) => {
 export default function SupplierDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const isMobile = useIsMobile();
   const t = useT();
   const tp = t.supplierDetail;
 
@@ -111,8 +109,6 @@ export default function SupplierDetailPage() {
     }
   };
 
-  const cardCls = `bg-g-surface border border-g-border rounded-2xl mb-4 shadow-google-1 ${isMobile ? 'p-[18px]' : 'p-6'}`;
-  const sectionLabelCls = 'text-[11px] font-semibold text-g-text-2 uppercase tracking-wider block mb-4';
   const fieldLabelCls = 'text-[12px] text-g-text-3 mb-0.5';
   const fieldValueCls = 'text-sm text-g-text';
 
@@ -136,7 +132,7 @@ export default function SupplierDetailPage() {
   const typeLabel = tp.fields.supplierTypes[supplier.supplierType] || supplier.supplierType;
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[800px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       {/* Toast */}
       {notification && (
         <div
@@ -178,7 +174,7 @@ export default function SupplierDetailPage() {
       </Link>
 
       {/* Header card */}
-      <div className={`${cardCls} flex items-start justify-between gap-4 flex-wrap`}>
+      <FormCard className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div
             className="rounded-full flex-shrink-0 flex items-center justify-center text-white font-medium"
@@ -187,7 +183,7 @@ export default function SupplierDetailPage() {
             {(supplier.name || '?')[0].toUpperCase()}
           </div>
           <div>
-            <h1 className="m-0 font-medium text-g-text" style={{ fontSize: isMobile ? 20 : 24 }}>
+            <h1 className="m-0 text-xl sm:text-2xl font-medium text-g-text">
               {supplier.name}
             </h1>
             {(supplier.email || supplier.phone) && (
@@ -209,29 +205,23 @@ export default function SupplierDetailPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           {perms.edit_suppliers && !editing && (
-            <button
-              onClick={() => setEditing(true)}
-              className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2 px-4 text-sm font-medium cursor-pointer transition-google"
-            >
+            <button onClick={() => setEditing(true)} className={btnOutline}>
               {tp.editSupplier}
             </button>
           )}
           {perms.delete_suppliers && !editing && (
-            <button
-              onClick={() => setDeleteOpen(true)}
-              className="ripple bg-google-red text-white border-none rounded-full py-2 px-4 text-sm font-medium cursor-pointer transition-google"
-            >
+            <button onClick={() => setDeleteOpen(true)} className={btnFilled.replace('bg-google-blue', 'bg-google-red')}>
               {tp.deleteSupplier}
             </button>
           )}
         </div>
-      </div>
+      </FormCard>
 
       {/* Contact section */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.infoSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.infoSection}</FormSectionLabel>
         {!editing ? (
-          <div className="grid gap-x-6 gap-y-3" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+          <FormGrid>
             {[
               { label: tp.fields.name, value: supplier.name },
               { label: tp.fields.supplierType, value: typeLabel },
@@ -244,9 +234,9 @@ export default function SupplierDetailPage() {
                 <p className={`m-0 mt-0.5 ${fieldValueCls}`}>{value}</p>
               </div>
             ))}
-          </div>
+          </FormGrid>
         ) : (
-          <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+          <FormGrid>
             <Field label={`${tp.fields.name} *`}>
               <FormInput value={editForm.name} onChange={e => set('name', e.target.value)} />
             </Field>
@@ -267,22 +257,22 @@ export default function SupplierDetailPage() {
             <Field label={tp.fields.contactPerson}>
               <FormInput value={editForm.contactPerson} onChange={e => set('contactPerson', e.target.value)} />
             </Field>
-          </div>
+          </FormGrid>
         )}
-      </div>
+      </FormCard>
 
       {/* Address section */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.addressSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.addressSection}</FormSectionLabel>
         {!editing ? (
           (() => {
             const addr = supplier.address || {};
             const hasAddr = addr.street || addr.city || addr.postalCode || addr.state || addr.country;
-            if (!hasAddr) return <p className={`m-0 text-sm text-g-text-3`}>{tp.noAddress}</p>;
+            if (!hasAddr) return <p className="m-0 text-sm text-g-text-3">{tp.noAddress}</p>;
             return (
-              <div className="grid gap-x-6 gap-y-3" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                 {addr.street && (
-                  <div style={{ gridColumn: isMobile ? undefined : '1 / -1' }}>
+                  <div className="sm:col-span-2">
                     <p className={`m-0 ${fieldLabelCls}`}>{tp.fields.street}</p>
                     <p className={`m-0 mt-0.5 ${fieldValueCls}`}>{addr.street}</p>
                   </div>
@@ -299,7 +289,7 @@ export default function SupplierDetailPage() {
             <Field label={tp.fields.street}>
               <FormInput value={editForm.address.street} onChange={e => setAddr('street', e.target.value)} />
             </Field>
-            <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+            <FormGrid>
               <Field label={tp.fields.city}>
                 <FormInput value={editForm.address.city} onChange={e => setAddr('city', e.target.value)} />
               </Field>
@@ -312,14 +302,14 @@ export default function SupplierDetailPage() {
               <Field label={tp.fields.country}>
                 <FormInput value={editForm.address.country} onChange={e => setAddr('country', e.target.value)} />
               </Field>
-            </div>
+            </FormGrid>
           </div>
         )}
-      </div>
+      </FormCard>
 
       {/* Notes section */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.notesSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.notesSection}</FormSectionLabel>
         {!editing ? (
           <p className={`m-0 text-sm leading-relaxed whitespace-pre-wrap ${supplier.notes ? 'text-g-text' : 'text-g-text-3'}`}>
             {supplier.notes || tp.noNotes}
@@ -329,23 +319,15 @@ export default function SupplierDetailPage() {
             <FormTextarea rows={4} value={editForm.notes} onChange={e => set('notes', e.target.value)} />
           </Field>
         )}
-      </div>
+      </FormCard>
 
       {/* Save / Cancel */}
       {editing && (
         <div className="flex justify-end gap-2">
-          <button
-            onClick={() => { setEditing(false); seedEditForm(supplier); }}
-            disabled={saving}
-            className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer transition-google"
-          >
+          <button onClick={() => { setEditing(false); seedEditForm(supplier); }} disabled={saving} className={btnOutline}>
             {tp.cancelEdit}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="ripple bg-google-blue text-white border-none rounded-full py-2.5 px-6 text-sm font-medium cursor-pointer shadow-google-1 transition-google"
-          >
+          <button onClick={handleSave} disabled={saving} className={btnFilled}>
             {saving ? '…' : tp.saveSupplier}
           </button>
         </div>

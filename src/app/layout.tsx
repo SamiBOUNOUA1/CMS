@@ -5,8 +5,8 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 
 export const metadata = {
-  title: 'Catering Quotes',
-  description: 'Catering quoting management system',
+  title: 'Catero',
+  description: 'Catero catering management system',
 };
 
 export const viewport = {

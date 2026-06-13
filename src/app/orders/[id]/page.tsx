@@ -267,10 +267,10 @@ export default function OrderDetailPage() {
     'fully-paid':     { bg: '#e6f4ea', fg: '#137333' },
   };
   const psc = paymentStatusColors[order.paymentStatus] || paymentStatusColors['unpaid'];
-  const cardCls = 'bg-white rounded-2xl border border-[#e8eaed] shadow-google-1 mb-6 overflow-hidden';
+  const cardCls = 'bg-g-surface rounded-2xl border border-g-border shadow-google-1 mb-6 overflow-hidden';
 
   return (
-    <div className="max-w-[900px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[900px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       {notification && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg z-[1000] text-sm shadow-google-2 whitespace-nowrap"
           style={{ background: notification.type === 'error' ? '#d93025' : '#202124' }}>
@@ -280,7 +280,7 @@ export default function OrderDetailPage() {
 
       {deleteQuoteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
+          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
             <h3 className="text-lg font-medium text-[#202124] mb-2.5">{td.deleteQuoteDialog.title}</h3>
             <p className="text-sm text-[#5f6368] mb-6">{td.deleteQuoteDialog.body}</p>
             <div className="flex justify-end gap-2">
@@ -293,7 +293,7 @@ export default function OrderDetailPage() {
 
       {deletingPaymentId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
+          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
             <h3 className="text-lg font-medium text-[#202124] mb-2.5">{td.deletePaymentDialog.title}</h3>
             <p className="text-sm text-[#5f6368] mb-6">{td.deletePaymentDialog.body}</p>
             <div className="flex justify-end gap-2">
@@ -315,7 +315,7 @@ export default function OrderDetailPage() {
             <div className="mb-5">
               <label className="text-xs font-medium text-[#5f6368] block mb-1.5">Manager</label>
               <select value={selectedManagerId} onChange={e => setSelectedManagerId(e.target.value)}
-                className="w-full py-2.5 px-3 border border-[#dadce0] rounded-lg text-sm text-[#202124] bg-white outline-none">
+                className="w-full py-2.5 px-3.5 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
                 <option value="">— Unassigned —</option>
                 {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
               </select>
@@ -338,7 +338,7 @@ export default function OrderDetailPage() {
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <Link href="/orders" className="text-[13px] text-google-blue no-underline inline-flex items-center gap-1">← {td.back}</Link>
         {(perms.manage_flow_templates || perms.update_flow_status) && (
-          <Link href={`/orders/${id}/flow`} className="inline-flex items-center gap-1.5 py-2 px-4 bg-white border border-[#dadce0] rounded-lg no-underline text-[13px] text-[#3c4043] font-medium">
+          <Link href={`/orders/${id}/flow`} className="inline-flex items-center gap-1.5 py-2 px-4 bg-g-surface border border-g-border rounded-lg no-underline text-[13px] text-g-text font-medium">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="text-[#5f6368]">
               <path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm10-16H7v2h6V1zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 7h2V5h-2v2zm0 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zM7 5h2V3H7v2zm6 16h-2v2h2v-2zm4 0h-2v2h2v-2zm2-18v2h2c0-1.1-.9-2-2-2z" />
             </svg>
@@ -379,12 +379,12 @@ export default function OrderDetailPage() {
           {editing ? (
             <EditOrderForm form={editForm} setForm={setEditForm} eventTypeConfigs={eventTypeConfigs} isTableMode={isTableMode} tableCapacity={tableCapacity} t={t} />
           ) : (
-            <div className="grid gap-3" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px 24px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
               <FieldView label="Event type" value={`${EVENT_TYPE_ICONS[order.eventType] || ''} ${t.eventTypes[order.eventType] || order.eventType}`} />
               <FieldView label="Event date" value={order.eventDate ? format(new Date(order.eventDate), 'dd MMM yyyy') : '—'} />
               <FieldView label="Guests" value={order.tableCount ? `${order.tableCount} tables (~${order.guestCount} guests)` : `${order.guestCount} guests`} />
               <FieldView label="Start time" value={order.startTime || '—'} />
-              {order.notes && <div style={{ gridColumn: '1 / -1' }}><FieldView label="Notes" value={order.notes} /></div>}
+              {order.notes && <div className="sm:col-span-2"><FieldView label="Notes" value={order.notes} /></div>}
             </div>
           )}
           {editing && (
@@ -447,7 +447,7 @@ export default function OrderDetailPage() {
               <StepLineItems
                 form={{ lineGroups: orderLineGroups }}
                 setForm={updater => { if (typeof updater === 'function') { setOrderLineGroups(prev => updater({ lineGroups: prev }).lineGroups); } else { setOrderLineGroups(updater.lineGroups); } }}
-                errors={{}} products={products} isMobile={isMobile} tn={t.newQuote} isTableMode={isTableMode} currency={currency}
+                errors={{}} products={products} isMobile={false} tn={t.newQuote} isTableMode={isTableMode} currency={currency}
               />
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveItems} disabled={savingItems} className={btnFilled} style={{ opacity: savingItems ? 0.7 : 1 }}>{savingItems ? '…' : td.saveItems}</button>
@@ -520,7 +520,7 @@ export default function OrderDetailPage() {
               <StepStaff
                 form={{ staffAssignments: orderStaff }}
                 setForm={updater => { if (typeof updater === 'function') { setOrderStaff(prev => updater({ staffAssignments: prev }).staffAssignments); } else { setOrderStaff(updater.staffAssignments); } }}
-                isMobile={isMobile} tn={t.newQuote} currency={currency} staffRoles={staffRolesConfig.filter(r => r.isActive)}
+                isMobile={false} tn={t.newQuote} currency={currency} staffRoles={staffRolesConfig.filter(r => r.isActive)}
               />
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveStaff} disabled={savingStaff} className={btnFilled} style={{ opacity: savingStaff ? 0.7 : 1 }}>{savingStaff ? '…' : td.saveStaff}</button>
@@ -566,7 +566,7 @@ export default function OrderDetailPage() {
               <div className="mb-3.5">
                 <label className="text-xs font-medium text-[#5f6368] block mb-1">{td.discountLabel} ({currency})</label>
                 <input type="number" min="0" step="0.01" value={discountInput} onChange={e => setDiscountInput(e.target.value)}
-                  className="py-2 px-3 border border-[#dadce0] rounded-lg text-sm outline-none text-[#202124] bg-white w-[200px]" autoFocus />
+                  className="py-2.5 px-3.5 border border-g-border rounded-lg text-sm outline-none text-g-text bg-g-surface w-[200px] focus:border-google-blue" autoFocus />
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveDiscount} disabled={savingDiscount} className={btnFilled} style={{ opacity: savingDiscount ? 0.7 : 1 }}>{savingDiscount ? '…' : td.saveDiscount}</button>
@@ -598,7 +598,7 @@ export default function OrderDetailPage() {
             <span className="text-[13px] font-semibold text-google-red">– {formatCurrency(order.discountAmount, currency)}</span>
           </div>
         )}
-        <div className="py-5 px-6 grid gap-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr' }}>
+        <div className="py-5 px-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: td.orderTotal, value: formatCurrency(orderTotal, currency), color: '#202124' },
             { label: td.paidAmount, value: formatCurrency(paidAmount, currency), color: '#137333' },

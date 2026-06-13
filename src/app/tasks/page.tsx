@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useT } from '@/lib/LanguageContext';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { format } from 'date-fns';
+import { btnFilled } from '@/app/components/FormPrimitives';
+import TaskCreateModal from '@/app/components/TaskCreateModal';
 
 interface Task {
   _id: string; type: string; notes?: string; scheduledDate: string;
@@ -35,6 +37,7 @@ const TrashIcon = () => (
 export default function TasksPage() {
   const t = useT();
   const tp = t.tasksPage;
+  const tm = t.taskModal;
   const isMobile = useIsMobile(640);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -42,6 +45,7 @@ export default function TasksPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   const showNotif = (msg: string, type = 'success') => {
     setNotification({ msg, type });
@@ -101,15 +105,24 @@ export default function TasksPage() {
   const typeLabel = (type: string) => tp.types?.[type] ?? type;
 
   return (
-    <div className="max-w-[960px] mx-auto" style={{ padding: isMobile ? '20px 12px' : '32px 24px' }}>
+    <div className="max-w-[960px] mx-auto px-3 py-5 sm:px-6 sm:py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-medium text-[#202124] m-0">{tp.title}</h1>
+          <h1 className="text-[22px] font-medium text-g-text m-0">{tp.title}</h1>
           {!loading && (
-            <p className="mt-1 mb-0 text-[13px] text-[#9aa0a6]">{tp.taskCount(tasks.length)}</p>
+            <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.taskCount(tasks.length)}</p>
           )}
         </div>
+        <button onClick={() => setShowCreate(true)} className={btnFilled}>
+          + {tm.titleCreate}
+        </button>
       </div>
+
+      <TaskCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={() => { setShowCreate(false); fetchTasks(); showNotif(tm.created); }}
+      />
 
       {loading && <div className="text-[#9aa0a6] text-sm py-5">…</div>}
 

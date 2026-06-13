@@ -3,15 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT } from '@/lib/LanguageContext';
-import { Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
+import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea, FormCard, FormSectionLabel, FormGrid, formPageCls } from '@/app/components/FormPrimitives';
 
 const TYPE_KEYS = ['goods', 'materials', 'services'] as const;
 
 export default function NewSupplierPage() {
   const router = useRouter();
-  const isMobile = useIsMobile();
   const t = useT();
   const tp = t.supplierDetail;
 
@@ -52,12 +50,8 @@ export default function NewSupplierPage() {
     }
   };
 
-  const cardCls = `bg-g-surface border border-g-border rounded-2xl mb-4 shadow-google-1 ${isMobile ? 'p-[18px]' : 'p-6'}`;
-  const sectionLabelCls = 'text-[11px] font-semibold text-g-text-2 uppercase tracking-wider block mb-4';
-
   return (
-    <div className="mx-auto" style={{ maxWidth: 700, padding: isMobile ? '20px 16px' : '32px 24px' }}>
-      {/* Toast */}
+    <div className={formPageCls}>
       {notification && (
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium z-[200] shadow-google-2 whitespace-nowrap"
@@ -67,20 +61,18 @@ export default function NewSupplierPage() {
         </div>
       )}
 
-      {/* Back */}
       <Link href="/inventory/suppliers" className="inline-flex items-center gap-1.5 text-sm text-g-text-2 no-underline mb-5 hover:text-google-blue transition-colors">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
         {tp.back}
       </Link>
 
-      <h1 className="mb-6 font-medium text-g-text m-0" style={{ fontSize: isMobile ? 20 : 24 }}>
+      <h1 className="mb-6 text-2xl font-medium text-g-text m-0">
         {tp.newSupplier}
       </h1>
 
-      {/* Contact */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.infoSection}</span>
-        <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+      <FormCard>
+        <FormSectionLabel>{tp.infoSection}</FormSectionLabel>
+        <FormGrid>
           <Field label={`${tp.fields.name} *`}>
             <FormInput value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} />
           </Field>
@@ -101,17 +93,16 @@ export default function NewSupplierPage() {
           <Field label={tp.fields.contactPerson}>
             <FormInput value={form.contactPerson} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('contactPerson', e.target.value)} />
           </Field>
-        </div>
-      </div>
+        </FormGrid>
+      </FormCard>
 
-      {/* Address */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.addressSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.addressSection}</FormSectionLabel>
         <div className="flex flex-col gap-4">
           <Field label={tp.fields.street}>
             <FormInput value={form.address.street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddr('street', e.target.value)} />
           </Field>
-          <div className="grid gap-x-6 gap-y-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+          <FormGrid>
             <Field label={tp.fields.city}>
               <FormInput value={form.address.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddr('city', e.target.value)} />
             </Field>
@@ -124,31 +115,20 @@ export default function NewSupplierPage() {
             <Field label={tp.fields.country}>
               <FormInput value={form.address.country} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddr('country', e.target.value)} />
             </Field>
-          </div>
+          </FormGrid>
         </div>
-      </div>
+      </FormCard>
 
-      {/* Notes */}
-      <div className={cardCls}>
-        <span className={sectionLabelCls}>{tp.notesSection}</span>
+      <FormCard>
+        <FormSectionLabel>{tp.notesSection}</FormSectionLabel>
         <Field label={tp.fields.notes}>
           <FormTextarea rows={4} value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} />
         </Field>
-      </div>
+      </FormCard>
 
-      {/* Actions */}
       <div className="flex justify-end gap-2.5">
-        <Link
-          href="/inventory/suppliers"
-          className="ripple bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium no-underline inline-flex items-center transition-google"
-        >
-          {tp.cancelEdit}
-        </Link>
-        <button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="ripple bg-google-blue text-white border-none rounded-full py-2.5 px-6 text-sm font-medium cursor-pointer shadow-google-1 transition-google disabled:opacity-70"
-        >
+        <Link href="/inventory/suppliers" className={btnOutline}>{tp.cancelEdit}</Link>
+        <button onClick={handleSubmit} disabled={saving} className={btnFilled}>
           {saving ? '…' : tp.saveSupplier}
         </button>
       </div>

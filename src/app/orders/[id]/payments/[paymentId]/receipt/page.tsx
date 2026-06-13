@@ -48,6 +48,12 @@ export default function PaymentReceiptPage() {
     }).finally(() => setLoading(false));
   }, [orderId, paymentId]);
 
+  useEffect(() => {
+    if (order) {
+      document.title = `PaymentReceipt-${order.clientName || '—'}`;
+    }
+  }, [order]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">

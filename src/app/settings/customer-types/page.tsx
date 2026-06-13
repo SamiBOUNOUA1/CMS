@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useT } from '@/lib/LanguageContext';
+import { btnFilled, btnOutline, FormInput, FormCard } from '@/app/components/FormPrimitives';
 
 interface CustomerTypeConfig {
   _id: string;
@@ -123,167 +124,125 @@ export default function CustomerTypesSettingsPage() {
     <div className="max-w-[700px]">
       {/* Toast */}
       {notification && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#137333', fontFamily: "'Google Sans'", zIndex: 200, boxShadow: '0 4px 12px rgba(0,0,0,.2)' }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium whitespace-nowrap shadow-google-2 z-[200]"
+          style={{ background: notification.type === 'error' ? '#d93025' : '#137333' }}>
           {notification.msg}
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-7">
-        <h1 className="m-0 text-[22px] font-medium text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>
-          {tc.title}
-        </h1>
-        <p className="mt-1.5 mb-0 text-sm text-[#5f6368]">
-          {tc.subtitle}
-        </p>
+        <h1 className="m-0 text-[22px] font-medium text-g-text">{tc.title}</h1>
+        <p className="mt-1.5 mb-0 text-sm text-g-text-2">{tc.subtitle}</p>
       </div>
 
       {/* Add new */}
-      <div className="bg-white border border-[#e8eaed] rounded-xl mb-6" style={{ padding: '20px 24px' }}>
-        <p className="m-0 mb-3 text-[13px] font-semibold text-[#5f6368] uppercase tracking-[0.05em]" style={{ fontFamily: "'Google Sans'" }}>
-          {tc.addNew}
-        </p>
+      <FormCard className="mb-6">
+        <p className="m-0 mb-3 text-[11px] font-semibold text-g-text-2 uppercase tracking-wider">{tc.addNew}</p>
         <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
-          <input
+          <FormInput
             value={newLabel}
             onChange={e => setNewLabel(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
             placeholder={tc.labelPlaceholder}
-            className="flex-1 py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
+            className="flex-1"
           />
-          <button onClick={handleAdd} disabled={adding || !newLabel.trim()}
-            className="bg-google-blue text-white border-none rounded-lg py-[9px] px-[18px] text-sm font-medium cursor-pointer whitespace-nowrap sm:w-auto w-full"
-            style={{ fontFamily: "'Google Sans'", opacity: adding || !newLabel.trim() ? 0.6 : 1 }}>
+          <button onClick={handleAdd} disabled={adding || !newLabel.trim()} className={`${btnFilled} sm:w-auto w-full justify-center`}>
             {adding ? tc.adding : tc.add}
           </button>
         </div>
-      </div>
+      </FormCard>
 
       {/* Table */}
-      <div className="bg-white border border-[#e8eaed] rounded-xl overflow-hidden">
-        {/* Header — hidden on mobile */}
-        <div className="hidden sm:flex bg-[#f8f9fa] border-b border-[#e8eaed] gap-2" style={{ padding: '10px 20px' }}>
+      <div className="bg-g-surface border border-g-border rounded-2xl overflow-hidden shadow-google-1">
+        <div className="hidden sm:flex bg-g-bg border-b border-g-border gap-2 px-5 py-2.5">
           {[tc.table.label, tc.table.key, tc.table.status, tc.table.actions].map((h, i) => (
             <div key={i}
-              className="text-[11px] font-semibold text-[#5f6368] uppercase tracking-[0.04em]"
-              style={{ flex: i === 3 ? 'none' : i === 1 ? 0.8 : 1, width: i === 3 ? 140 : undefined, fontFamily: "'Google Sans'" }}>
+              className="text-[11px] font-semibold text-g-text-2 uppercase tracking-wider"
+              style={{ flex: i === 3 ? 'none' : i === 1 ? 0.8 : 1, width: i === 3 ? 140 : undefined }}>
               {h}
             </div>
           ))}
         </div>
 
-        {loading && (
-          <div className="p-8 text-center text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>
-            {tc.loading}
-          </div>
-        )}
-
-        {!loading && configs.length === 0 && (
-          <div className="p-8 text-center text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>
-            {tc.empty}
-          </div>
-        )}
+        {loading && <div className="p-8 text-center text-g-text-3">{tc.loading}</div>}
+        {!loading && configs.length === 0 && <div className="p-8 text-center text-g-text-3">{tc.empty}</div>}
 
         {!loading && configs.map((cfg, idx) => {
           const isEditing = !!edits[cfg._id];
           return (
-            <div key={cfg._id}
-              style={{ borderBottom: idx < configs.length - 1 ? '1px solid #f1f3f4' : 'none' }}>
+            <div key={cfg._id} style={{ borderBottom: idx < configs.length - 1 ? '1px solid var(--google-border)' : 'none' }}>
 
               {/* Desktop row */}
-              <div className="hidden sm:flex items-center gap-2" style={{ padding: '12px 20px' }}>
+              <div className="hidden sm:flex items-center gap-2 px-5 py-3">
                 <div className="flex-1">
                   {isEditing ? (
-                    <input
+                    <FormInput
                       value={edits[cfg._id].label}
                       onChange={e => setEdits(ed => ({ ...ed, [cfg._id]: { ...ed[cfg._id], label: e.target.value } }))}
                       onKeyDown={e => e.key === 'Enter' && handleSaveEdit(cfg._id)}
-                      className="w-full py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
                       autoFocus
                     />
                   ) : (
-                    <span className="text-sm text-[#202124] font-medium">{cfg.label}</span>
+                    <span className="text-sm text-g-text font-medium">{cfg.label}</span>
                   )}
                 </div>
-                <div className="text-xs text-[#9aa0a6] overflow-hidden text-ellipsis" style={{ flex: 0.8, fontFamily: 'monospace' }}>
+                <div className="text-xs text-g-text-3 overflow-hidden text-ellipsis font-mono" style={{ flex: 0.8 }}>
                   {cfg.key}
                 </div>
                 <div className="flex-1">
-                  <button
-                    onClick={() => handleToggleActive(cfg)}
-                    className="py-[3px] px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
-                    style={{ fontFamily: "'Google Sans'", background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}
-                  >
+                  <button onClick={() => handleToggleActive(cfg)}
+                    className="py-0.5 px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
+                    style={{ background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}>
                     {cfg.isActive ? tc.active : tc.inactive}
                   </button>
                 </div>
-                <div className="flex justify-end gap-1.5" style={{ width: 140 }}>
+                <div className="flex justify-end gap-1.5 w-[140px]">
                   {isEditing ? (
                     <>
-                      <button onClick={() => handleSaveEdit(cfg._id)}
-                        className="bg-google-blue text-white border-none rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.save}</button>
-                      <button onClick={() => cancelEdit(cfg._id)}
-                        className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-1.5 px-3.5 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.cancel}</button>
+                      <button onClick={() => handleSaveEdit(cfg._id)} className="bg-google-blue text-white border-none rounded-full py-1.5 px-3.5 text-[13px] font-medium cursor-pointer">{tc.save}</button>
+                      <button onClick={() => cancelEdit(cfg._id)} className={btnOutline + ' !py-1.5 !px-3.5'}>{tc.cancel}</button>
                     </>
                   ) : (
                     <>
-                      <button onClick={() => startEdit(cfg)}
-                        className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.edit}</button>
-                      <button onClick={() => handleDelete(cfg)}
-                        className="bg-transparent text-google-red border border-[#fce8e6] rounded-lg py-[7px] px-4 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.delete}</button>
+                      <button onClick={() => startEdit(cfg)} className={btnOutline + ' !py-1.5 !px-3.5'}>{tc.edit}</button>
+                      <button onClick={() => handleDelete(cfg)} className="bg-transparent text-google-red border border-google-red/30 rounded-full py-1.5 px-3.5 text-[13px] font-medium cursor-pointer">{tc.delete}</button>
                     </>
                   )}
                 </div>
               </div>
 
               {/* Mobile card */}
-              <div className="flex sm:hidden flex-col gap-2.5" style={{ padding: '14px 16px' }}>
+              <div className="flex sm:hidden flex-col gap-2.5 px-4 py-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     {isEditing ? (
-                      <input
+                      <FormInput
                         value={edits[cfg._id].label}
                         onChange={e => setEdits(ed => ({ ...ed, [cfg._id]: { ...ed[cfg._id], label: e.target.value } }))}
                         onKeyDown={e => e.key === 'Enter' && handleSaveEdit(cfg._id)}
-                        className="w-full py-[9px] px-3.5 border border-[#dadce0] rounded-lg text-sm text-[#202124] outline-none bg-white box-border"
                         autoFocus
                       />
                     ) : (
-                      <span className="text-sm text-[#202124] font-medium block">{cfg.label}</span>
+                      <span className="text-sm text-g-text font-medium block">{cfg.label}</span>
                     )}
-                    <span className="text-[11px] text-[#9aa0a6] mt-0.5 block" style={{ fontFamily: 'monospace' }}>{cfg.key}</span>
+                    <span className="text-[11px] text-g-text-3 mt-0.5 block font-mono">{cfg.key}</span>
                   </div>
-                  <button
-                    onClick={() => handleToggleActive(cfg)}
-                    className="shrink-0 py-[3px] px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
-                    style={{ fontFamily: "'Google Sans'", background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}
-                  >
+                  <button onClick={() => handleToggleActive(cfg)}
+                    className="shrink-0 py-0.5 px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
+                    style={{ background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}>
                     {cfg.isActive ? tc.active : tc.inactive}
                   </button>
                 </div>
                 <div className="flex gap-2">
                   {isEditing ? (
                     <>
-                      <button onClick={() => handleSaveEdit(cfg._id)}
-                        className="flex-1 bg-google-blue text-white border-none rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.save}</button>
-                      <button onClick={() => cancelEdit(cfg._id)}
-                        className="flex-1 bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.cancel}</button>
+                      <button onClick={() => handleSaveEdit(cfg._id)} className="flex-1 bg-google-blue text-white border-none rounded-full py-2 px-3 text-[13px] font-medium cursor-pointer">{tc.save}</button>
+                      <button onClick={() => cancelEdit(cfg._id)} className="flex-1 bg-transparent text-g-text-2 border border-g-border rounded-full py-2 px-3 text-[13px] font-medium cursor-pointer">{tc.cancel}</button>
                     </>
                   ) : (
                     <>
-                      <button onClick={() => startEdit(cfg)}
-                        className="flex-1 bg-transparent text-[#5f6368] border border-[#dadce0] rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.edit}</button>
-                      <button onClick={() => handleDelete(cfg)}
-                        className="flex-1 bg-transparent text-google-red border border-[#fce8e6] rounded-lg py-2 px-3 text-[13px] font-medium cursor-pointer"
-                        style={{ fontFamily: "'Google Sans'" }}>{tc.delete}</button>
+                      <button onClick={() => startEdit(cfg)} className="flex-1 bg-transparent text-g-text-2 border border-g-border rounded-full py-2 px-3 text-[13px] font-medium cursor-pointer">{tc.edit}</button>
+                      <button onClick={() => handleDelete(cfg)} className="flex-1 bg-transparent text-google-red border border-google-red/30 rounded-full py-2 px-3 text-[13px] font-medium cursor-pointer">{tc.delete}</button>
                     </>
                   )}
                 </div>
@@ -294,10 +253,7 @@ export default function CustomerTypesSettingsPage() {
         })}
       </div>
 
-      {/* Hint */}
-      <p className="mt-3 text-[13px] text-[#9aa0a6]">
-        {tc.hint}
-      </p>
+      <p className="mt-3 text-[13px] text-g-text-3">{tc.hint}</p>
     </div>
   );
 }

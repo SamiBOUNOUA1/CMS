@@ -29,6 +29,12 @@ export default function QuoteDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (quote) {
+      document.title = `Quote-${quote.order?.clientName || '—'}`;
+    }
+  }, [quote]);
+
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spinner /></div>;
   if (!quote) return <div style={{ padding: 40, textAlign: 'center', color: '#5f6368' }}>Quote not found.</div>;
 
