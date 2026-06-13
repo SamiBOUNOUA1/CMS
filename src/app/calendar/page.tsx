@@ -30,7 +30,7 @@ export default function CalendarPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/calendar')
+    fetch('/api/calendar', { cache: 'no-store' })
       .then(r => r.json())
       .then((d: any) => setOrders(d.orders || []))
       .finally(() => setLoading(false));
