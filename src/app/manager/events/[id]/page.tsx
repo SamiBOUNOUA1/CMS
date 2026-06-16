@@ -102,6 +102,27 @@ export default function ManagerEventDetailPage() {
         </div>
       </div>
 
+      {/* Materials list CTA */}
+      <Link
+        href={`/events/${id}/materials`}
+        className="flex items-center justify-between bg-g-surface rounded-2xl border border-g-border shadow-google-1 py-5 px-6 no-underline mb-4"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center bg-google-green-light text-google-green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-base font-medium text-g-text">Materials list</div>
+            <div className="text-[13px] text-g-text-2 mt-0.5">Check the items needed for this event</div>
+          </div>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-g-text-3">
+          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+        </svg>
+      </Link>
+
       {/* Event flow CTA */}
       {order.event ? (
         <Link

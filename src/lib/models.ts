@@ -282,6 +282,20 @@ const orderLineGroupSchema = new Schema({
   items: [orderLineGroupItemSchema],
 });
 
+// ── EVENT MATERIALS (checklist of inventory items used at the event) ───────────
+const orderMaterialSchema = new Schema({
+  inventoryItem: { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
+  quantity:      { type: Number, default: 1, min: 0 },
+  checked:       { type: Boolean, default: false },
+  checkedBy:     { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  checkedAt:     { type: Date, default: null },
+  // "Missing" warning flag — set when a material is absent/short at verification time.
+  // Mutually exclusive with `checked` (enforced in the materials PATCH route).
+  missing:       { type: Boolean, default: false },
+  missingBy:     { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  missingAt:     { type: Date, default: null },
+}, { _id: true });
+
 // ── ORDER ─────────────────────────────────────────────────────────────────────
 const orderSchema = new Schema(
   {
@@ -319,6 +333,7 @@ const orderSchema = new Schema(
     discountAmount:   { type: Number, default: 0 },
     lineGroups:       [orderLineGroupSchema],
     staffAssignments: [staffAssignmentSchema],
+    materials:        [orderMaterialSchema],
     totalAmount:      { type: Number, default: 0 },
     flowInstance: {
       templateId:   { type: Schema.Types.ObjectId, ref: 'FlowTemplate' },

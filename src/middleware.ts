@@ -100,13 +100,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (isSendWhatsapp && !permissions.edit_orders) return forbidden(request);
 
       if (pathname.startsWith('/api/orders') && !isSendWhatsapp) {
-        if (method === 'POST'   && !permissions.create_orders) return forbidden(request);
-        if (method === 'DELETE' && !permissions.delete_orders) return forbidden(request);
-        if (method === 'PATCH') {
-          if (/^\/api\/orders\/[^/]+\/event-flow$/.test(pathname)) {
-            if (!permissions.update_flow_status) return forbidden(request);
-          } else if (!permissions.edit_orders) {
-            return forbidden(request);
+        if (/^\/api\/orders\/[^/]+\/materials$/.test(pathname)) {
+          // Event materials: admin manages the list (PUT), checkers mark received (PATCH)
+          if (method === 'PUT'    && !permissions.manage_event_materials) return forbidden(request);
+          if (method === 'PATCH'  && !permissions.check_event_materials)  return forbidden(request);
+          if (method === 'POST'   && !permissions.manage_event_materials) return forbidden(request);
+          if (method === 'DELETE' && !permissions.manage_event_materials) return forbidden(request);
+        } else {
+          if (method === 'POST'   && !permissions.create_orders) return forbidden(request);
+          if (method === 'DELETE' && !permissions.delete_orders) return forbidden(request);
+          if (method === 'PATCH') {
+            if (/^\/api\/orders\/[^/]+\/event-flow$/.test(pathname)) {
+              if (!permissions.update_flow_status) return forbidden(request);
+            } else if (!permissions.edit_orders) {
+              return forbidden(request);
+            }
           }
         }
       }

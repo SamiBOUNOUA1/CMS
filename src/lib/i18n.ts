@@ -1206,6 +1206,8 @@ export const translations: Record<string, any> = {
         edit_customers:        'Edit customers',
         delete_customers:      'Delete customers',
         manage_customer_types: 'Manage customer types',
+        manage_event_materials:'Manage event materials',
+        check_event_materials: 'Check event materials',
         view_inventory:        'View inventory',
         manage_inventory:      'Manage inventory',
         view_suppliers:        'View suppliers',
@@ -1234,6 +1236,8 @@ export const translations: Record<string, any> = {
         edit_customers:        'Can create and edit customers',
         delete_customers:      'Can delete customers',
         manage_customer_types: 'Can configure customer types',
+        manage_event_materials:'Can build and edit the materials list for an event',
+        check_event_materials: 'Can mark event materials as received/checked',
         view_inventory:        'Can see the inventory list and item details',
         manage_inventory:      'Can add, edit, and adjust stock for inventory items',
         view_suppliers:        'Can see the supplier list and supplier details',
@@ -1574,6 +1578,7 @@ export const translations: Record<string, any> = {
       viewQuote: 'View quote details',
       viewOrder: 'View order',
       eventFlow: 'Event Flow',
+      materialsList: 'Materials list',
     },
 
     // Home
@@ -3151,6 +3156,8 @@ export const translations: Record<string, any> = {
         edit_customers:        'Modifier les clients',
         delete_customers:      'Supprimer les clients',
         manage_customer_types: 'Gérer les types de clients',
+        manage_event_materials:'Gérer le matériel d\'événement',
+        check_event_materials: 'Cocher le matériel d\'événement',
         view_inventory:        'Voir l\'inventaire',
         manage_inventory:      'Gérer l\'inventaire',
         view_suppliers:        'Voir les fournisseurs',
@@ -3179,6 +3186,8 @@ export const translations: Record<string, any> = {
         edit_customers:        'Peut créer et modifier des clients',
         delete_customers:      'Peut supprimer des clients',
         manage_customer_types: 'Peut configurer les types de clients',
+        manage_event_materials:'Peut créer et modifier la liste de matériel d\'un événement',
+        check_event_materials: 'Peut marquer le matériel comme reçu/vérifié',
         view_inventory:        'Peut consulter la liste et les détails de l\'inventaire',
         manage_inventory:      'Peut ajouter, modifier et ajuster les stocks',
         view_suppliers:        'Peut consulter la liste et les détails des fournisseurs',
@@ -3519,6 +3528,7 @@ export const translations: Record<string, any> = {
       viewQuote: 'Voir les détails du devis',
       viewOrder: 'Voir la commande',
       eventFlow: 'Flux événement',
+      materialsList: 'Liste du matériel',
     },
 
     // Home
