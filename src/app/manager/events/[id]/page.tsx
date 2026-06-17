@@ -15,6 +15,11 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   gala: 'Gala', conference: 'Conference', buffet: 'Buffet', other: 'Other',
 };
 
+const ASSIGNEE_ROLE_LABELS: Record<string, string> = {
+  manager: 'Manager', materials: 'Materials', kitchen: 'Kitchen',
+  staff: 'Staff', logistics: 'Logistics', other: 'Other',
+};
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -28,6 +33,8 @@ export default function ManagerEventDetailPage() {
   const { id } = useParams() as { id: string };
   const [order, setOrder] = useState<any>(null);
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [userId, setUserId] = useState('');
+  const [perms, setPerms] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -35,11 +42,14 @@ export default function ManagerEventDetailPage() {
     Promise.all([
       fetch(`/api/manager/events/${id}`),
       fetch('/api/settings/order-statuses').then(r => r.ok ? r.json() : { statuses: [] }),
-    ]).then(async ([orderRes, stData]: [any, any]) => {
+      fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
+    ]).then(async ([orderRes, stData, meData]: [any, any, any]) => {
       if (!orderRes.ok) { setNotFound(true); setLoading(false); return; }
       const orderData = await orderRes.json();
       setOrder(orderData.order);
       setStatuses(stData.statuses || []);
+      setUserId(meData?.user?._id || '');
+      setPerms(meData?.user?.permissions || {});
       setLoading(false);
     });
   }, [id]);
@@ -65,6 +75,10 @@ export default function ManagerEventDetailPage() {
   const sc = statusMap[order.status];
   const statusBg = sc?.color ? sc.color + '22' : '#f1f3f4';
   const statusFg = sc?.color || '#5f6368';
+  const myEntry = (order.assignees || []).find((a: any) => String(a.user) === String(userId));
+  const myRoleLabel = myEntry ? (ASSIGNEE_ROLE_LABELS[myEntry.role] || myEntry.role) : null;
+  const canSeeMaterials = perms.manage_event_materials || perms.check_event_materials;
+  const canSeeFlow = perms.update_flow_status;
 
   return (
     <div className="max-w-[720px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
@@ -81,9 +95,16 @@ export default function ManagerEventDetailPage() {
               {order.clientEmail}{order.clientPhone ? ` · ${order.clientPhone}` : ''}
             </div>
           </div>
-          <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold flex-shrink-0" style={{ background: statusBg, color: statusFg }}>
-            {sc?.label || order.status}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {myRoleLabel && (
+              <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold bg-[#e8f0fe] text-google-blue">
+                {myRoleLabel}
+              </span>
+            )}
+            <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold" style={{ background: statusBg, color: statusFg }}>
+              {sc?.label || order.status}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -103,6 +124,7 @@ export default function ManagerEventDetailPage() {
       </div>
 
       {/* Materials list CTA */}
+      {canSeeMaterials && (
       <Link
         href={`/events/${id}/materials`}
         className="flex items-center justify-between bg-g-surface rounded-2xl border border-g-border shadow-google-1 py-5 px-6 no-underline mb-4"
@@ -122,9 +144,10 @@ export default function ManagerEventDetailPage() {
           <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
         </svg>
       </Link>
+      )}
 
       {/* Event flow CTA */}
-      {order.event ? (
+      {canSeeFlow && (order.event ? (
         <Link
           href={`/manager/events/${id}/flow`}
           className="flex items-center justify-between bg-google-blue rounded-2xl py-5 px-6 no-underline shadow-[0_2px_8px_rgba(26,115,232,.3)]"
@@ -148,7 +171,7 @@ export default function ManagerEventDetailPage() {
         <div className="bg-g-surface rounded-2xl border border-g-border py-5 px-6 text-center text-g-text-2 text-sm">
           Event flow not yet available — the event has not been created for this order.
         </div>
-      )}
+      ))}
     </div>
   );
 }

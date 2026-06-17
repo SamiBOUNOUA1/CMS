@@ -3,6 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryItem, InventoryAdjustment, Supplier } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { requirePermission } from '@/lib/requireAuth';
+
+// Fields a client is allowed to set via PATCH. currentStock is changed only
+// through stockDelta (below) and isActive only via DELETE, so neither — nor
+// timestamps/_id — can be mass-assigned here.
+const EDITABLE_FIELDS = [
+  'name', 'category', 'unit', 'minStock', 'unitCost',
+  'supplier', 'warehouse', 'notes', 'imageUrl', 'laundryEligible',
+];
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -17,15 +26,18 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { auth, error } = await requirePermission(request, 'manage_inventory');
+    if (error) return error;
 
     await connectDB();
     const body = await request.json();
-    const { stockDelta, adjustmentType, notes: adjNotes, ...fields } = body;
+    const { stockDelta, adjustmentType, notes: adjNotes } = body;
+
+    // Only copy whitelisted fields (mass-assignment guard).
+    const fields: Record<string, unknown> = {};
+    for (const key of EDITABLE_FIELDS) {
+      if (body[key] !== undefined) fields[key] = body[key];
+    }
 
     const item = await InventoryItem.findById(params.id);
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -40,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
     // Apply stock adjustment if provided
     if (stockDelta !== undefined && stockDelta !== null) {
-      const userId = request.headers.get('x-user-id');
+      const userId = auth.userId;
       item.currentStock = Math.max(0, item.currentStock + Number(stockDelta));
       await InventoryAdjustment.create({
         item: item._id,
@@ -72,11 +84,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_inventory');
+    if (error) return error;
 
     await connectDB();
     const item = await InventoryItem.findByIdAndUpdate(

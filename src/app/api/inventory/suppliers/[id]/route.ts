@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Supplier, InventoryItem } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -16,11 +17,8 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.edit_suppliers) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'edit_suppliers');
+    if (error) return error;
 
     await connectDB();
     const body = await request.json();
@@ -40,11 +38,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.delete_suppliers) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'delete_suppliers');
+    if (error) return error;
 
     await connectDB();
     const supplier = await Supplier.findById(params.id);

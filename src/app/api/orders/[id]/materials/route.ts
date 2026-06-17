@@ -2,11 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
-
-function getPerms(request: NextRequest) {
-  const header = request.headers.get('x-user-permissions');
-  return header ? JSON.parse(header) : {};
-}
+import { getAuth, requirePermission } from '@/lib/requireAuth';
 
 // Returns the order's materials with the linked inventory item populated for display
 async function loadMaterials(id: string) {
@@ -23,6 +19,8 @@ async function loadMaterials(id: string) {
 // Readable by any authenticated user who can reach the event (prep + managers).
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     const order = await loadMaterials(params.id);
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -48,9 +46,8 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 // Guarded by manage_event_materials in middleware; re-checked here as defense.
 export async function PUT(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    if (!getPerms(request).manage_event_materials) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_event_materials');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const incoming = Array.isArray(body.materials) ? body.materials : [];
@@ -92,9 +89,8 @@ export async function PUT(request: NextRequest, { params }: { params: Record<str
 // Guarded by check_event_materials in middleware; re-checked here as defense.
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    if (!getPerms(request).check_event_materials) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { auth, error } = await requirePermission(request, 'check_event_materials');
+    if (error) return error;
     await connectDB();
     const { materialId, checked, missing } = await request.json();
 
@@ -104,7 +100,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     const material = order.materials.id(materialId);
     if (!material) return NextResponse.json({ error: 'Material not found' }, { status: 404 });
 
-    const userId = request.headers.get('x-user-id');
+    const userId = auth.userId;
     const now = new Date();
 
     if (checked !== undefined) {

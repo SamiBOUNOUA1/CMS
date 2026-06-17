@@ -16,6 +16,13 @@ const EVENT_TYPE_ICONS = {
   gala: '✨', conference: '🎤', buffet: '🍽️', other: '📋',
 };
 
+// Responsibility labels for event team members (mirrors ASSIGNEE_ROLES in models.ts)
+const ASSIGNEE_ROLE_LABELS = {
+  manager: 'Manager', materials: 'Materials', kitchen: 'Kitchen',
+  staff: 'Staff', logistics: 'Logistics', other: 'Other',
+};
+const ASSIGNEE_ROLES = Object.keys(ASSIGNEE_ROLE_LABELS);
+
 function formatCurrency(n, cur = '€') {
   if (n == null) return '—';
   return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + cur;
@@ -75,10 +82,10 @@ export default function OrderDetailPage() {
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [deletingPaymentId, setDeletingPaymentId] = useState(null);
 
-  const [managerModalOpen, setManagerModalOpen] = useState(false);
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [managers, setManagers] = useState([]);
-  const [selectedManagerId, setSelectedManagerId] = useState('');
-  const [savingManager, setSavingManager] = useState(false);
+  const [teamRows, setTeamRows] = useState([]); // [{ user: id, role }]
+  const [savingTeam, setSavingTeam] = useState(false);
 
   const [kitchenEnabled, setKitchenEnabled] = useState(false);
   const [kitchenDishes, setKitchenDishes] = useState([]);
@@ -235,14 +242,23 @@ export default function OrderDetailPage() {
     setDeletingPaymentId(null);
   };
 
-  const handleSaveManager = async () => {
-    setSavingManager(true);
+  const openTeamModal = () => {
+    setTeamRows((order.assignees || []).map(a => ({ user: a.user?._id || a.user || '', role: a.role || 'manager' })));
+    setTeamModalOpen(true);
+  };
+  const addTeamRow = () => setTeamRows(rows => [...rows, { user: '', role: 'manager' }]);
+  const updateTeamRow = (idx, field, value) => setTeamRows(rows => rows.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+  const removeTeamRow = (idx) => setTeamRows(rows => rows.filter((_, i) => i !== idx));
+
+  const handleSaveTeam = async () => {
+    setSavingTeam(true);
     try {
-      const res = await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignedManager: selectedManagerId || null }) });
+      const assignees = teamRows.filter(r => r.user).map(r => ({ user: r.user, role: r.role || 'manager' }));
+      const res = await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignees }) });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setOrder(data.order); setManagerModalOpen(false); showNotification('Manager assigned');
-    } catch { showNotification('Failed to assign manager', 'error'); } finally { setSavingManager(false); }
+      setOrder(data.order); setTeamModalOpen(false); showNotification('Team updated');
+    } catch { showNotification('Failed to update team', 'error'); } finally { setSavingTeam(false); }
   };
 
   if (loading) return <div className="flex justify-center p-20"><Spinner /></div>;
@@ -308,22 +324,34 @@ export default function OrderDetailPage() {
         <AddPaymentModal t={t} onClose={() => setAddPaymentOpen(false)} onSave={handleAddPayment} currency={currency} maxAmount={remainingAmount} />
       )}
 
-      {managerModalOpen && (
+      {teamModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
-            <h3 className="text-lg font-medium text-g-text mb-4">Assign Manager</h3>
-            <div className="mb-5">
-              <label className="text-xs font-medium text-[#5f6368] block mb-1.5">Manager</label>
-              <select value={selectedManagerId} onChange={e => setSelectedManagerId(e.target.value)}
-                className="w-full py-2.5 px-3.5 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
-                <option value="">— Unassigned —</option>
-                {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
-              </select>
-              {managers.length === 0 && <p className="mt-2 text-xs text-[#b06000]">No manager accounts found.</p>}
+          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[480px] shadow-google-2">
+            <h3 className="text-lg font-medium text-g-text mb-4">Assigned team</h3>
+            {teamRows.length === 0 && (
+              <p className="mb-4 text-sm text-[#9aa0a6] italic">No one assigned yet.</p>
+            )}
+            <div className="flex flex-col gap-2.5 mb-4">
+              {teamRows.map((row, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <select value={row.user} onChange={e => updateTeamRow(idx, 'user', e.target.value)}
+                    className="flex-1 min-w-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
+                    <option value="">— Select user —</option>
+                    {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
+                  </select>
+                  <select value={row.role} onChange={e => updateTeamRow(idx, 'role', e.target.value)}
+                    className="w-[130px] flex-shrink-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
+                    {ASSIGNEE_ROLES.map(r => <option key={r} value={r}>{ASSIGNEE_ROLE_LABELS[r]}</option>)}
+                  </select>
+                  <button onClick={() => removeTeamRow(idx)} className={iconBtn} title="Remove">✕</button>
+                </div>
+              ))}
             </div>
+            <button onClick={addTeamRow} className={btnOutlineSmall + ' mb-5'}>+ Add person</button>
+            {managers.length === 0 && <p className="mb-4 text-xs text-[#b06000]">No user accounts found.</p>}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setManagerModalOpen(false)} className={btnOutline}>Cancel</button>
-              <button onClick={handleSaveManager} disabled={savingManager} className={btnFilled} style={{ opacity: savingManager ? 0.7 : 1 }}>{savingManager ? '…' : 'Save'}</button>
+              <button onClick={() => setTeamModalOpen(false)} className={btnOutline}>Cancel</button>
+              <button onClick={handleSaveTeam} disabled={savingTeam} className={btnFilled} style={{ opacity: savingTeam ? 0.7 : 1 }}>{savingTeam ? '…' : 'Save'}</button>
             </div>
           </div>
         </div>
@@ -410,26 +438,31 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      {/* Assign Manager */}
+      {/* Assigned team */}
       <div className={cardCls}>
-        <div className="py-4 px-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">👤</span>
-            <div>
-              <div className="text-xs font-semibold text-[#5f6368] uppercase tracking-wide mb-0.5">Assigned Manager</div>
-              {order.assignedManager ? (
-                <div className="text-[15px] font-medium text-[#202124]">
-                  {order.assignedManager.name}
-                  <span className="font-normal text-[#5f6368] ml-1.5 text-[13px]">{order.assignedManager.email}</span>
+        <div className="py-4 px-6 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <span className="text-xl">👥</span>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-[#5f6368] uppercase tracking-wide mb-1.5">Assigned team</div>
+              {(order.assignees || []).length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {order.assignees.map((a, i) => (
+                    <div key={a.user?._id || i} className="text-[15px] font-medium text-[#202124] flex items-center gap-2 flex-wrap">
+                      <span className="rounded-full py-0.5 px-2 text-[11px] font-semibold bg-[#e8f0fe] text-google-blue">{ASSIGNEE_ROLE_LABELS[a.role] || a.role}</span>
+                      {a.user?.name || '—'}
+                      {a.user?.email && <span className="font-normal text-[#5f6368] text-[13px]">{a.user.email}</span>}
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="text-sm text-[#9aa0a6] italic">Unassigned</div>
+                <div className="text-sm text-[#9aa0a6] italic">No one assigned</div>
               )}
             </div>
           </div>
           {perms.edit_orders && (
-            <button onClick={() => { setSelectedManagerId(order.assignedManager?._id || ''); setManagerModalOpen(true); }} className={btnOutlineSmall}>
-              {order.assignedManager ? 'Change' : 'Assign'}
+            <button onClick={openTeamModal} className={btnOutlineSmall}>
+              {(order.assignees || []).length > 0 ? 'Manage' : 'Assign'}
             </button>
           )}
         </div>
@@ -447,7 +480,7 @@ export default function OrderDetailPage() {
               <StepLineItems
                 form={{ lineGroups: orderLineGroups }}
                 setForm={updater => { if (typeof updater === 'function') { setOrderLineGroups(prev => updater({ lineGroups: prev }).lineGroups); } else { setOrderLineGroups(updater.lineGroups); } }}
-                errors={{}} products={products} isMobile={false} tn={t.newQuote} isTableMode={isTableMode} currency={currency}
+                errors={{}} products={products} isMobile={isMobile} tn={t.newQuote} isTableMode={isTableMode} currency={currency}
               />
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveItems} disabled={savingItems} className={btnFilled} style={{ opacity: savingItems ? 0.7 : 1 }}>{savingItems ? '…' : td.saveItems}</button>
@@ -520,7 +553,7 @@ export default function OrderDetailPage() {
               <StepStaff
                 form={{ staffAssignments: orderStaff }}
                 setForm={updater => { if (typeof updater === 'function') { setOrderStaff(prev => updater({ staffAssignments: prev }).staffAssignments); } else { setOrderStaff(updater.staffAssignments); } }}
-                isMobile={false} tn={t.newQuote} currency={currency} staffRoles={staffRolesConfig.filter(r => r.isActive)}
+                isMobile={isMobile} tn={t.newQuote} currency={currency} staffRoles={staffRolesConfig.filter(r => r.isActive)}
               />
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveStaff} disabled={savingStaff} className={btnFilled} style={{ opacity: savingStaff ? 0.7 : 1 }}>{savingStaff ? '…' : td.saveStaff}</button>

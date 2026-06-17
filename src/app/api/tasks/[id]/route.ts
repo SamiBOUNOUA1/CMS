@@ -2,11 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Task } from '@/lib/models';
+import { getAuth } from '@/lib/requireAuth';
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+  const auth = await getAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   await connectDB();
-  const userId   = request.headers.get('x-user-id');
-  const userRole = request.headers.get('x-user-role');
+  const userId   = auth.userId;
+  const userRole = auth.role;
 
   try {
     const task = await Task.findById(params.id);
@@ -40,9 +43,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+  const auth = await getAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   await connectDB();
-  const userId   = request.headers.get('x-user-id');
-  const userRole = request.headers.get('x-user-role');
+  const userId   = auth.userId;
+  const userRole = auth.role;
 
   try {
     const task = await Task.findById(params.id);

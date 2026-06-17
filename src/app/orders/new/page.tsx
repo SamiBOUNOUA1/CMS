@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
 import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
@@ -13,6 +14,7 @@ export default function NewOrderPage() {
   const t = useT();
   const tn = t.newOrder;
   const currency = useCurrency();
+  const isMobile = useIsMobile();
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -375,7 +377,7 @@ export default function NewOrderPage() {
             setForm={setLineItemsForm}
             errors={errors}
             products={products}
-            isMobile={false}
+            isMobile={isMobile}
             tn={t.newQuote}
             isTableMode={isTableMode}
             currency={currency}
@@ -390,7 +392,7 @@ export default function NewOrderPage() {
           <StepStaff
             form={staffForm}
             setForm={setStaffForm}
-            isMobile={false}
+            isMobile={isMobile}
             tn={t.newQuote}
             currency={currency}
             staffRoles={staffRolesConfig}

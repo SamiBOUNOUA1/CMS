@@ -3,14 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
-
-function getPerms(request) {
-  try {
-    return JSON.parse(request.headers.get('x-user-permissions') || '{}');
-  } catch {
-    return {};
-  }
-}
+import { getAuth } from '@/lib/requireAuth';
 
 // GET /api/orders/[id]/event-flow
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -30,8 +23,10 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 // PATCH /api/orders/[id]/event-flow
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const perms = auth.permissions;
     await connectDB();
-    const perms = getPerms(request);
     const body = await request.json();
     const { action } = body;
 
@@ -72,7 +67,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
       event.markModified('flowInstance');
       await event.save();
 
-      const userId = request.headers.get('x-user-id');
+      const userId = auth.userId;
       await logActivity({
         action: 'event_step_changed',
         entityType: 'order',

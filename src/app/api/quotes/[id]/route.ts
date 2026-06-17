@@ -2,9 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Quote } from '@/lib/models';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     const quote = await Quote.findById(params.id).populate('order').lean();
     if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -16,6 +19,8 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'delete_quotes');
+    if (error) return error;
     await connectDB();
     const quote = await Quote.findById(params.id);
     if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 });

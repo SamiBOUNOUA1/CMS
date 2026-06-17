@@ -3,12 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { compare, hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
+import { getAuth } from '@/lib/requireAuth';
 
 // Returns the currently authenticated user's profile.
 export async function GET(request: NextRequest) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
-    const id = request.headers.get('x-user-id');
+    const id = auth.userId;
     const user = await User.findById(id).select('-passwordHash').lean();
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ user });
@@ -20,9 +23,10 @@ export async function GET(request: NextRequest) {
 // Self-service update of the authenticated user's own profile.
 export async function PATCH(request: NextRequest) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
-    const id = request.headers.get('x-user-id');
-    if (!id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const id = auth.userId;
 
     const body = await request.json();
     const user = await User.findById(id);

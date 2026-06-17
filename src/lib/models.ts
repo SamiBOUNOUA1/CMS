@@ -296,6 +296,14 @@ const orderMaterialSchema = new Schema({
   missingAt:     { type: Date, default: null },
 }, { _id: true });
 
+// ── EVENT ASSIGNEES (team members assigned to an order, each with a responsibility) ─
+// Responsibility labels shared by the assignment UI and any display badges.
+export const ASSIGNEE_ROLES = ['manager', 'materials', 'kitchen', 'staff', 'logistics', 'other'];
+const assigneeSchema = new Schema({
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  role: { type: String, default: 'manager' }, // responsibility label, see ASSIGNEE_ROLES
+}, { _id: false });
+
 // ── ORDER ─────────────────────────────────────────────────────────────────────
 const orderSchema = new Schema(
   {
@@ -327,7 +335,8 @@ const orderSchema = new Schema(
     },
     event:           { type: Schema.Types.ObjectId, ref: 'Event' },
     createdBy:       { type: Schema.Types.ObjectId, ref: 'User' },
-    assignedManager: { type: Schema.Types.ObjectId, ref: 'User' },
+    assignees:       [assigneeSchema],
+    assignedManager: { type: Schema.Types.ObjectId, ref: 'User' }, // @deprecated — migrated to assignees
     travelRegion:     { type: String, default: '' },
     travelPrice:      { type: Number, default: 0 },
     discountAmount:   { type: Number, default: 0 },

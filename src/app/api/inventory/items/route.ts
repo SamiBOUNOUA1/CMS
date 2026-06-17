@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryItem, Supplier, Warehouse } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
     const query = { isActive: true };
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
+        { name: safeRegex(search) },
       ];
     }
     if (categoryId) query.category = categoryId;
@@ -41,11 +43,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_inventory');
+    if (error) return error;
 
     await connectDB();
     const body = await request.json();

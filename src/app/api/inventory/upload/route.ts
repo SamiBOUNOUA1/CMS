@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { getBucket } from '@/lib/storage';
+import { requirePermission } from '@/lib/requireAuth';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -8,11 +9,8 @@ const EXT_MAP = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
 
 export async function POST(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_inventory');
+    if (error) return error;
 
     const formData = await request.formData();
     const file = formData.get('file');

@@ -10,6 +10,7 @@ import {
   Client, Venue,
   Role, RolePermissions,
 } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 const GROUP_COLLECTIONS: Record<string, { key: string; model: unknown }[]> = {
   settings: [
@@ -48,11 +49,8 @@ const GROUP_COLLECTIONS: Record<string, { key: string; model: unknown }[]> = {
 
 export async function GET(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_data) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_data');
+    if (error) return error;
 
     await connectDB();
 

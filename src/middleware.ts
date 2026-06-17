@@ -226,11 +226,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const res = NextResponse.next();
-    res.headers.set('x-user-id', String(payload.id));
-    res.headers.set('x-user-role', String(payload.role));
-    res.headers.set('x-user-permissions', JSON.stringify(permissions));
-    return res;
+    // Forward the verified identity to route handlers via *request* headers.
+    // Strip any inbound x-user-* headers first so a client cannot spoof them;
+    // routes additionally re-verify the JWT (see lib/requireAuth.ts).
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete('x-user-id');
+    requestHeaders.delete('x-user-role');
+    requestHeaders.delete('x-user-permissions');
+    requestHeaders.set('x-user-id', String(payload.id));
+    requestHeaders.set('x-user-role', String(payload.role));
+    requestHeaders.set('x-user-permissions', JSON.stringify(permissions));
+    return NextResponse.next({ request: { headers: requestHeaders } });
   } catch {
     return redirectToLogin(request);
   }

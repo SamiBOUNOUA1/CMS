@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { LaundryBatch, InventoryItem, InventoryAdjustment } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { requirePermission } from '@/lib/requireAuth';
 
 const STATUS_ORDER = ['draft', 'sent', 'returned', 'completed'];
 
@@ -17,11 +18,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.view_laundry) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'view_laundry');
+  if (error) return error;
 
   await connectDB();
   const batch = await getPopulated(params.id);
@@ -34,18 +32,15 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.manage_laundry) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const guard = await requirePermission(request, 'manage_laundry');
+  if (guard.error) return guard.error;
 
   await connectDB();
   const batch = await LaundryBatch.findById(params.id);
   if (!batch) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body = await request.json();
-  const userId = request.headers.get('x-user-id');
+  const userId = guard.auth.userId;
 
   // Status transition
   if (body.status && body.status !== batch.status) {
@@ -151,11 +146,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.manage_laundry) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'manage_laundry');
+  if (error) return error;
 
   await connectDB();
   const batch = await LaundryBatch.findById(params.id);

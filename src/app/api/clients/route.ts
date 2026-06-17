@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
 
 // GET /api/clients?search=&customerType=
 export async function GET(request: NextRequest) {
@@ -15,9 +17,9 @@ export async function GET(request: NextRequest) {
     const filter = {};
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
+        { name: safeRegex(search) },
+        { email: safeRegex(search) },
+        { phone: safeRegex(search) },
       ];
     }
     if (customerType) {
@@ -34,6 +36,8 @@ export async function GET(request: NextRequest) {
 // POST /api/clients — create a new client
 export async function POST(request: NextRequest) {
   try {
+    const { auth, error } = await requirePermission(request, 'edit_customers');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { name, email, phone, billingAddress, notes, customerType } = body;
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest) {
       customerType: customerType?.trim() || '',
     });
 
-    const userId = request.headers.get('x-user-id');
+    const userId = auth.userId;
     await logActivity({
       action: 'customer_created',
       entityType: 'client',

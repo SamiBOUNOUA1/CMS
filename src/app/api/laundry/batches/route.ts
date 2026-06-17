@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { LaundryBatch } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
 
 export async function GET(request: NextRequest) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.view_laundry) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'view_laundry');
+  if (error) return error;
 
   await connectDB();
 
@@ -19,8 +18,8 @@ export async function GET(request: NextRequest) {
   if (status) filter.status = status;
   if (search) {
     filter.$or = [
-      { batchNumber: { $regex: search, $options: 'i' } },
-      { notes: { $regex: search, $options: 'i' } },
+      { batchNumber: safeRegex(search) },
+      { notes: safeRegex(search) },
     ];
   }
 
@@ -35,11 +34,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.manage_laundry) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const guard = await requirePermission(request, 'manage_laundry');
+  if (guard.error) return guard.error;
 
   await connectDB();
 
@@ -67,7 +63,7 @@ export async function POST(request: NextRequest) {
   });
   const batchNumber = `LB-${year}-${String(count + 1).padStart(3, '0')}`;
 
-  const userId = request.headers.get('x-user-id');
+  const userId = guard.auth.userId;
 
   const batch = await LaundryBatch.create({
     batchNumber,

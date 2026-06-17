@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { WhatsAppSettings } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 // Sentinel returned to the client in place of the real access token. When the
 // client sends this value back unchanged on PATCH, the token is left untouched.
@@ -17,8 +18,10 @@ function maskSettings(s: Record<string, unknown>) {
 }
 
 // GET /api/settings/whatsapp — returns the single WhatsApp settings document (token masked)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_integrations');
+    if (error) return error;
     await connectDB();
     const settings = await WhatsAppSettings.findOneAndUpdate(
       {},
@@ -34,6 +37,8 @@ export async function GET() {
 // PATCH /api/settings/whatsapp — update WhatsApp settings
 export async function PATCH(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_integrations');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const {

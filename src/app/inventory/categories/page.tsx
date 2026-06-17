@@ -127,7 +127,7 @@ export default function InventoryCategoriesPage() {
       {canEdit && (
         <div className="bg-g-surface border border-g-border rounded-2xl p-5 mb-5 shadow-google-1">
           <h2 className="text-[13px] font-semibold text-g-text-2 uppercase tracking-wider m-0 mb-4">{tc.addNew}</h2>
-          <div className="flex gap-3 items-end flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:gap-3 sm:items-end gap-4">
             <div className="flex-1 min-w-[160px]">
               <label className="text-[11px] font-semibold text-g-text-2 uppercase tracking-wider block mb-1.5">{tc.label}</label>
               <input
@@ -145,7 +145,7 @@ export default function InventoryCategoriesPage() {
             <button
               onClick={handleAdd}
               disabled={adding || !newForm.name.trim()}
-              className="ripple py-2 px-5 rounded-full border-none bg-google-blue text-white text-sm font-medium cursor-pointer shadow-google-1 disabled:opacity-50 disabled:cursor-not-allowed transition-google"
+              className="ripple py-2 px-5 rounded-full border-none bg-google-blue text-white text-sm font-medium cursor-pointer shadow-google-1 disabled:opacity-50 disabled:cursor-not-allowed transition-google w-full sm:w-auto"
             >
               {adding ? tc.adding : tc.add}
             </button>
@@ -190,22 +190,24 @@ export default function InventoryCategoriesPage() {
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
             >
               {editId === cat._id ? (
-                <>
-                  <ColorPicker value={editForm.color} onChange={c => setEditForm(f => ({ ...f, color: c }))} />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
                   <input
                     value={editForm.name}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm(f => ({ ...f, name: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleEdit(cat._id)}
-                    className={`${inputCls} flex-1 min-w-0`}
+                    className={`${inputCls} w-full sm:flex-1 sm:min-w-0 order-1 sm:order-none`}
                     autoFocus
                   />
-                  <button onClick={() => handleEdit(cat._id)} className="ripple py-1.5 px-4 rounded-full border-none bg-google-blue text-white text-[13px] font-medium cursor-pointer flex-shrink-0">
-                    {tc.save}
-                  </button>
-                  <button onClick={() => setEditId(null)} className="ripple py-1.5 px-4 rounded-full border border-g-border bg-transparent text-[13px] cursor-pointer text-g-text-2 flex-shrink-0">
-                    {tc.cancel}
-                  </button>
-                </>
+                  <ColorPicker value={editForm.color} onChange={c => setEditForm(f => ({ ...f, color: c }))} />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(cat._id)} className="ripple py-1.5 px-4 rounded-full border-none bg-google-blue text-white text-[13px] font-medium cursor-pointer flex-shrink-0">
+                      {tc.save}
+                    </button>
+                    <button onClick={() => setEditId(null)} className="ripple py-1.5 px-4 rounded-full border border-g-border bg-transparent text-[13px] cursor-pointer text-g-text-2 flex-shrink-0">
+                      {tc.cancel}
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <>
                   <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${cat.color}18` }}>

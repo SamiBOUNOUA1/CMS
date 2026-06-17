@@ -79,6 +79,7 @@ interface SubRoute {
   label: string;
   labelFr: string;
   permission?: string;
+  anyPermission?: string[];
 }
 
 interface Module {
@@ -308,8 +309,9 @@ export default function AppNav() {
                   const IconComp = MODULE_ICON_MAP[mod.icon] ?? ModuleClipboardIcon;
                   const isModActive = mod.routes.some(r => pathname.startsWith(r));
                   const modLabel = lang === 'fr' ? mod.nameFr : mod.name;
-                  const visibleSubRoutes = (mod.subRoutes ?? []).filter(
-                    sr => !sr.permission || perms[sr.permission]
+                  const visibleSubRoutes = (mod.subRoutes ?? []).filter(sr =>
+                    (!sr.permission || perms[sr.permission]) &&
+                    (!sr.anyPermission || sr.anyPermission.some(p => perms[p]))
                   );
                   return (
                     <div key={mod.id}>

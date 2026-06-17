@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ModuleConfig } from '@/lib/models';
 import { MODULE_REGISTRY } from '@/lib/modules';
+import { requirePermission } from '@/lib/requireAuth';
 
 export async function GET() {
   try {
@@ -23,11 +24,8 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_users) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
 
     const body = await request.json();
     const updates = Array.isArray(body) ? body : [body];

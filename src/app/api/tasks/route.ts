@@ -2,11 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Task } from '@/lib/models';
+import { getAuth } from '@/lib/requireAuth';
 
 export async function GET(request: NextRequest) {
+  const auth = await getAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   await connectDB();
-  const userId   = request.headers.get('x-user-id');
-  const userRole = request.headers.get('x-user-role');
+  const userId   = auth.userId;
+  const userRole = auth.role;
   const { searchParams } = new URL(request.url);
   const limitParam = searchParams.get('limit');
   const ownerParam = searchParams.get('owner');
@@ -34,9 +37,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await getAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   await connectDB();
-  const userId   = request.headers.get('x-user-id');
-  const userRole = request.headers.get('x-user-role');
+  const userId   = auth.userId;
+  const userRole = auth.role;
 
   try {
     const body = await request.json();

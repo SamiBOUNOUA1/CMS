@@ -2,18 +2,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryCategory, InventoryItem } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_inventory');
+    if (error) return error;
 
     await connectDB();
     const body = await request.json();
-    const category = await InventoryCategory.findByIdAndUpdate(params.id, body, { new: true });
+    const update: Record<string, unknown> = {};
+    if (body.name !== undefined) update.name = body.name;
+    if (body.color !== undefined) update.color = body.color;
+    const category = await InventoryCategory.findByIdAndUpdate(params.id, update, { new: true });
     if (!category) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ category });
   } catch (err: unknown) {
@@ -23,11 +24,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_inventory) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_inventory');
+    if (error) return error;
 
     await connectDB();
     // Unset category from items that use it

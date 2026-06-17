@@ -2,14 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Activity } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 export async function GET(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.view_activities) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'view_activities');
+    if (error) return error;
 
     await connectDB();
     const { searchParams } = new URL(request.url);

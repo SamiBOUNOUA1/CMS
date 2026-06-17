@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Warehouse } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,8 +16,8 @@ export async function GET(request: NextRequest) {
     if (isActiveParam !== null) query.isActive = isActiveParam === 'true';
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { 'address.city': { $regex: search, $options: 'i' } },
+        { name: safeRegex(search) },
+        { 'address.city': safeRegex(search) },
       ];
     }
 
@@ -28,11 +30,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.edit_warehouses) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'edit_warehouses');
+    if (error) return error;
 
     await connectDB();
     const body = await request.json();

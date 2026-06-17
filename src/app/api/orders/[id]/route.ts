@@ -3,11 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, Event, OrderStatusConfig, FlowTemplate } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
-    const order = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
+    const order = await Order.findById(params.id).populate('event').populate('assignees.user', 'name email').lean();
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const quotes = await Quote.find({ order: params.id })
@@ -22,6 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { auth, error } = await requirePermission(request, 'edit_orders');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
 
@@ -32,11 +37,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     const allowed = [
       'clientName', 'clientEmail', 'clientPhone', 'eventDate', 'eventType',
       'guestCount', 'tableCount', 'startTime', 'notes', 'status',
-      'lineGroups', 'staffAssignments', 'discountAmount', 'assignedManager',
+      'lineGroups', 'staffAssignments', 'discountAmount', 'assignees',
     ];
     for (const key of allowed) {
       if (body[key] !== undefined) order[key] = body[key];
     }
+    // When the assignee team is written, clear the legacy single-manager field so the two never drift.
+    if (body.assignees !== undefined) order.assignedManager = null;
 
     // If status changed and new status has triggerEvent, create event if not yet created
     if (body.status && body.status !== prevStatus) {
@@ -77,7 +84,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     await order.save();
 
     if (body.status && body.status !== prevStatus) {
-      const userId = request.headers.get('x-user-id');
+      const userId = auth.userId;
       await logActivity({
         action: 'order_status_changed',
         entityType: 'order',
@@ -88,7 +95,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
       });
     }
 
-    const updated = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
+    const updated = await Order.findById(params.id).populate('event').populate('assignees.user', 'name email').lean();
     const quotes = await Quote.find({ order: params.id }).sort({ versionNumber: 1 }).lean();
     return NextResponse.json({ order: updated, quotes });
   } catch (err: unknown) {
@@ -99,6 +106,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'delete_orders');
+    if (error) return error;
     await connectDB();
     await Quote.deleteMany({ order: params.id });
     await Order.findByIdAndDelete(params.id);

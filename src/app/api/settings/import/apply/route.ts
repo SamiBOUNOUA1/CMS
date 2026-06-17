@@ -11,6 +11,7 @@ import {
   Client, Venue,
   Role, RolePermissions,
 } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 const COLLECTION_MODELS: Record<string, unknown> = {
   companySettings:     CompanySettings,
@@ -37,11 +38,8 @@ const COLLECTION_MODELS: Record<string, unknown> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const permsHeader = request.headers.get('x-user-permissions');
-    const perms = permsHeader ? JSON.parse(permsHeader) : {};
-    if (!perms.manage_data) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { error } = await requirePermission(request, 'manage_data');
+    if (error) return error;
 
     const body = await request.json();
     const { data, mode } = body;

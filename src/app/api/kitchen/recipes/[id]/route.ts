@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { KitchenRecipe } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { requirePermission } from '@/lib/requireAuth';
 
 async function getPopulated(id: string) {
   return KitchenRecipe.findById(id)
@@ -13,11 +14,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.view_kitchen) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'view_kitchen');
+  if (error) return error;
 
   await connectDB();
   const recipe = await getPopulated(params.id);
@@ -30,18 +28,15 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.manage_kitchen) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const guard = await requirePermission(request, 'manage_kitchen');
+  if (guard.error) return guard.error;
 
   await connectDB();
 
   const recipe = await KitchenRecipe.findById(params.id);
   if (!recipe) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const userId = request.headers.get('x-user-id');
+  const userId = guard.auth.userId;
   const body = await request.json();
 
   const allowed = ['name', 'nameFr', 'category', 'servings', 'description', 'instructions', 'prepTime', 'cookTime', 'isActive'];
@@ -76,11 +71,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.manage_kitchen) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'manage_kitchen');
+  if (error) return error;
 
   await connectDB();
   await KitchenRecipe.findByIdAndUpdate(params.id, { isActive: false });

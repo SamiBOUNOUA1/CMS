@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { KitchenRecipe } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
 
 export async function GET(request: NextRequest) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.view_kitchen) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'view_kitchen');
+  if (error) return error;
 
   await connectDB();
 
@@ -19,8 +18,8 @@ export async function GET(request: NextRequest) {
   if (category) filter.category = category;
   if (search) {
     filter.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { nameFr: { $regex: search, $options: 'i' } },
+      { name: safeRegex(search) },
+      { nameFr: safeRegex(search) },
     ];
   }
 
@@ -33,11 +32,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const permsHeader = request.headers.get('x-user-permissions');
-  const perms = permsHeader ? JSON.parse(permsHeader) : {};
-  if (!perms.manage_kitchen) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { error } = await requirePermission(request, 'manage_kitchen');
+  if (error) return error;
 
   await connectDB();
 

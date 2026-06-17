@@ -60,6 +60,7 @@ export default function PermissionsPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [dirty, setDirty] = useState<Record<string, Record<string, boolean>>>({});
+  const [selectedRole, setSelectedRole] = useState<string>('');
 
   const notify = (msg: string, type: 'success' | 'error' = 'success') => {
     setNotification({ msg, type });
@@ -74,6 +75,7 @@ export default function PermissionsPage() {
     setPermKeys(data.permissions);
     setRoles(data.roles ?? []);
     setDirty({});
+    setSelectedRole(prev => prev || Object.keys(data.matrix ?? {})[0] || '');
   }, [tp.loadFailed]);
 
   useEffect(() => { load(); }, [load]);
@@ -123,82 +125,64 @@ export default function PermissionsPage() {
         </div>
       )}
 
-      {/* Mobile layout */}
-      <div className="flex sm:hidden flex-col gap-4">
-        {roleNames.map(role => {
-          const rc = roleColor(role);
-          const roleDoc = roles.find(r => r.name === role);
-          const isDirty = !!dirty[role];
-          return (
-            <div key={role} className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="rounded-xl py-0.5 px-3 text-[13px] font-medium" style={{ background: rc.bg, color: rc.color }}>
-                  {roleDoc?.label ?? role}
-                </span>
-                {isDirty && (
-                  <button onClick={() => saveRole(role)} disabled={saving === role}
-                    className="bg-google-blue text-white border-none rounded-full py-1.5 px-4 text-[13px] font-medium cursor-pointer">
-                    {saving === role ? tp.saving : tp.save}
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                {permKeys.map(perm => (
-                  <div key={perm} className="flex items-center justify-between">
-                    <span className="text-[13px] text-g-text">{tp.permLabels[perm] ?? perm}</span>
-                    <Toggle checked={getVal(role, perm)} onChange={() => toggle(role, perm)} disabled={role === 'admin' && perm === 'manage_users'} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+      {/* Role selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        <label htmlFor="role-select" className="text-[13px] font-medium text-g-text-2 uppercase tracking-[0.06em]">
+          {tp.selectRole}
+        </label>
+        <select
+          id="role-select"
+          value={selectedRole}
+          onChange={e => setSelectedRole(e.target.value)}
+          className="w-full sm:w-auto sm:min-w-[200px] rounded-lg border border-g-border bg-g-surface text-sm text-g-text py-2.5 px-3.5 cursor-pointer focus:outline-none focus:border-google-blue"
+        >
+          {roleNames.map(role => {
+            const roleDoc = roles.find(r => r.name === role);
+            return <option key={role} value={role}>{roleDoc?.label ?? role}</option>;
+          })}
+        </select>
       </div>
 
-      {/* Desktop layout */}
-      <div className="hidden sm:block bg-g-surface rounded-2xl border border-g-border overflow-hidden shadow-google-1">
-          <div className="flex bg-g-bg border-b border-g-border gap-2" style={{ padding: '12px 20px' }}>
-            <div className="flex-[3] text-[11px] font-medium text-g-text-2 uppercase tracking-[0.06em]">
-              {tp.permission}
-            </div>
-            {roleNames.map(role => {
-              const rc = roleColor(role);
-              const roleDoc = roles.find(r => r.name === role);
+      {selectedRole && (
+        <div className="bg-g-surface rounded-2xl border border-g-border overflow-hidden shadow-google-1">
+          <div className="flex items-center justify-between gap-2 bg-g-bg border-b border-g-border" style={{ padding: '12px 20px' }}>
+            {(() => {
+              const rc = roleColor(selectedRole);
+              const roleDoc = roles.find(r => r.name === selectedRole);
               return (
-                <div key={role} className="flex-1 flex flex-col items-center gap-1.5">
-                  <span className="rounded-xl py-[3px] px-3 text-xs font-medium whitespace-nowrap" style={{ background: rc.bg, color: rc.color}}>
-                    {roleDoc?.label ?? role}
-                  </span>
-                  {dirty[role] && (
-                    <button
-                      onClick={() => saveRole(role)}
-                      disabled={saving === role}
-                      className="bg-google-blue text-white border-none rounded-full py-1 px-3 text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                    >
-                      {saving === role ? tp.saving : tp.save}
-                    </button>
-                  )}
-                </div>
+                <span className="rounded-xl py-[3px] px-3 text-xs font-medium whitespace-nowrap" style={{ background: rc.bg, color: rc.color }}>
+                  {roleDoc?.label ?? selectedRole}
+                </span>
               );
-            })}
+            })()}
+            {dirty[selectedRole] && (
+              <button
+                onClick={() => saveRole(selectedRole)}
+                disabled={saving === selectedRole}
+                className="bg-google-blue text-white border-none rounded-full py-1.5 px-4 text-[13px] font-medium cursor-pointer whitespace-nowrap"
+              >
+                {saving === selectedRole ? tp.saving : tp.save}
+              </button>
+            )}
           </div>
 
           {permKeys.map((perm, i) => (
-            <div key={perm} className="flex items-center gap-2 px-5 py-3.5" style={{ borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}>
-              <div className="flex-[3]">
+            <div key={perm} className="flex items-center gap-3 px-5 py-3.5" style={{ borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}>
+              <div className="flex-1 min-w-0">
                 <span className="text-sm text-g-text font-medium">{tp.permLabels[perm] ?? perm}</span>
                 {tp.permDescriptions[perm] && (
                   <p className="mt-0.5 mb-0 text-xs text-g-text-2">{tp.permDescriptions[perm]}</p>
                 )}
               </div>
-              {roleNames.map(role => (
-                <div key={role} className="flex-1 flex justify-center">
-                  <Toggle checked={getVal(role, perm)} onChange={() => toggle(role, perm)} disabled={role === 'admin' && perm === 'manage_users'} />
-                </div>
-              ))}
+              <Toggle
+                checked={getVal(selectedRole, perm)}
+                onChange={() => toggle(selectedRole, perm)}
+                disabled={selectedRole === 'admin' && perm === 'manage_users'}
+              />
             </div>
           ))}
         </div>
+      )}
 
       <p className="text-xs text-g-text-3 mt-4">{tp.note}</p>
     </div>

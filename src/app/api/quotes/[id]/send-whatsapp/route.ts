@@ -5,6 +5,7 @@ import { Quote, WhatsAppSettings } from '@/lib/models';
 import { renderPagePdf } from '@/lib/pdf';
 import { normalizePhone, sendPdfDocument } from '@/lib/whatsapp';
 import { logActivity } from '@/lib/activityLogger';
+import { requirePermission } from '@/lib/requireAuth';
 
 // Puppeteer + Graph API require the Node.js runtime (not Edge).
 export const runtime = 'nodejs';
@@ -12,6 +13,8 @@ export const maxDuration = 120;
 
 export async function POST(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { auth, error } = await requirePermission(request, 'edit_orders');
+    if (error) return error;
     await connectDB();
 
     const settings = await WhatsAppSettings.findOne({}).lean();
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: Record<st
       entityType: 'quote',
       entityId: params.id,
       entityLabel: clientName,
-      performedBy: request.headers.get('x-user-id'),
+      performedBy: auth.userId,
       metadata: { to, orderId: quote.order?._id?.toString() },
     });
 

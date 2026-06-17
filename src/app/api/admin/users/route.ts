@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const users = await User.find().select('-passwordHash').sort({ createdAt: -1 }).lean();
     return NextResponse.json({ users });
@@ -16,6 +19,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const { name, email, password, role } = await request.json();
     if (!name || !email || !password)
