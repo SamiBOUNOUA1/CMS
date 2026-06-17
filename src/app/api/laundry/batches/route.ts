@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   const batches = await LaundryBatch.find(filter)
     .populate('items.inventoryItem', 'name unit')
     .populate('order', 'clientName eventDate')
+    .populate('cleaningSupplier', 'name')
     .populate('createdBy', 'name')
     .sort({ date: -1 })
     .lean();
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
   await connectDB();
 
   const body = await request.json();
-  const { date, order, notes, items } = body;
+  const { date, order, cleaningSupplier, notes, items } = body;
 
   if (!date) {
     return NextResponse.json({ error: 'date is required' }, { status: 400 });
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
     batchNumber,
     date,
     order: order || null,
+    cleaningSupplier: cleaningSupplier || null,
     notes: notes || '',
     items: items.map((it: Record<string, unknown>) => ({
       inventoryItem: it.inventoryItem,
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest) {
   const populated = await LaundryBatch.findById(batch._id)
     .populate('items.inventoryItem', 'name unit')
     .populate('order', 'clientName eventDate')
+    .populate('cleaningSupplier', 'name')
     .populate('createdBy', 'name')
     .lean();
 

@@ -10,6 +10,7 @@ async function getPopulated(id: string) {
   return LaundryBatch.findById(id)
     .populate('items.inventoryItem', 'name unit currentStock')
     .populate('order', 'clientName eventDate')
+    .populate('cleaningSupplier', 'name')
     .populate('createdBy', 'name')
     .lean();
 }
@@ -126,6 +127,7 @@ export async function PATCH(
 
   if (body.date !== undefined) batch.date = body.date;
   if (body.order !== undefined) batch.order = body.order || null;
+  if (body.cleaningSupplier !== undefined) batch.cleaningSupplier = body.cleaningSupplier || null;
   if (body.notes !== undefined) batch.notes = body.notes;
   if (Array.isArray(body.items)) {
     batch.items = body.items.map((it: Record<string, unknown>) => ({

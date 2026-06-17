@@ -157,7 +157,7 @@ h1, h2, h3, h4, h5 {
   header { display: none !important; }
   .subnav-bar { display: none !important; }
   .sidenav { display: none !important; }
-  body { background: white !important; font-family: 'Georgia', 'Times New Roman', serif !important; }
+  body { background: white !important; font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif) !important; }
   main { margin-top: 0 !important; margin-left: 0 !important; }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
@@ -166,13 +166,13 @@ h1, h2, h3, h4, h5 {
   @page { margin: 18mm 20mm 22mm; size: A4; }
 
   /* Luxury palette */
-  .pdf-gold       { color: #8b6914; }
-  .pdf-gold-light { color: #c9a96e; }
+  .pdf-gold       { color: var(--pdf-accent, #8b6914); }
+  .pdf-gold-light { color: var(--pdf-accent, #c9a96e); }
   .pdf-muted      { color: #9a8c7a; }
   .pdf-dark       { color: #1a1a1a; }
 
   .pdf-company-name {
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif);
     font-size: 22pt;
     font-weight: 400;
     letter-spacing: 0.04em;
@@ -181,7 +181,7 @@ h1, h2, h3, h4, h5 {
   }
 
   .pdf-label {
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif);
     font-size: 7pt;
     font-weight: 400;
     color: #9a8c7a;
@@ -191,7 +191,7 @@ h1, h2, h3, h4, h5 {
 
   .pdf-rule-gold {
     border: none;
-    border-top: 1px solid #c9a96e;
+    border-top: 1px solid var(--pdf-accent, #c9a96e);
     margin: 0;
   }
 
@@ -202,9 +202,9 @@ h1, h2, h3, h4, h5 {
   }
 
   .pdf-section-title {
-    border-left: 2px solid #c9a96e;
+    border-left: 2px solid var(--pdf-accent, #c9a96e);
     padding-left: 8px;
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif);
     font-size: 10pt;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -213,9 +213,9 @@ h1, h2, h3, h4, h5 {
   }
 
   .pdf-total-grand {
-    color: #8b6914 !important;
+    color: var(--pdf-accent, #8b6914) !important;
     font-size: 15pt !important;
-    font-family: 'Georgia', 'Times New Roman', serif !important;
+    font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif) !important;
   }
 
   .pdf-footer {
@@ -225,7 +225,7 @@ h1, h2, h3, h4, h5 {
     right: 20mm;
     border-top: 1px solid #e0d5c5;
     padding-top: 4pt;
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif);
     font-size: 7pt;
     color: #b0a090;
     display: flex;

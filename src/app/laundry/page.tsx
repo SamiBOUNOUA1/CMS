@@ -276,6 +276,11 @@ export default function LaundryPage() {
                 <div style={{ fontSize: 13, color: batch.order?.clientName ? '#202124' : '#9aa0a6' }}>
                   {batch.order?.clientName ?? tl.table.noOrder}
                 </div>
+                {batch.cleaningSupplier?.name && (
+                  <div style={{ fontSize: 12, color: '#5f6368' }}>
+                    {tl.table.supplier}: {batch.cleaningSupplier.name}
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                   <span style={{ fontSize: 13, color: '#5f6368' }}>{formatDate(batch.date)}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -310,10 +315,10 @@ export default function LaundryPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: '#f8f9fa' }}>
-                {[tl.table.batchNumber, tl.table.date, tl.table.order, tl.table.items, tl.table.status].map((h, i) => (
+                {[tl.table.batchNumber, tl.table.date, tl.table.order, tl.table.supplier, tl.table.items, tl.table.status].map((h, i) => (
                   <th
                     key={i}
-                    className={i === 2 ? 'hidden sm:table-cell' : undefined}
+                    className={i === 2 || i === 3 ? 'hidden sm:table-cell' : undefined}
                     style={{
                       padding: '11px 16px', textAlign: 'left', fontSize: 11,
                       fontWeight: 600, color: '#5f6368', textTransform: 'uppercase',
@@ -348,6 +353,9 @@ export default function LaundryPage() {
                     <td style={{ padding: '14px 16px', color: '#5f6368' }}>{formatDate(batch.date)}</td>
                     <td className="hidden sm:table-cell" style={{ padding: '14px 16px', color: batch.order?.clientName ? '#202124' : '#9aa0a6' }}>
                       {batch.order?.clientName ?? tl.table.noOrder}
+                    </td>
+                    <td className="hidden sm:table-cell" style={{ padding: '14px 16px', color: batch.cleaningSupplier?.name ? '#202124' : '#9aa0a6' }}>
+                      {batch.cleaningSupplier?.name ?? tl.table.noSupplier}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <span style={{

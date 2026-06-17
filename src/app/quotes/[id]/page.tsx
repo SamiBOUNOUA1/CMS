@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
+import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
 
 export default function QuoteDetailPage() {
   const { id } = useParams();
@@ -16,11 +17,15 @@ export default function QuoteDetailPage() {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
+  const [layout, setLayout] = useState(DEFAULT_LAYOUT);
 
   useEffect(() => {
     fetch('/api/settings/company')
       .then(r => r.ok ? r.json() : null)
       .then(d => d?.settings && setCompany(d.settings));
+    fetch('/api/settings/document-layout')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.settings && setLayout(resolveLayout(d.settings)));
   }, []);
 
   useEffect(() => {
@@ -49,9 +54,10 @@ export default function QuoteDetailPage() {
   const tableCount = order?.tableCount;
   const orderId = order?._id;
   const staffTotal = quote.staffAssignments?.reduce((s, sa) => s + sa.lineTotal, 0) ?? 0;
+  const docFont = docFontFamily(layout.fontStyle);
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
       {/* Back breadcrumb + Print */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#5f6368', fontFamily: "'Google Sans'" }}>
@@ -84,33 +90,33 @@ export default function QuoteDetailPage() {
       <div className="print-only" style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 20 }}>
           <div style={{ maxWidth: '55%' }}>
-            {company?.logoUrl ? (
+            {layout.showLogo && company?.logoUrl ? (
               <img src={company.logoUrl} alt={company.companyName || ''} style={{ maxHeight: 56, maxWidth: 220, objectFit: 'contain', marginBottom: 10, display: 'block' }} />
             ) : company?.companyName ? (
               <p className="pdf-company-name" style={{ margin: '0 0 10px' }}>{company.companyName}</p>
             ) : null}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {(company?.address?.street || company?.address?.city) && (
-                <span className="pdf-label" style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: 'Georgia, serif' }}>
+              {layout.showAddress && (company?.address?.street || company?.address?.city) && (
+                <span className="pdf-label" style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: docFont }}>
                   {[company.address.street, [company.address.postalCode, company.address.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
                 </span>
               )}
-              {company?.phone && <span className="pdf-label" style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: 'Georgia, serif' }}>{company.phone}</span>}
-              {company?.email && <span className="pdf-label" style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: 'Georgia, serif' }}>{company.email}</span>}
-              {company?.vatNumber && <span className="pdf-label" style={{ marginTop: 4, fontSize: '7.5pt', color: '#9a8c7a', fontFamily: 'Georgia, serif' }}>{company.vatNumber}</span>}
+              {layout.showPhone && company?.phone && <span className="pdf-label" style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: docFont }}>{company.phone}</span>}
+              {layout.showEmail && company?.email && <span className="pdf-label" style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: docFont }}>{company.email}</span>}
+              {layout.showVatNumber && company?.vatNumber && <span className="pdf-label" style={{ marginTop: 4, fontSize: '7.5pt', color: '#9a8c7a', fontFamily: docFont }}>{company.vatNumber}</span>}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <p className="pdf-label" style={{ margin: '0 0 6px', fontSize: '7pt', letterSpacing: '0.18em' }}>{td.print.quote}</p>
-            <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '20pt', fontWeight: 400, color: '#1a1a1a' }}>
+            <p style={{ margin: 0, fontFamily: docFont, fontSize: '20pt', fontWeight: 400, color: '#1a1a1a' }}>
               #{quote._id.slice(-8).toUpperCase()}
             </p>
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
-              <span className="pdf-label" style={{ fontSize: '7.5pt', color: '#9a8c7a', fontFamily: 'Georgia, serif' }}>
+              <span className="pdf-label" style={{ fontSize: '7.5pt', color: '#9a8c7a', fontFamily: docFont }}>
                 {td.print.issued}: {format(new Date(quote.createdAt), 'dd MMMM yyyy')}
               </span>
               {quote.validUntil && (
-                <span className="pdf-label" style={{ fontSize: '7.5pt', color: '#9a8c7a', fontFamily: 'Georgia, serif' }}>
+                <span className="pdf-label" style={{ fontSize: '7.5pt', color: '#9a8c7a', fontFamily: docFont }}>
                   {td.print.validUntil}: {format(new Date(quote.validUntil), 'dd MMMM yyyy')}
                 </span>
               )}
@@ -122,21 +128,21 @@ export default function QuoteDetailPage() {
         <div style={{ display: 'flex', gap: 0, marginTop: 16, paddingBottom: 4 }}>
           <div style={{ flex: 1, paddingRight: 24, borderRight: '1px solid #e8e0d0' }}>
             <p className="pdf-label" style={{ margin: '0 0 5px' }}>{td.print.client}</p>
-            <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '11pt', color: '#1a1a1a' }}>{clientName}</p>
-            <p style={{ margin: '2px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>{clientEmail}</p>
-            {clientPhone && <p style={{ margin: '1px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>{clientPhone}</p>}
+            <p style={{ margin: 0, fontFamily: docFont, fontSize: '11pt', color: '#1a1a1a' }}>{clientName}</p>
+            <p style={{ margin: '2px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{clientEmail}</p>
+            {clientPhone && <p style={{ margin: '1px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{clientPhone}</p>}
           </div>
           <div style={{ flex: 1, paddingLeft: 24, paddingRight: 24, borderRight: '1px solid #e8e0d0' }}>
             <p className="pdf-label" style={{ margin: '0 0 5px' }}>{td.print.event}</p>
-            <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '11pt', color: '#1a1a1a', textTransform: 'capitalize' }}>{eventType?.replace('-', ' ')}</p>
-            <p style={{ margin: '2px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>{eventDate ? format(new Date(eventDate), 'dd MMMM yyyy') : '—'}</p>
-            <p style={{ margin: '1px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>
+            <p style={{ margin: 0, fontFamily: docFont, fontSize: '11pt', color: '#1a1a1a', textTransform: 'capitalize' }}>{eventType?.replace('-', ' ')}</p>
+            <p style={{ margin: '2px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{eventDate ? format(new Date(eventDate), 'dd MMMM yyyy') : '—'}</p>
+            <p style={{ margin: '1px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>
               {tableCount ? td.tables(tableCount, guestCount) : td.guests(guestCount)} · {td.version(quote.versionNumber)}
             </p>
           </div>
           <div style={{ paddingLeft: 24 }}>
             <p className="pdf-label" style={{ margin: '0 0 5px' }}>{td.print.status}</p>
-            <span style={{ fontFamily: 'Georgia, serif', fontSize: '10pt', color: '#137333', fontStyle: 'italic' }}>
+            <span style={{ fontFamily: docFont, fontSize: '10pt', color: '#137333', fontStyle: 'italic' }}>
               {quote.isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
@@ -188,7 +194,7 @@ export default function QuoteDetailPage() {
             ) : <p style={{ color: '#9aa0a6', fontSize: 14 }}>{td.noItems}</p>}
           </Section>
 
-          {staffTotal > 0 && (
+          {staffTotal > 0 && layout.showStaffSection && (
             <Section title={td.staffAssignments} icon="👨‍🍳" style={{ marginTop: 20 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
@@ -213,15 +219,15 @@ export default function QuoteDetailPage() {
             </Section>
           )}
 
-          {(quote.clientNotes || quote.internalNotes) && (
+          {((layout.showClientNotes && quote.clientNotes) || (layout.showInternalNotes && quote.internalNotes)) && (
             <Section title={td.notes} icon="📝" style={{ marginTop: 20 }}>
-              {quote.clientNotes && (
+              {layout.showClientNotes && quote.clientNotes && (
                 <div style={{ marginBottom: 12 }}>
                   <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.clientNotes}</p>
                   <p style={{ fontSize: 14, color: '#202124', margin: 0 }}>{quote.clientNotes}</p>
                 </div>
               )}
-              {quote.internalNotes && (
+              {layout.showInternalNotes && quote.internalNotes && (
                 <div>
                   <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.internalNotes}</p>
                   <p style={{ fontSize: 14, color: '#202124', margin: 0 }}>{quote.internalNotes}</p>
@@ -255,11 +261,13 @@ export default function QuoteDetailPage() {
       </div>
 
       {/* Print footer */}
-      <div className="print-only pdf-footer">
-        <span>{company?.companyName || ''}{company?.vatNumber ? ` · ${company.vatNumber}` : ''}</span>
-        <span style={{ color: '#c9a96e', letterSpacing: '0.08em', fontSize: '7pt' }}>✦</span>
-        <span style={{ fontStyle: 'italic' }}>{td.print.quote} #{quote._id.slice(-8).toUpperCase()} — {clientName}</span>
-      </div>
+      {layout.showFooter && (
+        <div className="print-only pdf-footer">
+          <span>{company?.companyName || ''}{company?.vatNumber ? ` · ${company.vatNumber}` : ''}</span>
+          <span style={{ color: layout.accentColor, letterSpacing: '0.08em', fontSize: '7pt' }}>✦</span>
+          <span style={{ fontStyle: 'italic' }}>{td.print.quote} #{quote._id.slice(-8).toUpperCase()} — {clientName}</span>
+        </div>
+      )}
     </div>
   );
 }

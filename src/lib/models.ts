@@ -556,6 +556,7 @@ const laundryBatchSchema = new Schema(
     batchNumber:        { type: String, required: true, unique: true, trim: true },
     date:               { type: Date, required: true, default: Date.now },
     order:              { type: Schema.Types.ObjectId, ref: 'Order', default: null },
+    cleaningSupplier:   { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
     status:             { type: String, enum: ['draft', 'sent', 'returned', 'completed'], default: 'draft' },
     notes:              { type: String, default: '' },
     items:              [laundryBatchItemSchema],
@@ -602,6 +603,27 @@ const whatsappSettingsSchema = new Schema(
   { timestamps: true }
 );
 export const WhatsAppSettings = models.WhatsAppSettings || model('WhatsAppSettings', whatsappSettingsSchema);
+
+// ── DOCUMENT LAYOUT SETTINGS ──────────────────────────────────────────────────
+// Shared printable-layout config for quote (devis) and payment receipt PDFs.
+const documentLayoutSettingsSchema = new Schema(
+  {
+    accentColor:       { type: String,  default: '#c9a96e', trim: true },
+    fontStyle:         { type: String,  default: 'serif', enum: ['serif', 'sans'] },
+    showLogo:          { type: Boolean, default: true },
+    showAddress:       { type: Boolean, default: true },
+    showPhone:         { type: Boolean, default: true },
+    showEmail:         { type: Boolean, default: true },
+    showVatNumber:     { type: Boolean, default: true },
+    showStaffSection:  { type: Boolean, default: true },  // both docs
+    showOrderItems:    { type: Boolean, default: true },  // receipt only
+    showClientNotes:   { type: Boolean, default: true },  // quote only
+    showInternalNotes: { type: Boolean, default: false }, // quote only
+    showFooter:        { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const DocumentLayoutSettings = models.DocumentLayoutSettings || model('DocumentLayoutSettings', documentLayoutSettingsSchema);
 
 // ── TASK ──────────────────────────────────────────────────────────────────────
 const taskSchema = new Schema(

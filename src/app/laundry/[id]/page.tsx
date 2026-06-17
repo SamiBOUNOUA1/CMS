@@ -39,6 +39,12 @@ const PlusIcon = () => (
   </svg>
 );
 
+const PrintIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" />
+  </svg>
+);
+
 const WarningIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
@@ -60,11 +66,14 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     order: '',
+    cleaningSupplier: '',
     notes: '',
     items: [] as any[],
   });
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(!isNew);
   const [editing, setEditing] = useState(isNew);
   const [recordingReturns, setRecordingReturns] = useState(false);
@@ -84,6 +93,8 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d && setUser(d.user));
     fetch('/api/inventory/items?laundryEligible=true').then(r => r.ok ? r.json() : { items: [] }).then((d: any) => setInventoryItems(d.items ?? []));
     fetch('/api/orders').then(r => r.ok ? r.json() : { orders: [] }).then((d: any) => setOrders(d.orders ?? []));
+    fetch('/api/inventory/suppliers?supplierType=services&isActive=true').then(r => r.ok ? r.json() : { suppliers: [] }).then((d: any) => setSuppliers(d.suppliers ?? []));
+    fetch('/api/settings/company').then(r => r.ok ? r.json() : null).then((d: any) => d?.settings && setCompany(d.settings));
   }, []);
 
   const loadBatch = useCallback(() => {
@@ -97,6 +108,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
         setForm({
           date: d.batch.date ? d.batch.date.slice(0, 10) : '',
           order: d.batch.order?._id ?? '',
+          cleaningSupplier: d.batch.cleaningSupplier?._id ?? '',
           notes: d.batch.notes ?? '',
           items: (d.batch.items ?? []).map((it: any) => ({
             ...it,
@@ -139,6 +151,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
     const payload = {
       date: form.date,
       order: form.order || null,
+      cleaningSupplier: form.cleaningSupplier || null,
       notes: form.notes,
       items: form.items.map(it => ({
         inventoryItem: it.inventoryItem,
@@ -216,6 +229,96 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
     if (!res.ok) { showToast(td.completeFailed); return; }
     showToast(td.completedMsg);
     loadBatch();
+  }
+
+  function printTicket() {
+    if (!batch) return;
+    const tk = td.ticket;
+    const esc = (v: unknown) =>
+      String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+
+    const items = (batch.items ?? []);
+    const totalQty = items.reduce((s: number, it: any) => s + (Number(it.quantitySent) || 0), 0);
+    const batchDate = batch.date ? new Date(batch.date).toLocaleDateString() : tk.none;
+    const orderLabel = batch.order?.clientName
+      ? `${batch.order.clientName}${batch.order.eventDate ? ` — ${new Date(batch.order.eventDate).toLocaleDateString()}` : ''}`
+      : tk.none;
+    const supplierLabel = batch.cleaningSupplier?.name ?? tk.none;
+
+    const rows = items.map((it: any) => `
+      <tr>
+        <td class="name">${esc(it.inventoryItem?.name ?? tk.none)}</td>
+        <td class="qty">${esc(it.quantitySent ?? 0)}</td>
+        <td class="notes">${esc(it.notes || '')}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>${esc(batch.batchNumber ?? tk.title)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; margin: 0; padding: 32px 36px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1a1a1a; padding-bottom: 14px; margin-bottom: 18px; }
+  .company { font-size: 18px; font-weight: 700; }
+  .doc-type { text-align: right; }
+  .doc-type .label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #777; }
+  .doc-type .num { font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; margin-bottom: 20px; }
+  .meta .field .k { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 2px; }
+  .meta .field .v { font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #555; border-bottom: 1.5px solid #1a1a1a; padding: 7px 8px; }
+  thead th.qty { text-align: right; }
+  tbody td { padding: 8px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+  td.qty { text-align: right; font-weight: 700; white-space: nowrap; }
+  td.notes { color: #777; }
+  tfoot td { padding: 10px 8px; font-weight: 700; border-top: 2px solid #1a1a1a; }
+  tfoot td.qty { text-align: right; }
+  .foot { margin-top: 28px; font-size: 10px; color: #999; }
+  @media print { body { padding: 0; } @page { margin: 14mm; size: A4; } }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="company">${esc(company?.companyName || tk.title)}</div>
+    <div class="doc-type">
+      <div class="label">${esc(tk.title)}</div>
+      <div class="num">${esc(batch.batchNumber ?? '')}</div>
+    </div>
+  </div>
+  <div class="meta">
+    <div class="field"><div class="k">${esc(tk.date)}</div><div class="v">${esc(batchDate)}</div></div>
+    <div class="field"><div class="k">${esc(tk.order)}</div><div class="v">${esc(orderLabel)}</div></div>
+    <div class="field"><div class="k">${esc(tk.supplier)}</div><div class="v">${esc(supplierLabel)}</div></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th class="name">${esc(tk.item)}</th>
+        <th class="qty">${esc(tk.quantity)}</th>
+        <th class="notes">${esc(tk.notes)}</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td>${esc(tk.totalItems)}: ${items.length}</td>
+        <td class="qty">${esc(totalQty)}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="foot">${esc(tk.generatedOn)} ${esc(new Date().toLocaleString())}</div>
+  <script>window.onload = function () { window.print(); }</script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
   }
 
   async function handleDelete() {
@@ -339,6 +442,15 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {!isNew && !editing && !recordingReturns && (
+            <button
+              onClick={printTicket}
+              style={{ ...btnSecondaryStyle, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <PrintIcon />
+              {td.printTicket}
+            </button>
+          )}
           {!isNew && canManage && !editing && !recordingReturns && (
             <>
               {status === 'draft' && (
@@ -429,6 +541,20 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                 <option key={o._id} value={o._id}>
                   {o.clientName} — {o.eventDate ? new Date(o.eventDate).toLocaleDateString() : ''}
                 </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>{td.fields.cleaningSupplier}</label>
+            <select
+              value={form.cleaningSupplier}
+              onChange={e => setForm(f => ({ ...f, cleaningSupplier: e.target.value }))}
+              disabled={!editing && !isNew}
+              style={(!editing && !isNew) ? disabledInputStyle : inputStyle}
+            >
+              <option value="">{td.fields.noSupplier}</option>
+              {suppliers.map((s: any) => (
+                <option key={s._id} value={s._id}>{s.name}</option>
               ))}
             </select>
           </div>

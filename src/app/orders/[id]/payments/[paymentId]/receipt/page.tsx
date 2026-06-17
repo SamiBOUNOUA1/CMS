@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
+import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
 
 function formatCurrency(n: number | null | undefined, cur = '€') {
   if (n == null) return '—';
@@ -31,6 +32,7 @@ export default function PaymentReceiptPage() {
   const [payment, setPayment] = useState<any>(null);
   const [allPayments, setAllPayments] = useState<any[]>([]);
   const [company, setCompany] = useState<any>(null);
+  const [layout, setLayout] = useState(DEFAULT_LAYOUT);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +40,8 @@ export default function PaymentReceiptPage() {
       fetch(`/api/orders/${orderId}`).then(r => r.ok ? r.json() : null),
       fetch(`/api/orders/${orderId}/payments`).then(r => r.ok ? r.json() : null),
       fetch('/api/settings/company').then(r => r.ok ? r.json() : null),
-    ]).then(([orderData, paymentsData, companyData]: [any, any, any]) => {
+      fetch('/api/settings/document-layout').then(r => r.ok ? r.json() : null),
+    ]).then(([orderData, paymentsData, companyData, layoutData]: [any, any, any, any]) => {
       if (orderData?.order) setOrder(orderData.order);
       if (paymentsData?.payments) {
         setAllPayments(paymentsData.payments);
@@ -46,6 +49,7 @@ export default function PaymentReceiptPage() {
         setPayment(found || null);
       }
       if (companyData?.settings) setCompany(companyData.settings);
+      if (layoutData?.settings) setLayout(resolveLayout(layoutData.settings));
     }).finally(() => setLoading(false));
   }, [orderId, paymentId]);
 
@@ -88,12 +92,13 @@ export default function PaymentReceiptPage() {
   const tableCount = order.tableCount;
 
   const methodLabels = t.orderDetail.addPaymentDialog.methods;
+  const docFont = docFontFamily(layout.fontStyle);
 
-  const pdfLabel: React.CSSProperties = { margin: '0 0 5px', fontSize: '7pt', letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: 'Georgia, serif', color: '#9a8c7a', fontWeight: 'normal' };
-  const sectionTitle: React.CSSProperties = { fontFamily: 'Georgia, serif', fontSize: '9pt', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' };
+  const pdfLabel: React.CSSProperties = { margin: '0 0 5px', fontSize: '7pt', letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: docFont, color: '#9a8c7a', fontWeight: 'normal' };
+  const sectionTitle: React.CSSProperties = { fontFamily: docFont, fontSize: '9pt', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' };
 
   return (
-    <div className="max-w-[860px] mx-auto px-6 py-8 receipt-root" style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}>
+    <div className="max-w-[860px] mx-auto px-6 py-8 receipt-root" style={{ fontFamily: docFont, color: '#1a1a1a', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @media print {
@@ -131,29 +136,29 @@ export default function PaymentReceiptPage() {
       <div className="receipt-header mb-7">
         <div className="flex justify-between items-start pb-5">
           <div style={{ maxWidth: '55%' }}>
-            {company?.logoUrl ? (
+            {layout.showLogo && company?.logoUrl ? (
               <img src={company.logoUrl} alt={company.companyName || ''} style={{ maxHeight: 56, maxWidth: 220, objectFit: 'contain', marginBottom: 10, display: 'block' }} />
             ) : company?.companyName ? (
-              <p style={{ margin: '0 0 10px', fontFamily: 'Georgia, serif', fontSize: '20pt', fontWeight: 400, color: '#1a1a1a', letterSpacing: '0.03em' }}>{company.companyName}</p>
+              <p style={{ margin: '0 0 10px', fontFamily: docFont, fontSize: '20pt', fontWeight: 400, color: '#1a1a1a', letterSpacing: '0.03em' }}>{company.companyName}</p>
             ) : null}
             <div className="flex flex-col gap-0.5">
-              {(company?.address?.street || company?.address?.city) && (
-                <span style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: 'Georgia, serif' }}>
+              {layout.showAddress && (company?.address?.street || company?.address?.city) && (
+                <span style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: docFont }}>
                   {[company.address.street, [company.address.postalCode, company.address.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
                 </span>
               )}
-              {company?.phone && <span style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: 'Georgia, serif' }}>{company.phone}</span>}
-              {company?.email && <span style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: 'Georgia, serif' }}>{company.email}</span>}
-              {company?.vatNumber && <span style={{ marginTop: 4, fontSize: '7.5pt', color: '#9a8c7a', fontFamily: 'Georgia, serif' }}>{company.vatNumber}</span>}
+              {layout.showPhone && company?.phone && <span style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: docFont }}>{company.phone}</span>}
+              {layout.showEmail && company?.email && <span style={{ fontSize: '8pt', color: '#6b5e4e', fontFamily: docFont }}>{company.email}</span>}
+              {layout.showVatNumber && company?.vatNumber && <span style={{ marginTop: 4, fontSize: '7.5pt', color: '#9a8c7a', fontFamily: docFont }}>{company.vatNumber}</span>}
             </div>
           </div>
           <div className="text-right">
             <p style={{ ...pdfLabel, margin: '0 0 6px' }}>{tr.receipt}</p>
-            <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '20pt', fontWeight: 400, color: '#1a1a1a' }}>
+            <p style={{ margin: 0, fontFamily: docFont, fontSize: '20pt', fontWeight: 400, color: '#1a1a1a' }}>
               #{payment._id.slice(-8).toUpperCase()}
             </p>
             <div className="mt-2.5 flex flex-col gap-0.5 items-end">
-              <span style={{ fontSize: '7.5pt', color: '#9a8c7a', fontFamily: 'Georgia, serif' }}>
+              <span style={{ fontSize: '7.5pt', color: '#9a8c7a', fontFamily: docFont }}>
                 {tr.issued}: {payment.paymentDate ? format(new Date(payment.paymentDate), 'dd MMMM yyyy') : format(new Date(), 'dd MMMM yyyy')}
               </span>
             </div>
@@ -166,16 +171,16 @@ export default function PaymentReceiptPage() {
         <div className="receipt-client-event flex gap-0 mt-4 pb-1">
           <div className="flex-1 pr-6" style={{ borderRight: '1px solid #e8e0d0' }}>
             <p style={pdfLabel}>{tr.client}</p>
-            <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '11pt', color: '#1a1a1a' }}>{clientName}</p>
-            {clientEmail && <p style={{ margin: '2px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>{clientEmail}</p>}
-            {clientPhone && <p style={{ margin: '1px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>{clientPhone}</p>}
+            <p style={{ margin: 0, fontFamily: docFont, fontSize: '11pt', color: '#1a1a1a' }}>{clientName}</p>
+            {clientEmail && <p style={{ margin: '2px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{clientEmail}</p>}
+            {clientPhone && <p style={{ margin: '1px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{clientPhone}</p>}
           </div>
           <div className="flex-1 pl-6">
             <p style={pdfLabel}>{tr.event}</p>
-            {eventType && <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '11pt', color: '#1a1a1a', textTransform: 'capitalize' }}>{eventType.replace('-', ' ')}</p>}
-            {eventDate && <p style={{ margin: '2px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>{format(new Date(eventDate), 'dd MMMM yyyy')}</p>}
+            {eventType && <p style={{ margin: 0, fontFamily: docFont, fontSize: '11pt', color: '#1a1a1a', textTransform: 'capitalize' }}>{eventType.replace('-', ' ')}</p>}
+            {eventDate && <p style={{ margin: '2px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{format(new Date(eventDate), 'dd MMMM yyyy')}</p>}
             {(guestCount || tableCount) && (
-              <p style={{ margin: '1px 0 0', fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#6b5e4e' }}>
+              <p style={{ margin: '1px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>
                 {tableCount ? `${tableCount} tables · ${guestCount} guests` : `${guestCount} guests`}
               </p>
             )}
@@ -192,33 +197,33 @@ export default function PaymentReceiptPage() {
             <div className="flex gap-6">
               <div>
                 <p style={{ ...pdfLabel, margin: '0 0 2px' }}>{tr.method}</p>
-                <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '10pt', color: '#1a1a1a' }}>
+                <p style={{ margin: 0, fontFamily: docFont, fontSize: '10pt', color: '#1a1a1a' }}>
                   {methodLabels[payment.paymentMethod] || payment.paymentMethod}
                 </p>
               </div>
               <div>
                 <p style={{ ...pdfLabel, margin: '0 0 2px' }}>{tr.date}</p>
-                <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '10pt', color: '#1a1a1a' }}>
+                <p style={{ margin: 0, fontFamily: docFont, fontSize: '10pt', color: '#1a1a1a' }}>
                   {payment.paymentDate ? format(new Date(payment.paymentDate), 'dd MMM yyyy') : '—'}
                 </p>
               </div>
               {payment.reference && (
                 <div>
                   <p style={{ ...pdfLabel, margin: '0 0 2px' }}>{tr.reference}</p>
-                  <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '10pt', color: '#1a1a1a' }}>{payment.reference}</p>
+                  <p style={{ margin: 0, fontFamily: docFont, fontSize: '10pt', color: '#1a1a1a' }}>{payment.reference}</p>
                 </div>
               )}
             </div>
             {payment.notes && (
               <div className="mt-1">
                 <p style={{ ...pdfLabel, margin: '0 0 2px' }}>{tr.notes}</p>
-                <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '9pt', color: '#6b5e4e' }}>{payment.notes}</p>
+                <p style={{ margin: 0, fontFamily: docFont, fontSize: '9pt', color: '#6b5e4e' }}>{payment.notes}</p>
               </div>
             )}
           </div>
           <div className="text-right">
             <p style={{ ...pdfLabel, margin: '0 0 4px' }}>{tr.paymentDetails}</p>
-            <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '22pt', fontWeight: 400, color: '#137333' }}>
+            <p style={{ margin: 0, fontFamily: docFont, fontSize: '22pt', fontWeight: 400, color: '#137333' }}>
               {formatCurrency(payment.amount, currency)}
             </p>
           </div>
@@ -226,7 +231,7 @@ export default function PaymentReceiptPage() {
       </div>
 
       {/* Order Items */}
-      {(order.lineGroups || []).some((g: any) => g.items?.length > 0) && (
+      {layout.showOrderItems && (order.lineGroups || []).some((g: any) => g.items?.length > 0) && (
         <div className="receipt-section mb-6">
           <p style={sectionTitle}>{tr.orderItems}</p>
           <hr className="pdf-rule-thin" style={{ margin: '0 0 10px' }} />
@@ -235,19 +240,19 @@ export default function PaymentReceiptPage() {
             return (
               <div key={gi} className="receipt-item" style={{ marginBottom: gi < arr.length - 1 ? 14 : 0 }}>
                 <div className="receipt-group-header flex justify-between items-center rounded-md py-2 px-3 mb-1.5" style={{ background: '#f5f2ec' }}>
-                  <span style={{ fontFamily: 'Georgia, serif', fontSize: '10pt', fontWeight: 'bold', color: '#1a1a1a' }}>{g.label || '—'}</span>
-                  <span style={{ fontFamily: 'Georgia, serif', fontSize: '10pt', fontWeight: 'bold', color: '#6b5e4e' }}>{formatCurrency(groupTotal, currency)}</span>
+                  <span style={{ fontFamily: docFont, fontSize: '10pt', fontWeight: 'bold', color: '#1a1a1a' }}>{g.label || '—'}</span>
+                  <span style={{ fontFamily: docFont, fontSize: '10pt', fontWeight: 'bold', color: '#6b5e4e' }}>{formatCurrency(groupTotal, currency)}</span>
                 </div>
                 {(g.items || []).map((item: any, i: number) => (
                   <div key={i} className="pl-3.5 ml-2" style={{ borderLeft: '2px solid #e8e0d0', marginBottom: i < g.items.length - 1 ? 6 : 0 }}>
                     <div className="flex justify-between items-baseline py-1 px-2">
-                      <span style={{ fontFamily: 'Georgia, serif', fontSize: '9pt', color: '#1a1a1a' }}>{item.name}</span>
-                      <span style={{ fontFamily: 'Georgia, serif', fontSize: '8.5pt', color: '#9a8c7a', whiteSpace: 'nowrap', marginLeft: 12 }}>×{g.count}</span>
+                      <span style={{ fontFamily: docFont, fontSize: '9pt', color: '#1a1a1a' }}>{item.name}</span>
+                      <span style={{ fontFamily: docFont, fontSize: '8.5pt', color: '#9a8c7a', whiteSpace: 'nowrap', marginLeft: 12 }}>×{g.count}</span>
                     </div>
                     {item.subItems?.length > 0 && (
                       <div className="pl-2 pb-1">
                         {item.subItems.map((s: any, si: number) => (
-                          <span key={si} className="inline-block mr-2.5" style={{ fontFamily: 'Georgia, serif', fontSize: '8pt', color: '#9a8c7a' }}>· {s.name}</span>
+                          <span key={si} className="inline-block mr-2.5" style={{ fontFamily: docFont, fontSize: '8pt', color: '#9a8c7a' }}>· {s.name}</span>
                         ))}
                       </div>
                     )}
@@ -260,11 +265,11 @@ export default function PaymentReceiptPage() {
       )}
 
       {/* Staff Assignments */}
-      {staffSubtotal > 0 && (order.staffAssignments || []).length > 0 && (
+      {layout.showStaffSection && staffSubtotal > 0 && (order.staffAssignments || []).length > 0 && (
         <div className="receipt-section mb-6">
           <p style={sectionTitle}>{tr.staff}</p>
           <hr className="pdf-rule-thin" style={{ margin: '0 0 10px' }} />
-          <table className="receipt-table w-full" style={{ borderCollapse: 'collapse', fontSize: '9pt', fontFamily: 'Georgia, serif' }}>
+          <table className="receipt-table w-full" style={{ borderCollapse: 'collapse', fontSize: '9pt', fontFamily: docFont }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e8e0d0' }}>
                 {[tr.role, tr.count, tr.hours, tr.rate, tr.total].map((h: string, i: number) => (
@@ -331,11 +336,13 @@ export default function PaymentReceiptPage() {
       </div>
 
       {/* Print footer */}
-      <div className="print-only pdf-footer">
-        <span>{company?.companyName || ''}{company?.vatNumber ? ` · ${company.vatNumber}` : ''}</span>
-        <span style={{ color: '#c9a96e', letterSpacing: '0.08em', fontSize: '7pt' }}>✦</span>
-        <span style={{ fontStyle: 'italic' }}>{tr.receipt} #{payment._id.slice(-8).toUpperCase()} — {clientName}</span>
-      </div>
+      {layout.showFooter && (
+        <div className="print-only pdf-footer">
+          <span>{company?.companyName || ''}{company?.vatNumber ? ` · ${company.vatNumber}` : ''}</span>
+          <span style={{ color: layout.accentColor, letterSpacing: '0.08em', fontSize: '7pt' }}>✦</span>
+          <span style={{ fontStyle: 'italic' }}>{tr.receipt} #{payment._id.slice(-8).toUpperCase()} — {clientName}</span>
+        </div>
+      )}
     </div>
   );
 }
