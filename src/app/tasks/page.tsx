@@ -103,6 +103,7 @@ export default function TasksPage() {
 
   const isAdmin = currentUser?.role === 'admin';
   const typeLabel = (type: string) => tp.types?.[type] ?? type;
+  const pendingTasks = tasks.filter(t => !t.completed);
 
   return (
     <div className="max-w-[960px] mx-auto px-3 py-5 sm:px-6 sm:py-8">
@@ -110,7 +111,7 @@ export default function TasksPage() {
         <div>
           <h1 className="text-[22px] font-medium text-g-text m-0">{tp.title}</h1>
           {!loading && (
-            <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.taskCount(tasks.length)}</p>
+            <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.taskCount(pendingTasks.length)}</p>
           )}
         </div>
         <button onClick={() => setShowCreate(true)} className={btnFilled}>
@@ -126,17 +127,17 @@ export default function TasksPage() {
 
       {loading && <div className="text-[#9aa0a6] text-sm py-5">…</div>}
 
-      {!loading && tasks.length === 0 && (
+      {!loading && pendingTasks.length === 0 && (
         <div className="text-center py-12 px-6 bg-g-surface border border-g-border rounded-xl">
           <p className="text-base font-medium text-[#202124] mb-2">{tp.empty.title}</p>
           <p className="text-sm text-[#9aa0a6] m-0">{tp.empty.body}</p>
         </div>
       )}
 
-      {!loading && tasks.length > 0 && (
+      {!loading && pendingTasks.length > 0 && (
         isMobile ? (
           <div className="flex flex-col gap-2.5">
-            {tasks.map(task => {
+            {pendingTasks.map(task => {
               const dlStyle = getDeadlineStyle(task);
               return (
                 <div key={task._id} className="bg-g-surface border border-g-border rounded-xl p-3.5" style={dlStyle}>
@@ -177,13 +178,13 @@ export default function TasksPage() {
               <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-[#5f6368]">{tp.table.status}</div>
               <div className="w-10 flex-shrink-0" />
             </div>
-            {tasks.map((task, idx) => {
+            {pendingTasks.map((task, idx) => {
               const dlStyle = getDeadlineStyle(task);
               return (
                 <div
                   key={task._id}
                   className="flex items-center gap-3 px-5 py-3 bg-g-surface"
-                  style={{ borderBottom: idx === tasks.length - 1 ? 'none' : '1px solid var(--google-border)', ...dlStyle }}
+                  style={{ borderBottom: idx === pendingTasks.length - 1 ? 'none' : '1px solid var(--google-border)', ...dlStyle }}
                 >
                   <button
                     onClick={() => handleToggleComplete(task._id, task.completed)}

@@ -5,9 +5,10 @@ import { InventoryItem, InventoryAdjustment, Supplier } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { requirePermission } from '@/lib/requireAuth';
 
-// Fields a client is allowed to set via PATCH. currentStock is changed only
-// through stockDelta (below) and isActive only via DELETE, so neither — nor
-// timestamps/_id — can be mass-assigned here.
+// Fields a client is allowed to set via PATCH. currentStock is handled
+// separately (direct edit + correction adjustment, or relative stockDelta) and
+// isActive only via DELETE, so neither — nor timestamps/_id — can be
+// mass-assigned here.
 const EDITABLE_FIELDS = [
   'name', 'category', 'unit', 'minStock', 'unitCost',
   'supplier', 'warehouse', 'notes', 'imageUrl', 'laundryEligible',
@@ -31,7 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
     await connectDB();
     const body = await request.json();
-    const { stockDelta, adjustmentType, notes: adjNotes } = body;
+    const { stockDelta, adjustmentType, notes: adjNotes, currentStock } = body;
 
     // Only copy whitelisted fields (mass-assignment guard).
     const fields: Record<string, unknown> = {};
@@ -49,6 +50,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
     // Apply field updates
     Object.assign(item, fields);
+
+    // Direct stock edit: set currentStock and record a correction adjustment for
+    // the difference so the audit history stays accurate. (stockDelta below is the
+    // relative path used by the "Adjust Stock" panel.)
+    if (currentStock !== undefined && currentStock !== null) {
+      const newStock = Math.max(0, Number(currentStock));
+      const diff = newStock - item.currentStock;
+      if (diff !== 0) {
+        const userId = auth.userId;
+        item.currentStock = newStock;
+        await InventoryAdjustment.create({
+          item: item._id,
+          adjustmentType: 'correction',
+          quantity: diff,
+          notes: adjNotes ?? '',
+          performedBy: userId ?? null,
+        });
+        await logActivity({
+          action: 'inventory_adjusted',
+          entityType: 'inventoryItem',
+          entityId: params.id,
+          entityLabel: `${item.name} (${diff > 0 ? '+' : ''}${diff})`,
+          performedBy: userId,
+          metadata: { adjustmentType: 'correction', stockDelta: diff },
+        });
+      }
+    }
 
     // Apply stock adjustment if provided
     if (stockDelta !== undefined && stockDelta !== null) {

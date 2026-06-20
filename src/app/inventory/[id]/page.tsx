@@ -91,8 +91,11 @@ export default function InventoryItemPage({ params }) {
       if (isNew) {
         router.push(`/inventory/${d.item._id}`);
       } else {
-        setItem({ ...d.item, category: d.item.category?._id ?? '', supplier: d.item.supplier?._id ?? '' });
+        setItem({ ...d.item, category: d.item.category?._id ?? '', supplier: d.item.supplier?._id ?? '', warehouse: d.item.warehouse?._id ?? '' });
         setEditing(false);
+        fetch(`/api/inventory/adjustments?item=${params.id}`)
+          .then(r => r.ok ? r.json() : { adjustments: [] })
+          .then(d2 => setAdjustments(d2.adjustments ?? []));
         showToast(ti.saved);
       }
     } catch {

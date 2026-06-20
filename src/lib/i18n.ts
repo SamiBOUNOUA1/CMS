@@ -998,6 +998,7 @@ export const translations: Record<string, any> = {
             usage: 'Usage (stock out)',
             return: 'Return',
             'write-off': 'Write-off',
+            correction: 'Correction (manual count)',
           },
         },
         image: {
@@ -1883,6 +1884,7 @@ export const translations: Record<string, any> = {
               usage: 'Usage (stock out)',
               return: 'Return',
               'write-off': 'Write-off',
+              correction: 'Correction (manual count)',
             },
           },
           adjTable: {
@@ -3002,6 +3004,7 @@ export const translations: Record<string, any> = {
             usage: 'Utilisation (sortie stock)',
             return: 'Retour',
             'write-off': 'Mise au rebut',
+            correction: 'Correction (comptage manuel)',
           },
         },
         image: {
@@ -3887,6 +3890,7 @@ export const translations: Record<string, any> = {
               usage: 'Utilisation (sortie)',
               return: 'Retour',
               'write-off': 'Dépréciation',
+              correction: 'Correction (comptage manuel)',
             },
           },
           adjTable: {

@@ -531,7 +531,7 @@ export const InventoryItem = models.InventoryItem || model('InventoryItem', inve
 const inventoryAdjustmentSchema = new Schema(
   {
     item:           { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
-    adjustmentType: { type: String, enum: ['purchase', 'usage', 'return', 'write-off'], required: true },
+    adjustmentType: { type: String, enum: ['purchase', 'usage', 'return', 'write-off', 'correction'], required: true },
     quantity:       { type: Number, required: true },
     date:           { type: Date, default: Date.now },
     notes:          { type: String, default: '' },
