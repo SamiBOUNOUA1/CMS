@@ -41,7 +41,7 @@ export default function NewOrderPage() {
   const [form, setForm] = useState({
     clientName: '', clientEmail: '', clientPhone: '',
     eventDate: '', eventType: 'corporate', guestCount: 50, tableCount: '' as string | number,
-    startTime: '', notes: '', status: 'new',
+    startTime: '', eventLocation: '', notes: '', externalNotes: '', status: 'new',
   });
   const [lineGroups, setLineGroups] = useState<any[]>([defaultLineGroup()]);
   const [staffAssignments, setStaffAssignments] = useState<any[]>([]);
@@ -131,7 +131,9 @@ export default function NewOrderPage() {
         guestCount: isTableMode ? Number(form.tableCount) * tableCapacity : Number(form.guestCount),
         tableCount: isTableMode ? Number(form.tableCount) : undefined,
         startTime: form.startTime,
+        eventLocation: form.eventLocation,
         notes: form.notes,
+        externalNotes: form.externalNotes,
         status: orderStatuses[0]?.name || 'new',
         travelRegion: selectedRegion?.label || '',
         travelPrice: travelPrice,
@@ -313,6 +315,9 @@ export default function NewOrderPage() {
           <Field label={tn.event.notes}>
             <FormTextarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} placeholder={tn.event.notesPlaceholder} rows={3} />
           </Field>
+          <Field label={tn.event.externalNotes}>
+            <FormTextarea value={form.externalNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('externalNotes', e.target.value)} placeholder={tn.event.externalNotesPlaceholder} rows={3} />
+          </Field>
         </div>
       )}
 
@@ -321,6 +326,15 @@ export default function NewOrderPage() {
         <div>
           <h2 className="text-base font-medium text-g-text mb-2">{tn.location.title}</h2>
           <p className="text-[13px] text-g-text-2 mb-6">{tn.location.hint}</p>
+          <div className="mb-6">
+            <Field label={tn.location.address}>
+              <FormInput
+                value={form.eventLocation}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('eventLocation', e.target.value)}
+                placeholder={tn.location.addressPlaceholder}
+              />
+            </Field>
+          </div>
           {travelRegions.length === 0 ? (
             <div className="p-6 bg-g-bg rounded-xl border border-g-border text-g-text-2 text-sm text-center">
               {tn.location.noRegions}

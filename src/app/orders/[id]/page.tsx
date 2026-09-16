@@ -114,7 +114,9 @@ export default function OrderDetailPage() {
         eventDate: data.order.eventDate ? data.order.eventDate.slice(0, 10) : '',
         eventType: data.order.eventType, guestCount: data.order.guestCount,
         tableCount: data.order.tableCount || '', startTime: data.order.startTime || '',
-        notes: data.order.notes || '', status: data.order.status,
+        eventLocation: data.order.eventLocation || '',
+        notes: data.order.notes || '', externalNotes: data.order.externalNotes || '',
+        status: data.order.status,
       });
       setOrderLineGroups(data.order.lineGroups?.length ? data.order.lineGroups : [defaultLineGroup()]);
       setOrderStaff(data.order.staffAssignments || []);
@@ -412,7 +414,9 @@ export default function OrderDetailPage() {
               <FieldView label="Event date" value={order.eventDate ? format(new Date(order.eventDate), 'dd MMM yyyy') : '—'} />
               <FieldView label="Guests" value={order.tableCount ? `${order.tableCount} tables (~${order.guestCount} guests)` : `${order.guestCount} guests`} />
               <FieldView label="Start time" value={order.startTime || '—'} />
+              <FieldView label="Location" value={order.eventLocation || '—'} />
               {order.notes && <div className="sm:col-span-2"><FieldView label="Notes" value={order.notes} /></div>}
+              {order.externalNotes && <div className="sm:col-span-2"><FieldView label="External notes (shown on quote & receipt)" value={order.externalNotes} /></div>}
             </div>
           )}
           {editing && (
@@ -429,6 +433,9 @@ export default function OrderDetailPage() {
             <div className="text-sm text-[#202124]">
               {t.eventTypes[order.event.eventType] || order.event.eventType} · {order.event.eventDate ? format(new Date(order.event.eventDate), 'dd MMM yyyy') : '—'} · {order.event.guestCount} guests
             </div>
+            {order.event.eventLocation && (
+              <div className="text-[13px] text-[#5f6368] mt-0.5">📍 {order.event.eventLocation}</div>
+            )}
           </div>
         )}
         {!order.event && (
@@ -924,7 +931,9 @@ function EditOrderForm({ form, setForm, eventTypeConfigs, isTableMode, tableCapa
         )}
       </div>
       <div className={fieldCls}><label className={labelCls}>Start time</label><input type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} className={inputCls} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>Location</label><input value={form.eventLocation} onChange={e => set('eventLocation', e.target.value)} className={inputCls} placeholder="Address / venue" /></div>
       <div className={`${fieldCls} col-span-2`}><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className={`${inputCls} resize-y`} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>External notes <span className="text-[#9aa0a6] font-normal">(shown on quote &amp; receipt)</span></label><textarea value={form.externalNotes} onChange={e => set('externalNotes', e.target.value)} rows={3} className={`${inputCls} resize-y`} placeholder="Notes visible to the client on the quote &amp; payment receipt…" /></div>
     </div>
   );
 }

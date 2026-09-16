@@ -61,6 +61,7 @@ export default function DocumentLayoutSettingsPage() {
     { key: 'showOrderItems',    label: ts.showOrderItems,    scope: ts.receiptOnly },
     { key: 'showClientNotes',   label: ts.showClientNotes,   scope: ts.quoteOnly },
     { key: 'showInternalNotes', label: ts.showInternalNotes, scope: ts.quoteOnly },
+    { key: 'showExternalNotes', label: ts.showExternalNotes, scope: ts.bothDocs },
     { key: 'showFooter',        label: ts.showFooter,        scope: ts.bothDocs },
   ];
 

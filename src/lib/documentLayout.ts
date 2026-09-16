@@ -15,6 +15,7 @@ export interface DocumentLayout {
   showOrderItems: boolean;
   showClientNotes: boolean;
   showInternalNotes: boolean;
+  showExternalNotes: boolean;
   showFooter: boolean;
 }
 
@@ -30,6 +31,7 @@ export const DEFAULT_LAYOUT: DocumentLayout = {
   showOrderItems: true,
   showClientNotes: true,
   showInternalNotes: false,
+  showExternalNotes: true,
   showFooter: true,
 };
 

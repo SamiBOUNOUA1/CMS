@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Quote, Event, OrderStatusConfig, FlowTemplate } from '@/lib/models';
+import { Order, Quote, Event, OrderStatusConfig, FlowTemplate, Payment } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
 
@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     const prevStatus = order.status;
     const allowed = [
       'clientName', 'clientEmail', 'clientPhone', 'eventDate', 'eventType',
-      'guestCount', 'tableCount', 'startTime', 'notes', 'status',
+      'guestCount', 'tableCount', 'startTime', 'eventLocation', 'notes', 'externalNotes', 'status',
       'lineGroups', 'staffAssignments', 'discountAmount', 'assignees',
     ];
     for (const key of allowed) {
@@ -44,6 +44,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     }
     // When the assignee team is written, clear the legacy single-manager field so the two never drift.
     if (body.assignees !== undefined) order.assignedManager = null;
+
+    // Keep the linked Event (the snapshot the calendar reads from) in sync with the order.
+    // Without this, editing the order's date leaves the event on its old day in the calendar.
+    if (order.event && typeof order.event === 'object' && '_id' in order.event) {
+      const eventSyncFields = ['eventDate', 'eventType', 'guestCount', 'tableCount', 'startTime', 'eventLocation', 'notes'];
+      let eventChanged = false;
+      for (const key of eventSyncFields) {
+        if (body[key] !== undefined) {
+          order.event[key] = body[key];
+          eventChanged = true;
+        }
+      }
+      if (eventChanged) await order.event.save();
+    }
 
     // If status changed and new status has triggerEvent, create event if not yet created
     if (body.status && body.status !== prevStatus) {
@@ -63,6 +77,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
           guestCount: order.guestCount,
           tableCount: order.tableCount,
           startTime: order.startTime,
+          eventLocation: order.eventLocation,
           notes: order.notes,
           status: 'confirmed',
           flowInstance: template
@@ -82,6 +97,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     order.totalAmount = +(_iTotal + _sTotal + (order.travelPrice || 0) - (order.discountAmount || 0)).toFixed(2);
 
     await order.save();
+
+    // When an order is marked Completed, automatically record a cash payment for any
+    // outstanding balance so the order lands fully-paid.
+    if (body.status === 'completed' && prevStatus !== 'completed') {
+      const existingPayments = await Payment.find({ order: params.id }).lean();
+      const paidTotal = +existingPayments.reduce((s, p) => s + p.amount, 0).toFixed(2);
+      const remaining = +(order.totalAmount - paidTotal).toFixed(2);
+      if (remaining > 0) {
+        const payment = await Payment.create({
+          order: params.id,
+          amount: remaining,
+          paymentDate: new Date(),
+          paymentMethod: 'cash',
+          notes: 'Auto-recorded on order completion',
+        });
+        order.paymentStatus = 'fully-paid';
+        await order.save();
+        await logActivity({
+          action: 'payment_created',
+          entityType: 'payment',
+          entityId: payment._id.toString(),
+          entityLabel: `${remaining}€ – ${order.clientName}`,
+          performedBy: auth.userId,
+          metadata: { orderId: params.id, amount: remaining, method: 'cash', auto: true },
+        });
+      }
+    }
 
     if (body.status && body.status !== prevStatus) {
       const userId = auth.userId;

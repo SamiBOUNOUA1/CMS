@@ -36,12 +36,19 @@ const ModuleChefHatIcon = () => (
   </svg>
 );
 
+const ModuleBarChartIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M4 20V10h4v10H4zm6 0V4h4v16h-4zm6 0v-7h4v7h-4z" />
+  </svg>
+);
+
 const MODULE_ICON_MAP: Record<string, () => JSX.Element> = {
   ClipboardList: ModuleClipboardIcon,
   Warehouse: ModuleWarehouseIcon,
   CheckSquare: ModuleCheckSquareIcon,
   WashingMachine: ModuleWashingMachineIcon,
   ChefHat: ModuleChefHatIcon,
+  BarChart: ModuleBarChartIcon,
 };
 
 const SunIcon = () => (

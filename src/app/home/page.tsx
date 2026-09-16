@@ -2,9 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useT } from '@/lib/LanguageContext';
+import { useT, useCurrency } from '@/lib/LanguageContext';
 import { format } from 'date-fns';
 import { ACTION_LABELS, ActivityIcon } from '@/lib/activityHelpers';
+
+function formatCurrency(n: number | null | undefined, cur = '€') {
+  if (n == null) return '—';
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n) + ' ' + cur;
+}
+
+interface ReportKpis {
+  revenueThisMonth: number;
+  orderCount: number;
+  outstanding: number;
+}
 
 interface Task {
   _id: string;
@@ -41,6 +52,8 @@ export default function HomePage() {
   const t = useT();
   const tp = t.homePage;
   const tt = t.tasksPage;
+  const tr = t.reportsPage;
+  const currency = useCurrency();
 
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -48,6 +61,7 @@ export default function HomePage() {
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [canViewActivities, setCanViewActivities] = useState(false);
+  const [reportKpis, setReportKpis] = useState<ReportKpis | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -66,6 +80,21 @@ export default function HomePage() {
               .catch(() => setLoadingActivities(false));
           } else {
             setLoadingActivities(false);
+          }
+          if (d.user?.permissions?.view_reports) {
+            fetch('/api/reports?range=12m')
+              .then(r => r.ok ? r.json() : null)
+              .then(rep => {
+                if (rep) {
+                  const months = rep.revenueByMonth ?? [];
+                  setReportKpis({
+                    revenueThisMonth: months.length ? months[months.length - 1].revenue : 0,
+                    orderCount: rep.kpis?.orderCount ?? 0,
+                    outstanding: rep.paymentsSummary?.outstanding ?? 0,
+                  });
+                }
+              })
+              .catch(() => {});
           }
         }
       });
@@ -121,6 +150,24 @@ export default function HomePage() {
             {format(new Date(), 'EEEE, d MMMM yyyy')}
           </p>
         </div>
+
+        {/* Business KPI strip (reports permission only) */}
+        {reportKpis && (
+          <div className="flex gap-4 flex-wrap mb-8">
+            <Link href="/reports" className="flex-[1_1_160px] bg-g-surface border border-g-border rounded-xl px-5 py-4 no-underline">
+              <div className="font-sans text-[22px] font-medium text-google-blue">{formatCurrency(reportKpis.revenueThisMonth, currency)}</div>
+              <div className="text-[13px] text-g-text-2 font-[Roboto,Arial] mt-1">{tr.home.revenueThisMonth}</div>
+            </Link>
+            <Link href="/reports" className="flex-[1_1_160px] bg-g-surface border border-g-border rounded-xl px-5 py-4 no-underline">
+              <div className="font-sans text-[22px] font-medium" style={{ color: '#9334e6' }}>{reportKpis.orderCount}</div>
+              <div className="text-[13px] text-g-text-2 font-[Roboto,Arial] mt-1">{tr.home.orders12m}</div>
+            </Link>
+            <Link href="/reports" className="flex-[1_1_160px] bg-g-surface border border-g-border rounded-xl px-5 py-4 no-underline">
+              <div className="font-sans text-[22px] font-medium text-google-red">{formatCurrency(reportKpis.outstanding, currency)}</div>
+              <div className="text-[13px] text-g-text-2 font-[Roboto,Arial] mt-1">{tr.home.outstanding}</div>
+            </Link>
+          </div>
+        )}
 
         {/* Stats row */}
         <div className="flex gap-4 flex-wrap mb-8">

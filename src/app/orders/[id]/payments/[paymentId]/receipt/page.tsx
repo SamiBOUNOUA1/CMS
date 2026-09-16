@@ -335,6 +335,15 @@ export default function PaymentReceiptPage() {
         </div>
       </div>
 
+      {/* External notes */}
+      {layout.showExternalNotes && order.externalNotes && (
+        <div className="receipt-section mb-6">
+          <p style={sectionTitle}>{tr.externalNotes}</p>
+          <hr className="pdf-rule-thin" style={{ margin: '0 0 10px' }} />
+          <p style={{ margin: 0, fontFamily: docFont, fontSize: '9pt', color: '#6b5e4e', whiteSpace: 'pre-wrap' }}>{order.externalNotes}</p>
+        </div>
+      )}
+
       {/* Print footer */}
       {layout.showFooter && (
         <div className="print-only pdf-footer">

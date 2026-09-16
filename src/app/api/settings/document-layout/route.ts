@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest) {
     const fields = [
       'accentColor', 'fontStyle',
       'showLogo', 'showAddress', 'showPhone', 'showEmail', 'showVatNumber',
-      'showStaffSection', 'showOrderItems', 'showClientNotes', 'showInternalNotes', 'showFooter',
+      'showStaffSection', 'showOrderItems', 'showClientNotes', 'showInternalNotes', 'showExternalNotes', 'showFooter',
     ];
     const update = {};
     for (const f of fields) {

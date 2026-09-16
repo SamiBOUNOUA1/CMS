@@ -205,6 +205,7 @@ const eventSchema = new Schema(
   {
     client: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
     venue: { type: Schema.Types.ObjectId, ref: 'Venue' },
+    eventLocation: { type: String, default: '', trim: true }, // free-text location, synced from the order
     eventDate: { type: Date, required: true },
     eventType: {
       type: String,
@@ -326,7 +327,9 @@ const orderSchema = new Schema(
     guestCount:  { type: Number, required: true, min: 1 },
     tableCount:  { type: Number, min: 1 },
     startTime:   String,
+    eventLocation: { type: String, default: '', trim: true }, // free-text event location; copied to the linked Event
     notes:       String,
+    externalNotes: { type: String, default: '' }, // client-facing; shown on quote & receipt
     status:        { type: String, required: true, default: 'new' },
     paymentStatus: {
       type: String,
@@ -619,6 +622,7 @@ const documentLayoutSettingsSchema = new Schema(
     showOrderItems:    { type: Boolean, default: true },  // receipt only
     showClientNotes:   { type: Boolean, default: true },  // quote only
     showInternalNotes: { type: Boolean, default: false }, // quote only
+    showExternalNotes: { type: Boolean, default: true },  // both docs
     showFooter:        { type: Boolean, default: true },
   },
   { timestamps: true }

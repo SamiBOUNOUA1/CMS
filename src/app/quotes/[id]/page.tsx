@@ -57,9 +57,9 @@ export default function QuoteDetailPage() {
   const docFont = docFontFamily(layout.fontStyle);
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
+    <div className="quote-page" style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
       {/* Back breadcrumb + Print */}
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="no-print quote-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#5f6368', fontFamily: "'Google Sans'" }}>
           <Link href="/orders" style={{ color: '#1a73e8', textDecoration: 'none' }}>Orders</Link>
           <span>›</span>
@@ -196,7 +196,8 @@ export default function QuoteDetailPage() {
 
           {staffTotal > 0 && layout.showStaffSection && (
             <Section title={td.staffAssignments} icon="👨‍🍳" style={{ marginTop: 20 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <div className="quote-scroll-x">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 380 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e8eaed' }}>
                     {[td.table.role, td.table.count, td.table.hours, td.table.ratePerHour, td.table.total].map((h, idx) => (
@@ -216,15 +217,22 @@ export default function QuoteDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </Section>
           )}
 
-          {((layout.showClientNotes && quote.clientNotes) || (layout.showInternalNotes && quote.internalNotes)) && (
+          {((layout.showClientNotes && quote.clientNotes) || (layout.showInternalNotes && quote.internalNotes) || (layout.showExternalNotes && order?.externalNotes)) && (
             <Section title={td.notes} icon="📝" style={{ marginTop: 20 }}>
+              {layout.showExternalNotes && order?.externalNotes && (
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.externalNotes}</p>
+                  <p style={{ fontSize: 14, color: '#202124', margin: 0, whiteSpace: 'pre-wrap' }}>{order.externalNotes}</p>
+                </div>
+              )}
               {layout.showClientNotes && quote.clientNotes && (
                 <div style={{ marginBottom: 12 }}>
                   <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.clientNotes}</p>
-                  <p style={{ fontSize: 14, color: '#202124', margin: 0 }}>{quote.clientNotes}</p>
+                  <p style={{ fontSize: 14, color: '#202124', margin: 0, whiteSpace: 'pre-wrap' }}>{quote.clientNotes}</p>
                 </div>
               )}
               {layout.showInternalNotes && quote.internalNotes && (

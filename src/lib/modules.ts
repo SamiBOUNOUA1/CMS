@@ -94,6 +94,20 @@ export const MODULE_REGISTRY = [
     ],
     builtIn: false,
   },
+  {
+    id: 'reports',
+    name: 'Reports',
+    nameFr: 'Rapports',
+    description: 'Revenue trends, bookings, conversion, and business KPIs.',
+    descriptionFr: 'Tendances du chiffre d\'affaires, réservations, conversion et indicateurs clés.',
+    icon: 'BarChart',
+    color: '#9334e6',
+    primaryRoute: '/reports',
+    routes: ['/reports'],
+    apiPrefixes: ['/api/reports'],
+    permissions: ['view_reports'],
+    builtIn: false,
+  },
 ];
 
 export const MODULE_IDS = MODULE_REGISTRY.map(m => m.id);
