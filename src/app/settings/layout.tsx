@@ -56,6 +56,16 @@ const IconStaffRoles = () => (
     <path d="M11 6.08V4h2v2.08A8.01 8.01 0 0 1 19.92 13H22v2h-2.08A8.01 8.01 0 0 1 13 19.92V22h-2v-2.08A8.01 8.01 0 0 1 4.08 15H2v-2h2.08A8.01 8.01 0 0 1 11 6.08zM12 18c3.31 0 6-2.69 6-6s-2.69-6-6-6-6 2.69-6 6 2.69 6 6 6zm0-4a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
   </svg>
 );
+const IconWhatsApp = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.51 5.26l-.999 3.648 3.978-1.207zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+  </svg>
+);
+const IconDocLayout = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z" />
+  </svg>
+);
 const IconChevron = ({ open }: { open: boolean }) => (
   <svg
     width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
@@ -72,6 +82,11 @@ const IconFlow = () => (
 const IconModules = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
     <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z" />
+  </svg>
+);
+const IconDataManagement = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 10v-2h2v2h-2zm-4 0v-2h2v2H7zm8 0v-2h2v2h-2zM5 20h14v2H5z" />
   </svg>
 );
 const IconMenu = () => (
@@ -106,6 +121,8 @@ function useNavGroups(t: ReturnType<typeof useT>, perms: Record<string, boolean>
       label: ts.nav.general,
       items: [
         { href: '/settings/company',        label: ts.tabs.company,       icon: <IconCompany />,        perm: 'manage_users' },
+        { href: '/settings/document-layout', label: ts.tabs.documentLayout, icon: <IconDocLayout />,     perm: 'manage_users' },
+        { href: '/settings/whatsapp',       label: ts.tabs.whatsapp,      icon: <IconWhatsApp />,       perm: 'manage_integrations' },
         { href: '/settings/catalog',        label: ts.tabs.catalog,       icon: <IconCatalog />,        perm: 'manage_catalog' },
         { href: '/settings/event-types',      label: ts.tabs.eventTypes,    icon: <IconEventTypes />,      perm: 'manage_event_types' },
         { href: '/settings/order-statuses',  label: ts.tabs.orderStatuses, icon: <IconOrderStatuses />,   perm: 'manage_order_statuses' },
@@ -119,10 +136,11 @@ function useNavGroups(t: ReturnType<typeof useT>, perms: Record<string, boolean>
       key: 'administration',
       label: ts.nav.administration,
       items: [
-        { href: '/settings/modules',     label: ts.tabs.modules,     icon: <IconModules />,     perm: 'manage_users' },
-        { href: '/settings/users',       label: ts.tabs.users,       icon: <IconUsers />,       perm: 'manage_users' },
-        { href: '/settings/roles',       label: ts.tabs.roles,       icon: <IconRoles />,       perm: 'manage_users' },
-        { href: '/settings/permissions', label: ts.tabs.permissions, icon: <IconPermissions />, perm: 'manage_users' },
+        { href: '/settings/modules',         label: ts.tabs.modules,         icon: <IconModules />,         perm: 'manage_users' },
+        { href: '/settings/users',           label: ts.tabs.users,           icon: <IconUsers />,           perm: 'manage_users' },
+        { href: '/settings/roles',           label: ts.tabs.roles,           icon: <IconRoles />,           perm: 'manage_users' },
+        { href: '/settings/permissions',     label: ts.tabs.permissions,     icon: <IconPermissions />,     perm: 'manage_users' },
+        { href: '/settings/data-management', label: ts.tabs.dataManagement,  icon: <IconDataManagement />,  perm: 'manage_data' },
       ].filter(i => perms[i.perm]),
     },
   ].filter(g => g.items.length > 0);

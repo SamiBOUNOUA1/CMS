@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT, useCurrency } from '@/lib/LanguageContext';
-import { btnFilled, btnOutline } from '@/app/components/FormPrimitives';
+import { useIsMobile } from '@/lib/useIsMobile';
+import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
 import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 
 export default function NewOrderPage() {
   const router = useRouter();
-  const isMobile = useIsMobile();
   const t = useT();
   const tn = t.newOrder;
   const currency = useCurrency();
+  const isMobile = useIsMobile();
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -41,10 +41,10 @@ export default function NewOrderPage() {
   const [form, setForm] = useState({
     clientName: '', clientEmail: '', clientPhone: '',
     eventDate: '', eventType: 'corporate', guestCount: 50, tableCount: '' as string | number,
-    startTime: '', notes: '', status: 'new',
+    startTime: '', eventLocation: '', notes: '', externalNotes: '', status: 'new',
   });
   const [lineGroups, setLineGroups] = useState<any[]>([defaultLineGroup()]);
-  const [staffAssignments, setStaffAssignments] = useState<any[]>([defaultStaff('')]);
+  const [staffAssignments, setStaffAssignments] = useState<any[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<any>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerResults, setCustomerResults] = useState<any[]>([]);
@@ -56,14 +56,6 @@ export default function NewOrderPage() {
       setSelectedRegion(def);
     }
   }, [travelRegions]);
-
-  useEffect(() => {
-    if (staffRolesConfig.length > 0) {
-      setStaffAssignments(prev =>
-        prev.map(sa => sa.role === '' ? { ...sa, role: staffRolesConfig[0].key } : sa)
-      );
-    }
-  }, [staffRolesConfig]);
 
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
@@ -94,7 +86,8 @@ export default function NewOrderPage() {
     const e: Record<string, string> = {};
     if (step === 0) {
       if (!form.clientName.trim()) e.clientName = tn.validation.required;
-      if (!form.clientEmail.trim() || !/\S+@\S+\.\S+/.test(form.clientEmail)) e.clientEmail = tn.validation.validEmail;
+      if (!form.clientPhone.trim()) e.clientPhone = tn.validation.required;
+      if (form.clientEmail.trim() && !/\S+@\S+\.\S+/.test(form.clientEmail)) e.clientEmail = tn.validation.validEmail;
     }
     if (step === 1) {
       if (!form.eventDate) e.eventDate = tn.validation.required;
@@ -110,14 +103,18 @@ export default function NewOrderPage() {
 
   const effectiveCount = isTableMode ? Number(form.tableCount) || 1 : Number(form.guestCount) || 1;
 
+  const hasStaffRoles = staffRolesConfig.length > 0;
+  const lastStep = hasStaffRoles ? 4 : 3;
+  const displaySteps = hasStaffRoles ? tn.steps : tn.steps.slice(0, 4);
+
   const next = () => {
     if (!validate()) return;
     if (step === 1) {
       setLineGroups(prev => prev.map(g => ({ ...g, count: effectiveCount })));
     }
-    setStep(s => Math.min(s + 1, 4));
+    setStep(s => Math.min(s + 1, lastStep));
   };
-  const skip = () => setStep(s => Math.min(s + 1, 4));
+  const skip = () => setStep(s => Math.min(s + 1, lastStep));
   const prev = () => setStep(s => Math.max(s - 1, 0));
 
   const travelPrice = selectedRegion?.travelPrice || 0;
@@ -134,7 +131,9 @@ export default function NewOrderPage() {
         guestCount: isTableMode ? Number(form.tableCount) * tableCapacity : Number(form.guestCount),
         tableCount: isTableMode ? Number(form.tableCount) : undefined,
         startTime: form.startTime,
+        eventLocation: form.eventLocation,
         notes: form.notes,
+        externalNotes: form.externalNotes,
         status: orderStatuses[0]?.name || 'new',
         travelRegion: selectedRegion?.label || '',
         travelPrice: travelPrice,
@@ -183,32 +182,25 @@ export default function NewOrderPage() {
     }
   };
 
-  const inputCls = (err?: string) =>
-    `w-full py-2.5 px-3.5 border ${err ? 'border-google-red' : 'border-[#dadce0]'} rounded-lg text-[15px] outline-none text-[#202124] bg-white box-border`;
-  const labelCls = 'text-[13px] font-medium text-[#3c4043] block mb-1.5';
-  const fieldCls = 'mb-[18px]';
-  const errorCls = 'text-xs text-google-red mt-1';
-
   return (
-    <div className="mx-auto" style={{ maxWidth: step >= 3 ? 800 : 560, padding: isMobile ? '20px 16px' : '40px 24px' }}>
+    <div className={`mx-auto px-4 py-5 sm:px-6 sm:py-10 transition-all ${step >= 3 ? 'max-w-[800px]' : 'max-w-[560px]'}`}>
       {/* Header */}
       <div className="mb-7">
         <Link href="/orders" className="text-[13px] text-google-blue no-underline inline-flex items-center gap-1 mb-4">
           ← {t.orderDetail.back}
         </Link>
-        <h1 className="font-normal text-[#202124] m-0" style={{ fontSize: isMobile ? 22 : 26 }}>{tn.title}</h1>
-        <p className="text-[13px] text-[#5f6368] mt-1 mb-0">{tn.subtitle}</p>
+        <h1 className="text-[22px] sm:text-[26px] font-normal text-g-text m-0">{tn.title}</h1>
+        <p className="text-[13px] text-g-text-2 mt-1 mb-0">{tn.subtitle}</p>
       </div>
 
       {/* Stepper */}
       <div className="flex items-center mb-8">
-        {tn.steps.map((label: string, i: number) => (
-          <div key={i} className="flex items-center" style={{ flex: i < tn.steps.length - 1 ? 1 : 0 }}>
+        {displaySteps.map((label: string, i: number) => (
+          <div key={i} className="flex items-center" style={{ flex: i < displaySteps.length - 1 ? 1 : 0 }}>
             <div className="flex flex-col items-center gap-1">
               <div
-                className="rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
                 style={{
-                  width: isMobile ? 24 : 28, height: isMobile ? 24 : 28,
                   background: i < step ? '#137333' : i === step ? '#1a73e8' : '#e8eaed',
                   color: i <= step ? '#fff' : '#5f6368',
                 }}
@@ -216,9 +208,8 @@ export default function NewOrderPage() {
                 {i < step ? '✓' : i + 1}
               </div>
               <span
-                className="whitespace-nowrap"
+                className="whitespace-nowrap text-[9px] sm:text-[11px]"
                 style={{
-                  fontSize: isMobile ? 9 : 11,
                   fontWeight: i === step ? 600 : 400,
                   color: i === step ? '#1a73e8' : i < step ? '#137333' : '#5f6368',
                 }}
@@ -226,14 +217,10 @@ export default function NewOrderPage() {
                 {label}
               </span>
             </div>
-            {i < tn.steps.length - 1 && (
+            {i < displaySteps.length - 1 && (
               <div
-                className="flex-1 h-0.5 transition-colors duration-300"
-                style={{
-                  background: i < step ? '#137333' : '#e8eaed',
-                  margin: isMobile ? '0 4px' : '0 8px',
-                  marginBottom: isMobile ? 14 : 18,
-                }}
+                className="flex-1 h-0.5 mx-1 sm:mx-2 mb-3.5 sm:mb-[18px] transition-colors duration-300"
+                style={{ background: i < step ? '#137333' : '#e8eaed' }}
               />
             )}
           </div>
@@ -242,33 +229,33 @@ export default function NewOrderPage() {
 
       {/* Step 0: Client */}
       {step === 0 && (
-        <div>
-          <h2 className="text-base font-medium text-[#202124] mb-5">{tn.client.title}</h2>
+        <div className="flex flex-col gap-4">
+          <h2 className="text-base font-medium text-g-text m-0">{tn.client.title}</h2>
 
-          <div className={`${fieldCls} relative`}>
-            <label className={labelCls}>{tn.client.searchExisting}</label>
-            <input
-              value={customerSearch}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerSearch(e.target.value)}
-              placeholder={tn.client.searchPlaceholder}
-              className={inputCls()}
-              onBlur={() => setTimeout(() => setShowCustomerResults(false), 150)}
-              onFocus={() => customerResults.length > 0 && setShowCustomerResults(true)}
-              autoComplete="off"
-            />
+          <div className="relative">
+            <Field label={tn.client.searchExisting}>
+              <FormInput
+                value={customerSearch}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerSearch(e.target.value)}
+                placeholder={tn.client.searchPlaceholder}
+                onBlur={() => setTimeout(() => setShowCustomerResults(false), 150)}
+                onFocus={() => customerResults.length > 0 && setShowCustomerResults(true)}
+                autoComplete="off"
+              />
+            </Field>
             {showCustomerResults && (
-              <div className="absolute top-full left-0 right-0 z-[100] bg-white border border-[#dadce0] rounded-lg shadow-google-2 mt-1 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 z-[100] bg-g-surface border border-g-border rounded-lg shadow-google-2 mt-1 overflow-hidden">
                 {customerResults.length === 0 ? (
-                  <div className="py-3 px-4 text-[13px] text-[#5f6368]">{tn.client.noResults}</div>
+                  <div className="py-3 px-4 text-[13px] text-g-text-2">{tn.client.noResults}</div>
                 ) : (
                   customerResults.slice(0, 8).map((c: any) => (
                     <button
                       key={c._id}
                       onMouseDown={() => selectCustomer(c)}
-                      className="block w-full text-left py-2.5 px-4 border-none bg-none cursor-pointer border-b border-[#f1f3f4] hover:bg-[#f8f9fa]"
+                      className="block w-full text-left py-2.5 px-4 border-none bg-transparent cursor-pointer border-b border-g-border hover:bg-g-bg"
                     >
-                      <div className="text-sm text-[#202124] font-medium">{c.name}</div>
-                      <div className="text-xs text-[#5f6368]">{c.email}{c.phone ? ` · ${c.phone}` : ''}</div>
+                      <div className="text-sm text-g-text font-medium">{c.name}</div>
+                      <div className="text-xs text-g-text-2">{c.email}{c.phone ? ` · ${c.phone}` : ''}</div>
                     </button>
                   ))
                 )}
@@ -276,82 +263,80 @@ export default function NewOrderPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-[#e8eaed]" />
-            <span className="text-xs text-[#5f6368] whitespace-nowrap">{tn.client.orNewCustomer}</span>
-            <div className="flex-1 h-px bg-[#e8eaed]" />
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-g-border" />
+            <span className="text-xs text-g-text-2 whitespace-nowrap">{tn.client.orNewCustomer}</span>
+            <div className="flex-1 h-px bg-g-border" />
           </div>
 
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.client.fullName} *</label>
-            <input value={form.clientName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientName', e.target.value)} className={inputCls(errors.clientName)} />
-            {errors.clientName && <div className={errorCls}>{errors.clientName}</div>}
-          </div>
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.client.email} *</label>
-            <input type="email" value={form.clientEmail} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientEmail', e.target.value)} className={inputCls(errors.clientEmail)} />
-            {errors.clientEmail && <div className={errorCls}>{errors.clientEmail}</div>}
-          </div>
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.client.phone}</label>
-            <input type="tel" value={form.clientPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientPhone', e.target.value)} className={inputCls()} />
-          </div>
+          <Field label={`${tn.client.fullName} *`} error={errors.clientName}>
+            <FormInput value={form.clientName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientName', e.target.value)} error={errors.clientName} />
+          </Field>
+          <Field label={`${tn.client.phone} *`} error={errors.clientPhone}>
+            <FormInput type="tel" value={form.clientPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientPhone', e.target.value)} error={errors.clientPhone} />
+          </Field>
+          <Field label={tn.client.email} error={errors.clientEmail}>
+            <FormInput type="email" value={form.clientEmail} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('clientEmail', e.target.value)} error={errors.clientEmail} />
+          </Field>
         </div>
       )}
 
       {/* Step 1: Event */}
       {step === 1 && (
-        <div>
-          <h2 className="text-base font-medium text-[#202124] mb-5">{tn.event.title}</h2>
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.event.date} *</label>
-            <input type="date" value={form.eventDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('eventDate', e.target.value)} className={inputCls(errors.eventDate)} />
-            {errors.eventDate && <div className={errorCls}>{errors.eventDate}</div>}
-          </div>
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.event.type}</label>
-            <select value={form.eventType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('eventType', e.target.value)} className={`${inputCls()} appearance-none`}>
+        <div className="flex flex-col gap-4">
+          <h2 className="text-base font-medium text-g-text m-0">{tn.event.title}</h2>
+          <Field label={`${tn.event.date} *`} error={errors.eventDate}>
+            <FormInput type="date" value={form.eventDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('eventDate', e.target.value)} error={errors.eventDate} />
+          </Field>
+          <Field label={tn.event.type}>
+            <FormSelect value={form.eventType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('eventType', e.target.value)}>
               {eventTypeConfigs.map((c: any) => (
                 <option key={c.key} value={c.key}>{c.label}</option>
               ))}
-            </select>
-          </div>
+            </FormSelect>
+          </Field>
           {isTableMode ? (
-            <div className={fieldCls}>
-              <label className={labelCls}>{tn.event.tables} *</label>
-              <input type="number" min="1" value={form.tableCount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('tableCount', e.target.value)} className={inputCls(errors.tableCount)} />
+            <Field label={`${tn.event.tables} *`} error={errors.tableCount}>
+              <FormInput type="number" min="1" value={form.tableCount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('tableCount', e.target.value)} error={errors.tableCount} />
               {Number(form.tableCount) > 0 && (
-                <div className="text-xs text-[#5f6368] mt-1">
+                <p className="text-xs text-g-text-2 mt-1 m-0">
                   {tn.event.tableCapacityHint(tableCapacity, Number(form.tableCount) * tableCapacity)}
-                </div>
+                </p>
               )}
-              {errors.tableCount && <div className={errorCls}>{errors.tableCount}</div>}
-            </div>
+            </Field>
           ) : (
-            <div className={fieldCls}>
-              <label className={labelCls}>{tn.event.guests} *</label>
-              <input type="number" min="1" value={form.guestCount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('guestCount', e.target.value)} className={inputCls(errors.guestCount)} />
-              {errors.guestCount && <div className={errorCls}>{errors.guestCount}</div>}
-            </div>
+            <Field label={`${tn.event.guests} *`} error={errors.guestCount}>
+              <FormInput type="number" min="1" value={form.guestCount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('guestCount', e.target.value)} error={errors.guestCount} />
+            </Field>
           )}
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.event.startTime}</label>
-            <input type="time" value={form.startTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('startTime', e.target.value)} className={inputCls()} />
-          </div>
-          <div className={fieldCls}>
-            <label className={labelCls}>{tn.event.notes}</label>
-            <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} placeholder={tn.event.notesPlaceholder} rows={3} className={`${inputCls()} resize-y`} />
-          </div>
+          <Field label={tn.event.startTime}>
+            <FormInput type="time" value={form.startTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('startTime', e.target.value)} />
+          </Field>
+          <Field label={tn.event.notes}>
+            <FormTextarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} placeholder={tn.event.notesPlaceholder} rows={3} />
+          </Field>
+          <Field label={tn.event.externalNotes}>
+            <FormTextarea value={form.externalNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('externalNotes', e.target.value)} placeholder={tn.event.externalNotesPlaceholder} rows={3} />
+          </Field>
         </div>
       )}
 
       {/* Step 2: Location */}
       {step === 2 && (
         <div>
-          <h2 className="text-base font-medium text-[#202124] mb-2">{tn.location.title}</h2>
-          <p className="text-[13px] text-[#5f6368] mb-6">{tn.location.hint}</p>
+          <h2 className="text-base font-medium text-g-text mb-2">{tn.location.title}</h2>
+          <p className="text-[13px] text-g-text-2 mb-6">{tn.location.hint}</p>
+          <div className="mb-6">
+            <Field label={tn.location.address}>
+              <FormInput
+                value={form.eventLocation}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('eventLocation', e.target.value)}
+                placeholder={tn.location.addressPlaceholder}
+              />
+            </Field>
+          </div>
           {travelRegions.length === 0 ? (
-            <div className="p-6 bg-[#f8f9fa] rounded-xl border border-[#e8eaed] text-[#5f6368] text-sm text-center">
+            <div className="p-6 bg-g-bg rounded-xl border border-g-border text-g-text-2 text-sm text-center">
               {tn.location.noRegions}
             </div>
           ) : (
@@ -364,8 +349,8 @@ export default function NewOrderPage() {
                     onClick={() => setSelectedRegion(region)}
                     className="flex items-center justify-between p-4 rounded-xl cursor-pointer text-left transition-all duration-150"
                     style={{
-                      border: `2px solid ${isSelected ? '#1a73e8' : '#e8eaed'}`,
-                      background: isSelected ? '#e8f0fe' : '#fff',
+                      border: `2px solid ${isSelected ? '#1a73e8' : 'var(--google-border)'}`,
+                      background: isSelected ? '#e8f0fe' : 'var(--google-surface)',
                     }}
                   >
                     <div className="flex items-center gap-3">
@@ -375,14 +360,14 @@ export default function NewOrderPage() {
                       >
                         {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-google-blue" />}
                       </div>
-                      <span className="text-[15px]" style={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? '#1a73e8' : '#202124' }}>
+                      <span className="text-[15px]" style={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? '#1a73e8' : 'var(--google-text-primary)' }}>
                         {region.label}
                       </span>
                     </div>
                     <span
                       className="text-sm font-medium px-3 py-1 rounded-full"
                       style={{
-                        color: region.travelPrice > 0 ? '#202124' : '#137333',
+                        color: region.travelPrice > 0 ? 'var(--google-text-primary)' : '#137333',
                         background: region.travelPrice > 0 ? '#fce8e6' : '#e6f4ea',
                       }}
                     >
@@ -400,7 +385,7 @@ export default function NewOrderPage() {
 
       {/* Step 3: Menu Items */}
       {step === 3 && (
-        <div className="bg-white rounded-2xl border border-[#e8eaed] shadow-google-1 mb-2" style={{ padding: isMobile ? 16 : 32 }}>
+        <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 mb-2 p-4 sm:p-8">
           <StepLineItems
             form={lineItemsForm}
             setForm={setLineItemsForm}
@@ -417,7 +402,7 @@ export default function NewOrderPage() {
 
       {/* Step 4: Staff */}
       {step === 4 && (
-        <div className="bg-white rounded-2xl border border-[#e8eaed] shadow-google-1 mb-2" style={{ padding: isMobile ? 16 : 32 }}>
+        <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 mb-2 p-4 sm:p-8">
           <StepStaff
             form={staffForm}
             setForm={setStaffForm}
@@ -431,38 +416,41 @@ export default function NewOrderPage() {
 
       {/* Running total */}
       {step >= 3 && (
-        <div className="text-right text-[15px] text-[#202124] mt-4">
+        <div className="text-right text-[15px] text-g-text mt-4">
           {travelPrice > 0 && (
-            <div className="text-[13px] text-[#5f6368] mb-1">
-              {tn.location.travelFee}: <span className="text-[#202124]">{currency}{travelPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div className="text-[13px] text-g-text-2 mb-1">
+              {tn.location.travelFee}: <span className="text-g-text">{currency}{travelPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
           {tn.estimatedTotal} : <strong>{currency}{(runningTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-between mt-6 gap-3">
-        {step === 0 ? (
-          <Link href="/orders" className={btnOutline}>{tn.cancel}</Link>
-        ) : (
-          <button onClick={prev} className={btnOutline}>{tn.back}</button>
-        )}
-        <div className="flex gap-2">
-          {step === 3 && (
-            <button onClick={skip} className={btnOutline}>{tn.skip}</button>
+      {/* Actions — mobile: column stack; desktop: row */}
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-between">
+        {/* Back/Cancel — pushed to end on mobile via order */}
+        <div className="order-last sm:order-first">
+          {step === 0 ? (
+            <Link href="/orders" className={`${btnOutline} w-full sm:w-auto text-center justify-center`}>{tn.cancel}</Link>
+          ) : (
+            <button onClick={prev} className={`${btnOutline} w-full sm:w-auto justify-center`}>{tn.back}</button>
           )}
-          {step === 4 && (
-            <button onClick={submit} disabled={saving} className={btnOutline} style={{ opacity: saving ? 0.7 : 1 }}>
+        </div>
+        {/* Primary + skip */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
+          {(step === 3 || step === 4) && (
+            <button
+              onClick={step === 3 ? (hasStaffRoles ? skip : submit) : submit}
+              disabled={step === 4 && saving}
+              className={`${btnOutline} w-full sm:w-auto justify-center`}
+            >
               {tn.skip}
             </button>
           )}
-          {step < 3 ? (
-            <button onClick={next} className={btnFilled}>{tn.continue}</button>
-          ) : step === 3 ? (
-            <button onClick={next} className={btnFilled}>{tn.continue}</button>
+          {step < lastStep ? (
+            <button onClick={next} className={`${btnFilled} w-full sm:w-auto justify-center`}>{tn.continue}</button>
           ) : (
-            <button onClick={submit} disabled={saving} className={btnFilled} style={{ opacity: saving ? 0.7 : 1 }}>
+            <button onClick={submit} disabled={saving} className={`${btnFilled} w-full sm:w-auto justify-center`}>
               {saving ? tn.creating : tn.create}
             </button>
           )}

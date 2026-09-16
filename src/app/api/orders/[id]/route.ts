@@ -1,12 +1,16 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Quote, Event, OrderStatusConfig, FlowTemplate } from '@/lib/models';
+import { Order, Quote, Event, OrderStatusConfig, FlowTemplate, Payment } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
-    const order = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
+    const order = await Order.findById(params.id).populate('event').populate('assignees.user', 'name email').lean();
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const quotes = await Quote.find({ order: params.id })
@@ -21,6 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { auth, error } = await requirePermission(request, 'edit_orders');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
 
@@ -30,11 +36,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     const prevStatus = order.status;
     const allowed = [
       'clientName', 'clientEmail', 'clientPhone', 'eventDate', 'eventType',
-      'guestCount', 'tableCount', 'startTime', 'notes', 'status',
-      'lineGroups', 'staffAssignments', 'discountAmount', 'assignedManager',
+      'guestCount', 'tableCount', 'startTime', 'eventLocation', 'notes', 'externalNotes', 'status',
+      'lineGroups', 'staffAssignments', 'discountAmount', 'assignees',
     ];
     for (const key of allowed) {
       if (body[key] !== undefined) order[key] = body[key];
+    }
+    // When the assignee team is written, clear the legacy single-manager field so the two never drift.
+    if (body.assignees !== undefined) order.assignedManager = null;
+
+    // Keep the linked Event (the snapshot the calendar reads from) in sync with the order.
+    // Without this, editing the order's date leaves the event on its old day in the calendar.
+    if (order.event && typeof order.event === 'object' && '_id' in order.event) {
+      const eventSyncFields = ['eventDate', 'eventType', 'guestCount', 'tableCount', 'startTime', 'eventLocation', 'notes'];
+      let eventChanged = false;
+      for (const key of eventSyncFields) {
+        if (body[key] !== undefined) {
+          order.event[key] = body[key];
+          eventChanged = true;
+        }
+      }
+      if (eventChanged) await order.event.save();
     }
 
     // If status changed and new status has triggerEvent, create event if not yet created
@@ -55,6 +77,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
           guestCount: order.guestCount,
           tableCount: order.tableCount,
           startTime: order.startTime,
+          eventLocation: order.eventLocation,
           notes: order.notes,
           status: 'confirmed',
           flowInstance: template
@@ -74,7 +97,47 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     order.totalAmount = +(_iTotal + _sTotal + (order.travelPrice || 0) - (order.discountAmount || 0)).toFixed(2);
 
     await order.save();
-    const updated = await Order.findById(params.id).populate('event').populate('assignedManager', 'name email').lean();
+
+    // When an order is marked Completed, automatically record a cash payment for any
+    // outstanding balance so the order lands fully-paid.
+    if (body.status === 'completed' && prevStatus !== 'completed') {
+      const existingPayments = await Payment.find({ order: params.id }).lean();
+      const paidTotal = +existingPayments.reduce((s, p) => s + p.amount, 0).toFixed(2);
+      const remaining = +(order.totalAmount - paidTotal).toFixed(2);
+      if (remaining > 0) {
+        const payment = await Payment.create({
+          order: params.id,
+          amount: remaining,
+          paymentDate: new Date(),
+          paymentMethod: 'cash',
+          notes: 'Auto-recorded on order completion',
+        });
+        order.paymentStatus = 'fully-paid';
+        await order.save();
+        await logActivity({
+          action: 'payment_created',
+          entityType: 'payment',
+          entityId: payment._id.toString(),
+          entityLabel: `${remaining}€ – ${order.clientName}`,
+          performedBy: auth.userId,
+          metadata: { orderId: params.id, amount: remaining, method: 'cash', auto: true },
+        });
+      }
+    }
+
+    if (body.status && body.status !== prevStatus) {
+      const userId = auth.userId;
+      await logActivity({
+        action: 'order_status_changed',
+        entityType: 'order',
+        entityId: params.id,
+        entityLabel: `${order.clientName} – ${body.status}`,
+        performedBy: userId,
+        metadata: { previousStatus: prevStatus, newStatus: body.status },
+      });
+    }
+
+    const updated = await Order.findById(params.id).populate('event').populate('assignees.user', 'name email').lean();
     const quotes = await Quote.find({ order: params.id }).sort({ versionNumber: 1 }).lean();
     return NextResponse.json({ order: updated, quotes });
   } catch (err: unknown) {
@@ -85,6 +148,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'delete_orders');
+    if (error) return error;
     await connectDB();
     await Quote.deleteMany({ order: params.id });
     await Order.findByIdAndDelete(params.id);
@@ -96,12 +161,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
 
 async function ensureClient(order) {
   const { Client } = await import('@/lib/models');
-  let client = await Client.findOne({ email: order.clientEmail });
+  let client = await Client.findOne({ phone: order.clientPhone });
   if (!client) {
     client = await Client.create({
       name: order.clientName,
-      email: order.clientEmail,
-      phone: order.clientPhone || '',
+      email: order.clientEmail || '',
+      phone: order.clientPhone,
     });
   }
   return client._id;

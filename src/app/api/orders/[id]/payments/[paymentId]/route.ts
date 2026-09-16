@@ -2,9 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'delete_orders');
+    if (error) return error;
     await connectDB();
 
     const payment = await Payment.findById(params.paymentId);

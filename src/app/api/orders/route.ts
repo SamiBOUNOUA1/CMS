@@ -2,10 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, FlowTemplate } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
 
 // GET /api/orders — list orders with latest active quote summary
 export async function GET(request: NextRequest) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -59,9 +63,10 @@ export async function GET(request: NextRequest) {
 // POST /api/orders — create a new order
 export async function POST(request: NextRequest) {
   try {
+    const { auth, error } = await requirePermission(request, 'create_orders');
+    if (error) return error;
     await connectDB();
-    const headers = request.headers;
-    const userId = headers.get('x-user-id');
+    const userId = auth.userId;
     const body = await request.json();
 
     const lineGroups       = body.lineGroups       || [];
@@ -86,7 +91,9 @@ export async function POST(request: NextRequest) {
       guestCount:  Number(body.guestCount),
       tableCount:  body.tableCount ? Number(body.tableCount) : undefined,
       startTime:    body.startTime || '',
+      eventLocation: body.eventLocation || '',
       notes:        body.notes || '',
+      externalNotes: body.externalNotes || '',
       status:       body.status || 'new',
       travelRegion:   body.travelRegion || '',
       travelPrice:    travelPrice,
@@ -112,6 +119,14 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    await logActivity({
+      action: 'order_created',
+      entityType: 'order',
+      entityId: order._id.toString(),
+      entityLabel: `${body.clientName} – ${body.eventType}`,
+      performedBy: userId,
+    });
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err: unknown) {

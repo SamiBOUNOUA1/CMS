@@ -6,7 +6,7 @@ import { Product } from '@/lib/models';
 export async function GET() {
   try {
     await connectDB();
-    const products = await Product.find().populate('category', 'name').sort({ name: 1 }).lean();
+    const products = await Product.find().populate('category', 'name').populate('linkedRecipe', 'name nameFr').sort({ name: 1 }).lean();
     return NextResponse.json({ products });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

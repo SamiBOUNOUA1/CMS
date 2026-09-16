@@ -2,10 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { CompanySettings } from '@/lib/models';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
 
-// GET /api/settings/company — returns the single company settings document
-export async function GET() {
+// GET /api/settings/company — returns the single company settings document.
+// Read access is broad (company name/logo appears on quotes & receipts), so any
+// authenticated user may read it; only admins (manage_users) may edit it.
+export async function GET(request: NextRequest) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     const settings = await CompanySettings.findOneAndUpdate(
       {},
@@ -18,9 +23,11 @@ export async function GET() {
   }
 }
 
-// PATCH /api/settings/company — update company settings
+// PATCH /api/settings/company — update company settings (admin only)
 export async function PATCH(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { companyName, logoUrl, phone, email, address, currency, vatNumber } = body;

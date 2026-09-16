@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
+import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
 
 // GET /api/clients?search=&customerType=
 export async function GET(request: NextRequest) {
@@ -14,9 +17,9 @@ export async function GET(request: NextRequest) {
     const filter = {};
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
+        { name: safeRegex(search) },
+        { email: safeRegex(search) },
+        { phone: safeRegex(search) },
       ];
     }
     if (customerType) {
@@ -33,6 +36,8 @@ export async function GET(request: NextRequest) {
 // POST /api/clients — create a new client
 export async function POST(request: NextRequest) {
   try {
+    const { auth, error } = await requirePermission(request, 'edit_customers');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { name, email, phone, billingAddress, notes, customerType } = body;
@@ -40,26 +45,36 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
-    if (!email?.trim()) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (!phone?.trim()) {
+      return NextResponse.json({ error: 'Phone is required' }, { status: 400 });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
 
-    const existing = await Client.findOne({ email: email.trim().toLowerCase() });
+    const existing = await Client.findOne({ phone: phone.trim() });
     if (existing) {
-      return NextResponse.json({ error: 'A customer with this email already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'A customer with this phone number already exists' }, { status: 409 });
     }
 
     const client = await Client.create({
       name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone?.trim() || '',
+      email: email?.trim().toLowerCase() || '',
+      phone: phone.trim(),
       billingAddress: billingAddress || {},
       notes: notes?.trim() || '',
       customerType: customerType?.trim() || '',
     });
+
+    const userId = auth.userId;
+    await logActivity({
+      action: 'customer_created',
+      entityType: 'client',
+      entityId: client._id.toString(),
+      entityLabel: client.name,
+      performedBy: userId,
+    });
+
     return NextResponse.json({ client }, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

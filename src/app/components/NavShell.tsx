@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import AppNav from './AppNav';
 import SideNav from './SideNav';
 import SubNav from './SubNav';
-import TaskFloatingButton from './TaskFloatingButton';
 
 interface NavShellProps {
   children: ReactNode;
@@ -29,7 +28,6 @@ export default function NavShell({ children }: NavShellProps) {
       <main style={{ marginTop: 104, marginLeft: 64 }} className="flex-1 sidenav-main">
         {children}
       </main>
-      <TaskFloatingButton />
     </div>
   );
 }

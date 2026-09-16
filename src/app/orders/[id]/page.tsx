@@ -16,6 +16,13 @@ const EVENT_TYPE_ICONS = {
   gala: '✨', conference: '🎤', buffet: '🍽️', other: '📋',
 };
 
+// Responsibility labels for event team members (mirrors ASSIGNEE_ROLES in models.ts)
+const ASSIGNEE_ROLE_LABELS = {
+  manager: 'Manager', materials: 'Materials', kitchen: 'Kitchen',
+  staff: 'Staff', logistics: 'Logistics', other: 'Other',
+};
+const ASSIGNEE_ROLES = Object.keys(ASSIGNEE_ROLE_LABELS);
+
 function formatCurrency(n, cur = '€') {
   if (n == null) return '—';
   return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + cur;
@@ -75,10 +82,13 @@ export default function OrderDetailPage() {
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [deletingPaymentId, setDeletingPaymentId] = useState(null);
 
-  const [managerModalOpen, setManagerModalOpen] = useState(false);
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [managers, setManagers] = useState([]);
-  const [selectedManagerId, setSelectedManagerId] = useState('');
-  const [savingManager, setSavingManager] = useState(false);
+  const [teamRows, setTeamRows] = useState([]); // [{ user: id, role }]
+  const [savingTeam, setSavingTeam] = useState(false);
+
+  const [kitchenEnabled, setKitchenEnabled] = useState(false);
+  const [kitchenDishes, setKitchenDishes] = useState([]);
 
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -104,10 +114,12 @@ export default function OrderDetailPage() {
         eventDate: data.order.eventDate ? data.order.eventDate.slice(0, 10) : '',
         eventType: data.order.eventType, guestCount: data.order.guestCount,
         tableCount: data.order.tableCount || '', startTime: data.order.startTime || '',
-        notes: data.order.notes || '', status: data.order.status,
+        eventLocation: data.order.eventLocation || '',
+        notes: data.order.notes || '', externalNotes: data.order.externalNotes || '',
+        status: data.order.status,
       });
       setOrderLineGroups(data.order.lineGroups?.length ? data.order.lineGroups : [defaultLineGroup()]);
-      setOrderStaff(data.order.staffAssignments?.length ? data.order.staffAssignments : [defaultStaff('')]);
+      setOrderStaff(data.order.staffAssignments || []);
     } catch {
       showNotification(td.loadFailed, 'error');
     } finally {
@@ -122,6 +134,13 @@ export default function OrderDetailPage() {
     fetch('/api/products').then(r => r.json()).then(d => setProducts((d.products || []).filter(p => p.isActive !== false)));
     fetch('/api/settings/staff-roles').then(r => r.json()).then(d => setStaffRolesConfig(d.roles || []));
     fetch('/api/admin/managers').then(r => r.ok ? r.json() : { managers: [] }).then(d => setManagers(d.managers || []));
+    fetch('/api/settings/modules').then(r => r.ok ? r.json() : { modules: [] }).then(d => {
+      const km = (d.modules || []).find(m => m.id === 'kitchen');
+      if (km?.isEnabled) {
+        setKitchenEnabled(true);
+        fetch(`/api/orders/${id}/kitchen-requirements`).then(r => r.ok ? r.json() : { requirements: [] }).then(d2 => setKitchenDishes(d2.dishes || []));
+      }
+    });
     loadData();
   }, [loadData]);
 
@@ -158,6 +177,9 @@ export default function OrderDetailPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setOrder(data.order); setEditingItems(false); showNotification(td.itemsSaved);
+      if (kitchenEnabled) {
+        fetch(`/api/orders/${id}/kitchen-requirements`).then(r => r.ok ? r.json() : { requirements: [] }).then(d2 => setKitchenDishes(d2.dishes || []));
+      }
     } catch { showNotification(td.saveFailed, 'error'); } finally { setSavingItems(false); }
   };
 
@@ -222,14 +244,23 @@ export default function OrderDetailPage() {
     setDeletingPaymentId(null);
   };
 
-  const handleSaveManager = async () => {
-    setSavingManager(true);
+  const openTeamModal = () => {
+    setTeamRows((order.assignees || []).map(a => ({ user: a.user?._id || a.user || '', role: a.role || 'manager' })));
+    setTeamModalOpen(true);
+  };
+  const addTeamRow = () => setTeamRows(rows => [...rows, { user: '', role: 'manager' }]);
+  const updateTeamRow = (idx, field, value) => setTeamRows(rows => rows.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+  const removeTeamRow = (idx) => setTeamRows(rows => rows.filter((_, i) => i !== idx));
+
+  const handleSaveTeam = async () => {
+    setSavingTeam(true);
     try {
-      const res = await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignedManager: selectedManagerId || null }) });
+      const assignees = teamRows.filter(r => r.user).map(r => ({ user: r.user, role: r.role || 'manager' }));
+      const res = await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignees }) });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setOrder(data.order); setManagerModalOpen(false); showNotification('Manager assigned');
-    } catch { showNotification('Failed to assign manager', 'error'); } finally { setSavingManager(false); }
+      setOrder(data.order); setTeamModalOpen(false); showNotification('Team updated');
+    } catch { showNotification('Failed to update team', 'error'); } finally { setSavingTeam(false); }
   };
 
   if (loading) return <div className="flex justify-center p-20"><Spinner /></div>;
@@ -254,10 +285,10 @@ export default function OrderDetailPage() {
     'fully-paid':     { bg: '#e6f4ea', fg: '#137333' },
   };
   const psc = paymentStatusColors[order.paymentStatus] || paymentStatusColors['unpaid'];
-  const cardCls = 'bg-white rounded-2xl border border-[#e8eaed] shadow-google-1 mb-6 overflow-hidden';
+  const cardCls = 'bg-g-surface rounded-2xl border border-g-border shadow-google-1 mb-6 overflow-hidden';
 
   return (
-    <div className="max-w-[900px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[900px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       {notification && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg z-[1000] text-sm shadow-google-2 whitespace-nowrap"
           style={{ background: notification.type === 'error' ? '#d93025' : '#202124' }}>
@@ -267,7 +298,7 @@ export default function OrderDetailPage() {
 
       {deleteQuoteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
+          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
             <h3 className="text-lg font-medium text-[#202124] mb-2.5">{td.deleteQuoteDialog.title}</h3>
             <p className="text-sm text-[#5f6368] mb-6">{td.deleteQuoteDialog.body}</p>
             <div className="flex justify-end gap-2">
@@ -280,7 +311,7 @@ export default function OrderDetailPage() {
 
       {deletingPaymentId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
+          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
             <h3 className="text-lg font-medium text-[#202124] mb-2.5">{td.deletePaymentDialog.title}</h3>
             <p className="text-sm text-[#5f6368] mb-6">{td.deletePaymentDialog.body}</p>
             <div className="flex justify-end gap-2">
@@ -295,22 +326,34 @@ export default function OrderDetailPage() {
         <AddPaymentModal t={t} onClose={() => setAddPaymentOpen(false)} onSave={handleAddPayment} currency={currency} maxAmount={remainingAmount} />
       )}
 
-      {managerModalOpen && (
+      {teamModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
-            <h3 className="text-lg font-medium text-g-text mb-4">Assign Manager</h3>
-            <div className="mb-5">
-              <label className="text-xs font-medium text-[#5f6368] block mb-1.5">Manager</label>
-              <select value={selectedManagerId} onChange={e => setSelectedManagerId(e.target.value)}
-                className="w-full py-2.5 px-3 border border-[#dadce0] rounded-lg text-sm text-[#202124] bg-white outline-none">
-                <option value="">— Unassigned —</option>
-                {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
-              </select>
-              {managers.length === 0 && <p className="mt-2 text-xs text-[#b06000]">No manager accounts found.</p>}
+          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[480px] shadow-google-2">
+            <h3 className="text-lg font-medium text-g-text mb-4">Assigned team</h3>
+            {teamRows.length === 0 && (
+              <p className="mb-4 text-sm text-[#9aa0a6] italic">No one assigned yet.</p>
+            )}
+            <div className="flex flex-col gap-2.5 mb-4">
+              {teamRows.map((row, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <select value={row.user} onChange={e => updateTeamRow(idx, 'user', e.target.value)}
+                    className="flex-1 min-w-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
+                    <option value="">— Select user —</option>
+                    {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
+                  </select>
+                  <select value={row.role} onChange={e => updateTeamRow(idx, 'role', e.target.value)}
+                    className="w-[130px] flex-shrink-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
+                    {ASSIGNEE_ROLES.map(r => <option key={r} value={r}>{ASSIGNEE_ROLE_LABELS[r]}</option>)}
+                  </select>
+                  <button onClick={() => removeTeamRow(idx)} className={iconBtn} title="Remove">✕</button>
+                </div>
+              ))}
             </div>
+            <button onClick={addTeamRow} className={btnOutlineSmall + ' mb-5'}>+ Add person</button>
+            {managers.length === 0 && <p className="mb-4 text-xs text-[#b06000]">No user accounts found.</p>}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setManagerModalOpen(false)} className={btnOutline}>Cancel</button>
-              <button onClick={handleSaveManager} disabled={savingManager} className={btnFilled} style={{ opacity: savingManager ? 0.7 : 1 }}>{savingManager ? '…' : 'Save'}</button>
+              <button onClick={() => setTeamModalOpen(false)} className={btnOutline}>Cancel</button>
+              <button onClick={handleSaveTeam} disabled={savingTeam} className={btnFilled} style={{ opacity: savingTeam ? 0.7 : 1 }}>{savingTeam ? '…' : 'Save'}</button>
             </div>
           </div>
         </div>
@@ -325,7 +368,7 @@ export default function OrderDetailPage() {
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <Link href="/orders" className="text-[13px] text-google-blue no-underline inline-flex items-center gap-1">← {td.back}</Link>
         {(perms.manage_flow_templates || perms.update_flow_status) && (
-          <Link href={`/orders/${id}/flow`} className="inline-flex items-center gap-1.5 py-2 px-4 bg-white border border-[#dadce0] rounded-lg no-underline text-[13px] text-[#3c4043] font-medium">
+          <Link href={`/orders/${id}/flow`} className="inline-flex items-center gap-1.5 py-2 px-4 bg-g-surface border border-g-border rounded-lg no-underline text-[13px] text-g-text font-medium">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="text-[#5f6368]">
               <path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm10-16H7v2h6V1zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 7h2V5h-2v2zm0 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zM7 5h2V3H7v2zm6 16h-2v2h2v-2zm4 0h-2v2h2v-2zm2-18v2h2c0-1.1-.9-2-2-2z" />
             </svg>
@@ -366,12 +409,14 @@ export default function OrderDetailPage() {
           {editing ? (
             <EditOrderForm form={editForm} setForm={setEditForm} eventTypeConfigs={eventTypeConfigs} isTableMode={isTableMode} tableCapacity={tableCapacity} t={t} />
           ) : (
-            <div className="grid gap-3" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px 24px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
               <FieldView label="Event type" value={`${EVENT_TYPE_ICONS[order.eventType] || ''} ${t.eventTypes[order.eventType] || order.eventType}`} />
               <FieldView label="Event date" value={order.eventDate ? format(new Date(order.eventDate), 'dd MMM yyyy') : '—'} />
               <FieldView label="Guests" value={order.tableCount ? `${order.tableCount} tables (~${order.guestCount} guests)` : `${order.guestCount} guests`} />
               <FieldView label="Start time" value={order.startTime || '—'} />
-              {order.notes && <div style={{ gridColumn: '1 / -1' }}><FieldView label="Notes" value={order.notes} /></div>}
+              <FieldView label="Location" value={order.eventLocation || '—'} />
+              {order.notes && <div className="sm:col-span-2"><FieldView label="Notes" value={order.notes} /></div>}
+              {order.externalNotes && <div className="sm:col-span-2"><FieldView label="External notes (shown on quote & receipt)" value={order.externalNotes} /></div>}
             </div>
           )}
           {editing && (
@@ -388,6 +433,9 @@ export default function OrderDetailPage() {
             <div className="text-sm text-[#202124]">
               {t.eventTypes[order.event.eventType] || order.event.eventType} · {order.event.eventDate ? format(new Date(order.event.eventDate), 'dd MMM yyyy') : '—'} · {order.event.guestCount} guests
             </div>
+            {order.event.eventLocation && (
+              <div className="text-[13px] text-[#5f6368] mt-0.5">📍 {order.event.eventLocation}</div>
+            )}
           </div>
         )}
         {!order.event && (
@@ -397,26 +445,31 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      {/* Assign Manager */}
+      {/* Assigned team */}
       <div className={cardCls}>
-        <div className="py-4 px-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">👤</span>
-            <div>
-              <div className="text-xs font-semibold text-[#5f6368] uppercase tracking-wide mb-0.5">Assigned Manager</div>
-              {order.assignedManager ? (
-                <div className="text-[15px] font-medium text-[#202124]">
-                  {order.assignedManager.name}
-                  <span className="font-normal text-[#5f6368] ml-1.5 text-[13px]">{order.assignedManager.email}</span>
+        <div className="py-4 px-6 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <span className="text-xl">👥</span>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-[#5f6368] uppercase tracking-wide mb-1.5">Assigned team</div>
+              {(order.assignees || []).length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {order.assignees.map((a, i) => (
+                    <div key={a.user?._id || i} className="text-[15px] font-medium text-[#202124] flex items-center gap-2 flex-wrap">
+                      <span className="rounded-full py-0.5 px-2 text-[11px] font-semibold bg-[#e8f0fe] text-google-blue">{ASSIGNEE_ROLE_LABELS[a.role] || a.role}</span>
+                      {a.user?.name || '—'}
+                      {a.user?.email && <span className="font-normal text-[#5f6368] text-[13px]">{a.user.email}</span>}
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="text-sm text-[#9aa0a6] italic">Unassigned</div>
+                <div className="text-sm text-[#9aa0a6] italic">No one assigned</div>
               )}
             </div>
           </div>
           {perms.edit_orders && (
-            <button onClick={() => { setSelectedManagerId(order.assignedManager?._id || ''); setManagerModalOpen(true); }} className={btnOutlineSmall}>
-              {order.assignedManager ? 'Change' : 'Assign'}
+            <button onClick={openTeamModal} className={btnOutlineSmall}>
+              {(order.assignees || []).length > 0 ? 'Manage' : 'Assign'}
             </button>
           )}
         </div>
@@ -446,6 +499,54 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Kitchen Requirements */}
+      {kitchenEnabled && kitchenDishes.length > 0 && (
+        <div className={cardCls}>
+          <div className="py-4 px-6 border-b border-[#f1f3f4]">
+            <h2 className="text-base font-medium text-[#202124] m-0">🍽 {td.kitchenRequirementsSection}</h2>
+          </div>
+          <div className="py-2">
+            {kitchenDishes.map((dish, di) => (
+              <div key={dish.productId} style={{ borderTop: di > 0 ? '1px solid #f1f3f4' : undefined }}>
+                {/* Dish header */}
+                <div className="flex items-center gap-2 px-6 py-3">
+                  <span className="text-[13px] font-semibold text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>{dish.productName}</span>
+                  <span className="text-[11px] text-[#9aa0a6] bg-[#f1f3f4] rounded-full px-2 py-px">× {dish.count}</span>
+                </div>
+                {/* Ingredients table */}
+                <div className="px-6 pb-3 overflow-x-auto">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: "'Google Sans'" }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #f1f3f4' }}>
+                        <th style={{ textAlign: 'left', padding: '4px 8px 4px 0', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqIngredient}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 8px', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqNeeded}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 8px', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqInStock}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 0 4px 8px', color: '#9aa0a6', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqToAdd}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dish.ingredients.map(ing => {
+                        const sufficient = ing.currentStock >= ing.needed;
+                        return (
+                          <tr key={ing.stockItemId} style={{ borderBottom: '1px solid #f8f9fa' }}>
+                            <td style={{ padding: '7px 8px 7px 0', color: '#202124' }}>{ing.name}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 8px', color: '#5f6368' }}>{ing.needed} {ing.unit}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 8px', color: sufficient ? '#137333' : '#f9ab00', fontWeight: 500 }}>{ing.currentStock} {ing.unit}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 0 7px 8px', color: ing.toAdd > 0 ? '#d93025' : '#137333', fontWeight: 600 }}>
+                              {ing.toAdd > 0 ? `+ ${ing.toAdd} ${ing.unit}` : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Staff */}
       <div className={cardCls}>
@@ -505,7 +606,7 @@ export default function OrderDetailPage() {
               <div className="mb-3.5">
                 <label className="text-xs font-medium text-[#5f6368] block mb-1">{td.discountLabel} ({currency})</label>
                 <input type="number" min="0" step="0.01" value={discountInput} onChange={e => setDiscountInput(e.target.value)}
-                  className="py-2 px-3 border border-[#dadce0] rounded-lg text-sm outline-none text-[#202124] bg-white w-[200px]" autoFocus />
+                  className="py-2.5 px-3.5 border border-g-border rounded-lg text-sm outline-none text-g-text bg-g-surface w-[200px] focus:border-google-blue" autoFocus />
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveDiscount} disabled={savingDiscount} className={btnFilled} style={{ opacity: savingDiscount ? 0.7 : 1 }}>{savingDiscount ? '…' : td.saveDiscount}</button>
@@ -537,7 +638,7 @@ export default function OrderDetailPage() {
             <span className="text-[13px] font-semibold text-google-red">– {formatCurrency(order.discountAmount, currency)}</span>
           </div>
         )}
-        <div className="py-5 px-6 grid gap-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr' }}>
+        <div className="py-5 px-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: td.orderTotal, value: formatCurrency(orderTotal, currency), color: '#202124' },
             { label: td.paidAmount, value: formatCurrency(paidAmount, currency), color: '#137333' },
@@ -830,7 +931,9 @@ function EditOrderForm({ form, setForm, eventTypeConfigs, isTableMode, tableCapa
         )}
       </div>
       <div className={fieldCls}><label className={labelCls}>Start time</label><input type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} className={inputCls} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>Location</label><input value={form.eventLocation} onChange={e => set('eventLocation', e.target.value)} className={inputCls} placeholder="Address / venue" /></div>
       <div className={`${fieldCls} col-span-2`}><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className={`${inputCls} resize-y`} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>External notes <span className="text-[#9aa0a6] font-normal">(shown on quote &amp; receipt)</span></label><textarea value={form.externalNotes} onChange={e => set('externalNotes', e.target.value)} rows={3} className={`${inputCls} resize-y`} placeholder="Notes visible to the client on the quote &amp; payment receipt…" /></div>
     </div>
   );
 }

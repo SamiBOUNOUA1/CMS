@@ -97,6 +97,7 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true },
     role: { type: String, required: true, default: 'viewer' },
     isActive: { type: Boolean, default: true },
+    preferredLanguage: { type: String, enum: ['en', 'fr'], default: 'en' },
   },
   { timestamps: true }
 );
@@ -123,6 +124,7 @@ const productSchema = new Schema(
     unit: { type: String, default: 'item', trim: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
     subItems: [subItemSchema],
+    linkedRecipe: { type: Schema.Types.ObjectId, ref: 'KitchenRecipe', default: null },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
@@ -133,8 +135,8 @@ export const Product = models.Product || model('Product', productSchema);
 const clientSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, lowercase: true, trim: true },
-    phone: { type: String, trim: true },
+    email: { type: String, lowercase: true, trim: true },
+    phone: { type: String, required: true, trim: true },
     billingAddress: {
       street: String,
       city: String,
@@ -203,11 +205,19 @@ const eventSchema = new Schema(
   {
     client: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
     venue: { type: Schema.Types.ObjectId, ref: 'Venue' },
+    eventLocation: { type: String, default: '', trim: true }, // free-text location, synced from the order
     eventDate: { type: Date, required: true },
     eventType: {
       type: String,
-      enum: ['wedding', 'corporate', 'birthday', 'gala', 'conference', 'buffet', 'other'],
       required: true,
+      validate: {
+        validator: async function (value: string) {
+          const EventTypeConfigModel = models.EventTypeConfig || model('EventTypeConfig', eventTypeConfigSchema);
+          const exists = await EventTypeConfigModel.exists({ key: value, isActive: true });
+          return !!exists;
+        },
+        message: (props: { value: string }) => `\`${props.value}\` is not a valid event type`,
+      },
     },
     guestCount: { type: Number, required: true, min: 1 },
     tableCount: { type: Number, min: 1 },
@@ -273,22 +283,53 @@ const orderLineGroupSchema = new Schema({
   items: [orderLineGroupItemSchema],
 });
 
+// ── EVENT MATERIALS (checklist of inventory items used at the event) ───────────
+const orderMaterialSchema = new Schema({
+  inventoryItem: { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
+  quantity:      { type: Number, default: 1, min: 0 },
+  checked:       { type: Boolean, default: false },
+  checkedBy:     { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  checkedAt:     { type: Date, default: null },
+  // "Missing" warning flag — set when a material is absent/short at verification time.
+  // Mutually exclusive with `checked` (enforced in the materials PATCH route).
+  missing:       { type: Boolean, default: false },
+  missingBy:     { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  missingAt:     { type: Date, default: null },
+}, { _id: true });
+
+// ── EVENT ASSIGNEES (team members assigned to an order, each with a responsibility) ─
+// Responsibility labels shared by the assignment UI and any display badges.
+export const ASSIGNEE_ROLES = ['manager', 'materials', 'kitchen', 'staff', 'logistics', 'other'];
+const assigneeSchema = new Schema({
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  role: { type: String, default: 'manager' }, // responsibility label, see ASSIGNEE_ROLES
+}, { _id: false });
+
 // ── ORDER ─────────────────────────────────────────────────────────────────────
 const orderSchema = new Schema(
   {
     clientName:  { type: String, required: true, trim: true },
-    clientEmail: { type: String, required: true, lowercase: true, trim: true },
-    clientPhone: { type: String, trim: true },
+    clientEmail: { type: String, lowercase: true, trim: true },
+    clientPhone: { type: String, required: true, trim: true },
     eventDate:   { type: Date, required: true },
     eventType: {
       type: String,
-      enum: ['wedding', 'corporate', 'birthday', 'gala', 'conference', 'buffet', 'other'],
       required: true,
+      validate: {
+        validator: async function (value: string) {
+          const EventTypeConfigModel = models.EventTypeConfig || model('EventTypeConfig', eventTypeConfigSchema);
+          const exists = await EventTypeConfigModel.exists({ key: value, isActive: true });
+          return !!exists;
+        },
+        message: (props: { value: string }) => `\`${props.value}\` is not a valid event type`,
+      },
     },
     guestCount:  { type: Number, required: true, min: 1 },
     tableCount:  { type: Number, min: 1 },
     startTime:   String,
+    eventLocation: { type: String, default: '', trim: true }, // free-text event location; copied to the linked Event
     notes:       String,
+    externalNotes: { type: String, default: '' }, // client-facing; shown on quote & receipt
     status:        { type: String, required: true, default: 'new' },
     paymentStatus: {
       type: String,
@@ -297,12 +338,14 @@ const orderSchema = new Schema(
     },
     event:           { type: Schema.Types.ObjectId, ref: 'Event' },
     createdBy:       { type: Schema.Types.ObjectId, ref: 'User' },
-    assignedManager: { type: Schema.Types.ObjectId, ref: 'User' },
+    assignees:       [assigneeSchema],
+    assignedManager: { type: Schema.Types.ObjectId, ref: 'User' }, // @deprecated — migrated to assignees
     travelRegion:     { type: String, default: '' },
     travelPrice:      { type: Number, default: 0 },
     discountAmount:   { type: Number, default: 0 },
     lineGroups:       [orderLineGroupSchema],
     staffAssignments: [staffAssignmentSchema],
+    materials:        [orderMaterialSchema],
     totalAmount:      { type: Number, default: 0 },
     flowInstance: {
       templateId:   { type: Schema.Types.ObjectId, ref: 'FlowTemplate' },
@@ -422,20 +465,66 @@ const inventoryCategorySchema = new Schema(
 );
 export const InventoryCategory = models.InventoryCategory || model('InventoryCategory', inventoryCategorySchema);
 
+// ── SUPPLIER ──────────────────────────────────────────────────────────────────
+const supplierSchema = new Schema(
+  {
+    name:          { type: String, required: true, trim: true },
+    email:         { type: String, trim: true, lowercase: true, default: '' },
+    phone:         { type: String, trim: true, default: '' },
+    supplierType:  { type: String, enum: ['goods', 'materials', 'services'], required: true },
+    contactPerson: { type: String, trim: true, default: '' },
+    address: {
+      street:     { type: String, default: '' },
+      city:       { type: String, default: '' },
+      postalCode: { type: String, default: '' },
+      state:      { type: String, default: '' },
+      country:    { type: String, default: 'FR' },
+    },
+    notes:    { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const Supplier = models.Supplier || model('Supplier', supplierSchema);
+
+// ── WAREHOUSE ─────────────────────────────────────────────────────────────────
+const warehouseSchema = new Schema(
+  {
+    name:        { type: String, required: true, trim: true },
+    description: { type: String, default: '' },
+    address: {
+      street:     { type: String, default: '' },
+      city:       { type: String, default: '' },
+      postalCode: { type: String, default: '' },
+      state:      { type: String, default: '' },
+      country:    { type: String, default: 'FR' },
+    },
+    coordinates: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
+    notes:    { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const Warehouse = models.Warehouse || model('Warehouse', warehouseSchema);
+
 // ── INVENTORY ITEM ────────────────────────────────────────────────────────────
 const inventoryItemSchema = new Schema(
   {
-    name:             { type: String, required: true, trim: true },
-    category:         { type: Schema.Types.ObjectId, ref: 'InventoryCategory', default: null },
-    unit:             { type: String, default: 'unit', trim: true },
-    currentStock:     { type: Number, default: 0, min: 0 },
-    minStock:         { type: Number, default: 0, min: 0 },
-    unitCost:         { type: Number, default: 0, min: 0 },
-    supplierName:     { type: String, default: '', trim: true },
-    supplierContact:  { type: String, default: '', trim: true },
-    notes:            { type: String, default: '' },
-    imageUrl:         { type: String, default: '' },
-    isActive:         { type: Boolean, default: true },
+    name:         { type: String, required: true, trim: true },
+    category:     { type: Schema.Types.ObjectId, ref: 'InventoryCategory', default: null },
+    unit:         { type: String, default: 'unit', trim: true },
+    currentStock: { type: Number, default: 0, min: 0 },
+    minStock:     { type: Number, default: 0, min: 0 },
+    unitCost:     { type: Number, default: 0, min: 0 },
+    supplier:     { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
+    warehouse:    { type: Schema.Types.ObjectId, ref: 'Warehouse', default: null },
+    notes:           { type: String, default: '' },
+    imageUrl:        { type: String, default: '' },
+    isActive:        { type: Boolean, default: true },
+    laundryEligible: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -445,7 +534,7 @@ export const InventoryItem = models.InventoryItem || model('InventoryItem', inve
 const inventoryAdjustmentSchema = new Schema(
   {
     item:           { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
-    adjustmentType: { type: String, enum: ['purchase', 'usage', 'return', 'write-off'], required: true },
+    adjustmentType: { type: String, enum: ['purchase', 'usage', 'return', 'write-off', 'correction'], required: true },
     quantity:       { type: Number, required: true },
     date:           { type: Date, default: Date.now },
     notes:          { type: String, default: '' },
@@ -454,6 +543,32 @@ const inventoryAdjustmentSchema = new Schema(
   { timestamps: true }
 );
 export const InventoryAdjustment = models.InventoryAdjustment || model('InventoryAdjustment', inventoryAdjustmentSchema);
+
+// ── LAUNDRY BATCH ─────────────────────────────────────────────────────────────
+const laundryBatchItemSchema = new Schema({
+  inventoryItem:    { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
+  quantitySent:     { type: Number, required: true, min: 1 },
+  quantityReturned: { type: Number, default: 0, min: 0 },
+  quantityLost:     { type: Number, default: 0, min: 0 },
+  quantityDamaged:  { type: Number, default: 0, min: 0 },
+  notes:            { type: String, default: '' },
+}, { _id: true });
+
+const laundryBatchSchema = new Schema(
+  {
+    batchNumber:        { type: String, required: true, unique: true, trim: true },
+    date:               { type: Date, required: true, default: Date.now },
+    order:              { type: Schema.Types.ObjectId, ref: 'Order', default: null },
+    cleaningSupplier:   { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
+    status:             { type: String, enum: ['draft', 'sent', 'returned', 'completed'], default: 'draft' },
+    notes:              { type: String, default: '' },
+    items:              [laundryBatchItemSchema],
+    createdBy:          { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    inventoryProcessed: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+export const LaundryBatch = models.LaundryBatch || model('LaundryBatch', laundryBatchSchema);
 
 // ── COMPANY SETTINGS ──────────────────────────────────────────────────────────
 const companySettingsSchema = new Schema(
@@ -475,6 +590,45 @@ const companySettingsSchema = new Schema(
 );
 export const CompanySettings = models.CompanySettings || model('CompanySettings', companySettingsSchema);
 
+// ── WHATSAPP SETTINGS ─────────────────────────────────────────────────────────
+const whatsappSettingsSchema = new Schema(
+  {
+    enabled:             { type: Boolean, default: false },
+    phoneNumberId:       { type: String, default: '', trim: true },
+    accessToken:         { type: String, default: '', trim: true },
+    businessAccountId:   { type: String, default: '', trim: true },
+    defaultCountryCode:  { type: String, default: '', trim: true },
+    quoteTemplateName:   { type: String, default: '', trim: true },
+    quoteTemplateLang:   { type: String, default: 'fr', trim: true },
+    receiptTemplateName: { type: String, default: '', trim: true },
+    receiptTemplateLang: { type: String, default: 'fr', trim: true },
+  },
+  { timestamps: true }
+);
+export const WhatsAppSettings = models.WhatsAppSettings || model('WhatsAppSettings', whatsappSettingsSchema);
+
+// ── DOCUMENT LAYOUT SETTINGS ──────────────────────────────────────────────────
+// Shared printable-layout config for quote (devis) and payment receipt PDFs.
+const documentLayoutSettingsSchema = new Schema(
+  {
+    accentColor:       { type: String,  default: '#c9a96e', trim: true },
+    fontStyle:         { type: String,  default: 'serif', enum: ['serif', 'sans'] },
+    showLogo:          { type: Boolean, default: true },
+    showAddress:       { type: Boolean, default: true },
+    showPhone:         { type: Boolean, default: true },
+    showEmail:         { type: Boolean, default: true },
+    showVatNumber:     { type: Boolean, default: true },
+    showStaffSection:  { type: Boolean, default: true },  // both docs
+    showOrderItems:    { type: Boolean, default: true },  // receipt only
+    showClientNotes:   { type: Boolean, default: true },  // quote only
+    showInternalNotes: { type: Boolean, default: false }, // quote only
+    showExternalNotes: { type: Boolean, default: true },  // both docs
+    showFooter:        { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const DocumentLayoutSettings = models.DocumentLayoutSettings || model('DocumentLayoutSettings', documentLayoutSettingsSchema);
+
 // ── TASK ──────────────────────────────────────────────────────────────────────
 const taskSchema = new Schema(
   {
@@ -489,3 +643,80 @@ const taskSchema = new Schema(
 );
 export const Task = models.Task || model('Task', taskSchema);
 
+// ── ACTIVITY ──────────────────────────────────────────────────────────────────
+const activitySchema = new Schema(
+  {
+    action:      { type: String, required: true, enum: [
+      'order_created', 'customer_created', 'event_step_changed',
+      'order_status_changed', 'payment_created', 'quote_generated',
+      'inventory_adjusted', 'laundry_sent', 'laundry_received',
+      'kitchen_stock_adjusted', 'kitchen_recipe_saved',
+      'quote_sent', 'receipt_sent',
+    ]},
+    entityType:  { type: String, required: true },
+    entityId:    { type: Schema.Types.ObjectId, required: true },
+    entityLabel: { type: String, default: '' },
+    performedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    metadata:    { type: Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
+activitySchema.index({ createdAt: -1 });
+export const Activity = models.Activity || model('Activity', activitySchema);
+
+// ── KITCHEN STOCK ─────────────────────────────────────────────────────────────
+const kitchenStockItemSchema = new Schema(
+  {
+    name:         { type: String, required: true, trim: true },
+    category:     { type: String, default: 'other', trim: true, enum: ['vegetables', 'dairy', 'meat', 'dry', 'spices', 'beverages', 'other'] },
+    unit:         { type: String, default: 'kg', trim: true },
+    currentStock: { type: Number, default: 0, min: 0 },
+    minStock:     { type: Number, default: 0, min: 0 },
+    unitCost:     { type: Number, default: 0, min: 0 },
+    notes:        { type: String, default: '' },
+    isActive:     { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const KitchenStockItem = models.KitchenStockItem || model('KitchenStockItem', kitchenStockItemSchema);
+
+const kitchenStockAdjustmentSchema = new Schema(
+  {
+    item:           { type: Schema.Types.ObjectId, ref: 'KitchenStockItem', required: true },
+    adjustmentType: { type: String, enum: ['purchase', 'usage', 'write-off', 'return'], required: true },
+    quantity:       { type: Number, required: true },
+    date:           { type: Date, default: Date.now },
+    notes:          { type: String, default: '' },
+    performedBy:    { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  },
+  { timestamps: true }
+);
+kitchenStockAdjustmentSchema.index({ item: 1, createdAt: -1 });
+export const KitchenStockAdjustment = models.KitchenStockAdjustment || model('KitchenStockAdjustment', kitchenStockAdjustmentSchema);
+
+// ── KITCHEN RECIPES ───────────────────────────────────────────────────────────
+const recipeIngredientSchema = new Schema(
+  {
+    stockItem: { type: Schema.Types.ObjectId, ref: 'KitchenStockItem', required: true },
+    quantity:  { type: Number, required: true, min: 0 },
+    unit:      { type: String, default: '', trim: true },
+  },
+  { _id: false }
+);
+
+const kitchenRecipeSchema = new Schema(
+  {
+    name:         { type: String, required: true, trim: true },
+    nameFr:       { type: String, default: '', trim: true },
+    category:     { type: String, enum: ['starter', 'main', 'dessert', 'side', 'other'], default: 'other' },
+    servings:     { type: Number, default: 1, min: 1 },
+    description:  { type: String, default: '' },
+    instructions: { type: String, default: '' },
+    prepTime:     { type: Number, default: 0, min: 0 },
+    cookTime:     { type: Number, default: 0, min: 0 },
+    ingredients:  [recipeIngredientSchema],
+    isActive:     { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const KitchenRecipe = models.KitchenRecipe || model('KitchenRecipe', kitchenRecipeSchema);

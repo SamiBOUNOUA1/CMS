@@ -1,9 +1,9 @@
 'use client';
 
 import { useT } from '@/lib/LanguageContext';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { LanguageContext } from '@/lib/LanguageContext';
-import { useEffect, useState } from 'react';
+import { btnFilled, Field, FormInput, FormSectionLabel, FormGrid } from '@/app/components/FormPrimitives';
 
 interface CompanyForm {
   companyName: string;
@@ -87,120 +87,77 @@ export default function CompanySettingsPage() {
   };
 
   if (loading) {
-    return <p className="text-[#5f6368] p-6" style={{ fontFamily: "'Google Sans'" }}>{ts.loading}</p>;
+    return <p className="text-g-text-2 p-6">{ts.loading}</p>;
   }
 
   return (
     <div className="max-w-[640px]">
-      {/* Header */}
       <div className="mb-7">
-        <h2 className="text-[22px] font-medium text-[#202124] m-0 mb-1" style={{ fontFamily: "'Google Sans'" }}>
-          {ts.title}
-        </h2>
-        <p className="text-sm text-[#5f6368] m-0" style={{ fontFamily: "'Google Sans'" }}>
-          {ts.subtitle}
-        </p>
+        <h2 className="text-[22px] font-medium text-g-text m-0 mb-1">{ts.title}</h2>
+        <p className="text-sm text-g-text-2 m-0">{ts.subtitle}</p>
       </div>
 
-      {/* Identity */}
-      <p className={sectionTitleCls}>Identity</p>
-      <div className="flex flex-col gap-4">
+      <FormSectionLabel>Identity</FormSectionLabel>
+      <div className="flex flex-col gap-4 mb-6">
+        <Field label={ts.companyName}>
+          <FormInput value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder={ts.companyNamePlaceholder} />
+        </Field>
+        <Field label={ts.logoUrl}>
+          <FormInput value={form.logoUrl} onChange={e => set('logoUrl', e.target.value)} placeholder={ts.logoUrlPlaceholder} />
+        </Field>
+      </div>
+
+      <FormSectionLabel>Contact</FormSectionLabel>
+      <FormGrid className="mb-6">
+        <Field label={ts.phone}>
+          <FormInput value={form.phone} onChange={e => set('phone', e.target.value)} placeholder={ts.phonePlaceholder} />
+        </Field>
+        <Field label={ts.email}>
+          <FormInput type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder={ts.emailPlaceholder} />
+        </Field>
+      </FormGrid>
+
+      <FormSectionLabel>{ts.address}</FormSectionLabel>
+      <div className="flex flex-col gap-4 mb-6">
+        <Field label={ts.street}>
+          <FormInput value={form.address.street} onChange={e => setAddr('street', e.target.value)} placeholder={ts.streetPlaceholder} />
+        </Field>
+        <FormGrid>
+          <Field label={ts.city}>
+            <FormInput value={form.address.city} onChange={e => setAddr('city', e.target.value)} placeholder={ts.cityPlaceholder} />
+          </Field>
+          <Field label={ts.postalCode}>
+            <FormInput value={form.address.postalCode} onChange={e => setAddr('postalCode', e.target.value)} placeholder={ts.postalCodePlaceholder} />
+          </Field>
+        </FormGrid>
+        <Field label={ts.country} className="max-w-[160px]">
+          <FormInput value={form.address.country} onChange={e => setAddr('country', e.target.value)} placeholder={ts.countryPlaceholder} />
+        </Field>
+      </div>
+
+      <FormSectionLabel>Financial</FormSectionLabel>
+      <FormGrid className="mb-8">
         <div>
-          <label className={labelCls}>{ts.companyName}</label>
-          <input className={inputCls} value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder={ts.companyNamePlaceholder} />
+          <Field label={ts.currency}>
+            <FormInput value={form.currency} onChange={e => set('currency', e.target.value)} placeholder={ts.currencyPlaceholder} maxLength={4} className="max-w-[100px]" />
+          </Field>
+          <p className="text-[11px] text-g-text-3 mt-1">{ts.currencyHint}</p>
         </div>
-        <div>
-          <label className={labelCls}>{ts.logoUrl}</label>
-          <input className={inputCls} value={form.logoUrl} onChange={e => set('logoUrl', e.target.value)} placeholder={ts.logoUrlPlaceholder} />
-        </div>
-      </div>
+        <Field label={ts.vatNumber}>
+          <FormInput value={form.vatNumber} onChange={e => set('vatNumber', e.target.value)} placeholder={ts.vatNumberPlaceholder} />
+        </Field>
+      </FormGrid>
 
-      {/* Contact */}
-      <p className={sectionTitleCls}>Contact</p>
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>{ts.phone}</label>
-            <input className={inputCls} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder={ts.phonePlaceholder} />
-          </div>
-          <div>
-            <label className={labelCls}>{ts.email}</label>
-            <input className={inputCls} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder={ts.emailPlaceholder} />
-          </div>
-        </div>
-      </div>
+      <button onClick={handleSave} disabled={saving} className={btnFilled}>
+        {saving ? ts.saving : ts.save}
+      </button>
 
-      {/* Address */}
-      <p className={sectionTitleCls}>{ts.address}</p>
-      <div className="flex flex-col gap-4">
-        <div>
-          <label className={labelCls}>{ts.street}</label>
-          <input className={inputCls} value={form.address.street} onChange={e => setAddr('street', e.target.value)} placeholder={ts.streetPlaceholder} />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>{ts.city}</label>
-            <input className={inputCls} value={form.address.city} onChange={e => setAddr('city', e.target.value)} placeholder={ts.cityPlaceholder} />
-          </div>
-          <div>
-            <label className={labelCls}>{ts.postalCode}</label>
-            <input className={inputCls} value={form.address.postalCode} onChange={e => setAddr('postalCode', e.target.value)} placeholder={ts.postalCodePlaceholder} />
-          </div>
-        </div>
-        <div>
-          <label className={labelCls}>{ts.country}</label>
-          <input className={inputCls} style={{ maxWidth: 120 }} value={form.address.country} onChange={e => setAddr('country', e.target.value)} placeholder={ts.countryPlaceholder} />
-        </div>
-      </div>
-
-      {/* Financial */}
-      <p className={sectionTitleCls}>Financial</p>
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>{ts.currency}</label>
-            <input className={inputCls} style={{ maxWidth: 80 }} value={form.currency} onChange={e => set('currency', e.target.value)} placeholder={ts.currencyPlaceholder} maxLength={4} />
-            <p className="text-[11px] text-[#9aa0a6] mt-1" style={{ fontFamily: "'Google Sans'" }}>{ts.currencyHint}</p>
-          </div>
-          <div>
-            <label className={labelCls}>{ts.vatNumber}</label>
-            <input className={inputCls} value={form.vatNumber} onChange={e => set('vatNumber', e.target.value)} placeholder={ts.vatNumberPlaceholder} />
-          </div>
-        </div>
-      </div>
-
-      {/* Save button */}
-      <div className="mt-8">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="py-2.5 px-6 rounded-lg border-none text-white text-sm font-medium"
-          style={{
-            fontFamily: "'Google Sans'",
-            cursor: saving ? 'not-allowed' : 'pointer',
-            background: saving ? '#9aa0a6' : '#1a73e8',
-          }}
-        >
-          {saving ? ts.saving : ts.save}
-        </button>
-      </div>
-
-      {/* Toast notification */}
       {notif && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-5 rounded-lg text-sm"
-          style={{
-            background: notif.type === 'error' ? '#d93025' : '#202124',
-            fontFamily: "'Google Sans'",
-            zIndex: 9999,
-            boxShadow: '0 4px 12px rgba(0,0,0,.2)',
-          }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-5 rounded-lg text-sm shadow-google-2 z-[9999]"
+          style={{ background: notif.type === 'error' ? '#d93025' : '#202124' }}>
           {notif.msg}
         </div>
       )}
     </div>
   );
 }
-
-const labelCls = 'block text-[13px] font-medium text-[#5f6368] mb-1';
-const inputCls = 'w-full py-[9px] px-3 rounded-lg border border-[#dadce0] text-sm text-[#202124] outline-none bg-white box-border';
-const sectionTitleCls = 'text-[13px] font-semibold tracking-[0.04em] uppercase text-[#9aa0a6] mb-3 mt-7';

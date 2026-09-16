@@ -46,7 +46,7 @@ function LoginForm() {
             </svg>
           </div>
           <h1 className="font-sans text-[22px] font-normal text-g-text m-0">
-            Catering<span className="text-google-blue font-medium">Quotes</span>
+            Cat<span className="text-google-blue font-medium">ero</span>
           </h1>
           <p className="text-sm text-g-text-2 mt-1.5 mb-0">{t.login.signInTo}</p>
         </div>

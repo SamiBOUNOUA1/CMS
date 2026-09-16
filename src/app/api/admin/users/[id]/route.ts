@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
+import { requirePermission } from '@/lib/requireAuth';
 
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const update = {};
@@ -35,8 +38,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
 export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { auth, error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
-    const requestingUserId = request.headers.get('x-user-id');
+    const requestingUserId = auth.userId;
 
     if (params.id === requestingUserId)
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });

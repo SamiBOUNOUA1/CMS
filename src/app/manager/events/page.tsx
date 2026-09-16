@@ -15,6 +15,18 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   gala: 'Gala', conference: 'Conference', buffet: 'Buffet', other: 'Other',
 };
 
+const ASSIGNEE_ROLE_LABELS: Record<string, string> = {
+  manager: 'Manager', materials: 'Materials', kitchen: 'Kitchen',
+  staff: 'Staff', logistics: 'Logistics', other: 'Other',
+};
+
+// Find the responsibility the current user holds on an order (assignees.user is an unpopulated id).
+function myRole(order: any, userId: string): string | null {
+  const entry = (order.assignees || []).find((a: any) => String(a.user) === String(userId));
+  if (!entry) return null;
+  return ASSIGNEE_ROLE_LABELS[entry.role] || entry.role;
+}
+
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
   let hash = 0;
@@ -26,15 +38,18 @@ export default function ManagerEventsPage() {
   const isMobile = useIsMobile();
   const [orders, setOrders] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/manager/events').then(r => r.ok ? r.json() : { orders: [] }),
       fetch('/api/settings/order-statuses').then(r => r.ok ? r.json() : { statuses: [] }),
-    ]).then(([evData, stData]: [any, any]) => {
+      fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
+    ]).then(([evData, stData, meData]: [any, any, any]) => {
       setOrders(evData.orders || []);
       setStatuses(stData.statuses || []);
+      setUserId(meData?.user?._id || '');
       setLoading(false);
     });
   }, []);
@@ -92,6 +107,11 @@ export default function ManagerEventsPage() {
                       {order.tableCount ? `${order.tableCount} tables` : `${order.guestCount} guests`}
                     </div>
                   </div>
+                  {myRole(order, userId) && (
+                    <span className="rounded-full py-1 px-3 text-xs font-semibold flex-shrink-0 bg-[#e8f0fe] text-google-blue">
+                      {myRole(order, userId)}
+                    </span>
+                  )}
                   <span className="rounded-full py-1 px-3 text-xs font-semibold flex-shrink-0" style={{ background: statusBg, color: statusFg }}>
                     {sc?.label || order.status}
                   </span>

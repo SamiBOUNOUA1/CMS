@@ -19,7 +19,7 @@ interface Notification {
 const SYSTEM_COLORS: Record<string, { bg: string; color: string }> = {
   admin:   { bg: '#fce8e6', color: '#d93025' },
   manager: { bg: '#e8f0fe', color: '#1a73e8' },
-  viewer:  { bg: '#f1f3f4', color: '#5f6368' },
+  viewer:  { bg: '#f1f3f4', color: '#5f6368' }
 };
 const FALLBACK_COLOR = { bg: '#f1f3f4', color: '#5f6368' };
 
@@ -78,7 +78,7 @@ export default function RolesPage() {
       const res = await fetch('/api/admin/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: newLabel.trim(), isDefault: newIsDefault }),
+        body: JSON.stringify({ label: newLabel.trim(), isDefault: newIsDefault })
       });
       const data = await res.json();
       if (!res.ok) { notify(data.error || tr.notifications.saveFailed, 'error'); return; }
@@ -104,7 +104,7 @@ export default function RolesPage() {
       const res = await fetch(`/api/admin/roles/${role._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: editLabel.trim() }),
+        body: JSON.stringify({ label: editLabel.trim() })
       });
       const data = await res.json();
       if (!res.ok) { notify(data.error || tr.notifications.saveFailed, 'error'); return; }
@@ -122,7 +122,7 @@ export default function RolesPage() {
       const res = await fetch(`/api/admin/roles/${role._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isDefault: !role.isDefault }),
+        body: JSON.stringify({ isDefault: !role.isDefault })
       });
       const data = await res.json();
       if (!res.ok) { notify(data.error || tr.notifications.saveFailed, 'error'); return; }
@@ -148,14 +148,14 @@ export default function RolesPage() {
   };
 
   if (loading) {
-    return <p className="text-[#5f6368] text-sm" style={{ fontFamily: "'Google Sans'" }}>Loading…</p>;
+    return <p className="text-g-text-2 text-sm">Loading…</p>;
   }
 
   return (
     <div>
       {notification && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#202124', zIndex: 1000, fontFamily: "'Google Sans'" }}>
+          style={{ background: notification.type === 'error' ? '#d93025' : '#202124', zIndex: 1000}}>
           {notification.msg}
         </div>
       )}
@@ -163,16 +163,16 @@ export default function RolesPage() {
       {/* Delete confirm dialog */}
       {deleteId && (
         <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.4)', zIndex: 200 }}>
-          <div className="bg-white rounded-2xl w-full max-w-[360px]" style={{ padding: '24px 28px', boxShadow: '0 24px 38px rgba(0,0,0,.14)' }}>
-            <h3 className="text-lg font-medium m-0 mb-2.5" style={{ fontFamily: "'Google Sans'" }}>{tr.deleteDialog.title}</h3>
-            <p className="text-sm text-[#5f6368] m-0 mb-6">{tr.deleteDialog.body}</p>
+          <div className="bg-g-surface rounded-2xl w-full max-w-[360px]" style={{ padding: '24px 28px', boxShadow: '0 24px 38px rgba(0,0,0,.14)' }}>
+            <h3 className="text-lg font-medium m-0 mb-2.5">{tr.deleteDialog.title}</h3>
+            <p className="text-sm text-g-text-2 m-0 mb-6">{tr.deleteDialog.body}</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setDeleteId(null)}
-                className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-                style={{ fontFamily: "'Google Sans'" }}>{tr.deleteDialog.cancel}</button>
+                className="bg-transparent text-google-blue border border-g-border rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
+               >{tr.deleteDialog.cancel}</button>
               <button onClick={() => deleteRole(deleteId)} disabled={saving === deleteId}
                 className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-                style={{ background: '#d93025', fontFamily: "'Google Sans'" }}>
+                style={{ background: '#d93025'}}>
                 {saving === deleteId ? '…' : tr.deleteDialog.delete}
               </button>
             </div>
@@ -185,10 +185,10 @@ export default function RolesPage() {
         {!showAddForm ? (
           <button onClick={() => setShowAddForm(true)}
             className="bg-google-blue text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium cursor-pointer"
-            style={{ fontFamily: "'Google Sans'" }}>{tr.addRole}</button>
+           >{tr.addRole}</button>
         ) : (
           <form onSubmit={createRole}
-            className="bg-white rounded-xl border border-[#e8eaed] p-5 flex flex-wrap gap-3 items-end shadow-google-1">
+            className="bg-g-surface rounded-2xl border border-g-border p-5 flex flex-wrap gap-3 items-end shadow-google-1">
             <div style={{ flex: '1 1 200px' }}>
               <label className={labelCls}>{tr.editLabel}</label>
               <input
@@ -200,19 +200,19 @@ export default function RolesPage() {
                 autoFocus
               />
             </div>
-            <label className="flex items-center gap-1.5 text-[13px] text-[#5f6368] cursor-pointer flex-shrink-0 pb-0.5" style={{ fontFamily: "'Google Sans'" }}>
+            <label className="flex items-center gap-1.5 text-[13px] text-g-text-2 cursor-pointer flex-shrink-0 pb-0.5">
               <input type="checkbox" checked={newIsDefault} onChange={e => setNewIsDefault(e.target.checked)} />
               {tr.setAsDefault}
             </label>
             <div className="flex gap-2 flex-shrink-0">
               <button type="submit" disabled={creating}
                 className="bg-google-blue text-white border-none rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
-                style={{ fontFamily: "'Google Sans'" }}>
+               >
                 {creating ? tr.creating : tr.create}
               </button>
               <button type="button" onClick={() => { setShowAddForm(false); setNewLabel(''); }}
-                className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
-                style={{ fontFamily: "'Google Sans'" }}>
+                className="bg-transparent text-google-blue border border-g-border rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
+               >
                 {tr.deleteDialog.cancel}
               </button>
             </div>
@@ -221,12 +221,12 @@ export default function RolesPage() {
       </div>
 
       {/* Roles table */}
-      <div className="bg-white rounded-xl border border-[#e8eaed] overflow-hidden shadow-google-1">
+      <div className="bg-g-surface rounded-2xl border border-g-border overflow-hidden shadow-google-1">
         {/* Table header */}
-        <div className="flex bg-[#f8f9fa] border-b border-[#e8eaed] gap-2" style={{ padding: '10px 20px' }}>
-          <div style={{ flex: 2 }} className="text-[11px] font-medium text-[#5f6368] uppercase tracking-[0.06em]">Role</div>
-          <div style={{ flex: 1 }} className="text-[11px] font-medium text-[#5f6368] uppercase tracking-[0.06em]">Internal name</div>
-          <div style={{ width: 100 }} className="text-[11px] font-medium text-[#5f6368] uppercase tracking-[0.06em] text-center">Default</div>
+        <div className="flex bg-g-bg border-b border-g-border gap-2" style={{ padding: '10px 20px' }}>
+          <div style={{ flex: 2 }} className="text-[11px] font-medium text-g-text-2 uppercase tracking-[0.06em]">Role</div>
+          <div style={{ flex: 1 }} className="text-[11px] font-medium text-g-text-2 uppercase tracking-[0.06em]">Internal name</div>
+          <div style={{ width: 100 }} className="text-[11px] font-medium text-g-text-2 uppercase tracking-[0.06em] text-center">Default</div>
           <div style={{ width: 80 }} />
         </div>
 
@@ -250,20 +250,20 @@ export default function RolesPage() {
                     />
                     <button onClick={() => saveEdit(role)} disabled={saving === role._id}
                       className="bg-google-blue text-white border-none rounded-lg py-[7px] px-3 text-xs font-medium cursor-pointer"
-                      style={{ fontFamily: "'Google Sans'" }}>
+                     >
                       {saving === role._id ? '…' : '✓'}
                     </button>
                     <button onClick={() => setEditingId(null)}
-                      className="bg-transparent text-google-blue border border-[#dadce0] rounded-lg py-[7px] px-3 text-xs font-medium cursor-pointer"
-                      style={{ fontFamily: "'Google Sans'" }}>✕</button>
+                      className="bg-transparent text-google-blue border border-g-border rounded-lg py-[7px] px-3 text-xs font-medium cursor-pointer"
+                     >✕</button>
                   </div>
                 ) : (
                   <>
-                    <span className="rounded-xl py-[3px] px-3 text-[13px] font-medium" style={{ background: rc.bg, color: rc.color, fontFamily: "'Google Sans'" }}>
+                    <span className="rounded-xl py-[3px] px-3 text-[13px] font-medium" style={{ background: rc.bg, color: rc.color}}>
                       {role.label}
                     </span>
                     {role.isSystem && (
-                      <span className="flex items-center gap-[3px] text-[11px] text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>
+                      <span className="flex items-center gap-[3px] text-[11px] text-g-text-3">
                         <IconLock />{tr.systemRole}
                       </span>
                     )}
@@ -272,7 +272,7 @@ export default function RolesPage() {
               </div>
 
               {/* Internal name */}
-              <div style={{ flex: 1, fontFamily: 'monospace' }} className="text-xs text-[#9aa0a6]">{role.name}</div>
+              <div style={{ flex: 1, fontFamily: 'monospace' }} className="text-xs text-g-text-3">{role.name}</div>
 
               {/* Default toggle */}
               <div style={{ width: 100 }} className="flex justify-center">
@@ -281,9 +281,8 @@ export default function RolesPage() {
                   disabled={saving === role._id}
                   className="border-none rounded-xl py-[3px] px-2.5 text-xs font-medium cursor-pointer"
                   style={{
-                    fontFamily: "'Google Sans'",
-                    background: role.isDefault ? '#e6f4ea' : '#f1f3f4',
-                    color: role.isDefault ? '#137333' : '#5f6368',
+                                        background: role.isDefault ? '#e6f4ea' : '#f1f3f4',
+                    color: role.isDefault ? '#137333' : '#5f6368'
                   }}
                 >
                   {role.isDefault ? 'Yes' : 'No'}
@@ -295,7 +294,7 @@ export default function RolesPage() {
                 {!role.isSystem && !isEditing && (
                   <>
                     <button onClick={() => startEdit(role)}
-                      className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-full border-none bg-transparent text-[#5f6368] cursor-pointer"
+                      className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-full border-none bg-transparent text-g-text-2 cursor-pointer"
                       title={tr.editLabel}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
                     </button>
@@ -312,16 +311,16 @@ export default function RolesPage() {
         })}
 
         {roles.length === 0 && (
-          <p className="p-5 text-sm text-[#9aa0a6] m-0" style={{ fontFamily: "'Google Sans'" }}>No roles yet.</p>
+          <p className="p-5 text-sm text-g-text-3 m-0">No roles yet.</p>
         )}
       </div>
 
-      <p className="text-xs text-[#9aa0a6] mt-4" style={{ fontFamily: "'Google Sans'" }}>
+      <p className="text-xs text-g-text-3 mt-4">
         System roles are protected and cannot be deleted or renamed.
       </p>
     </div>
   );
 }
 
-const labelCls = 'block text-[11px] font-medium text-[#5f6368] mb-[5px] uppercase tracking-[0.04em]';
-const inputCls = 'w-full py-[9px] px-3 rounded-lg box-border border border-[#dadce0] text-[13px] text-[#202124] outline-none';
+const labelCls = 'block text-[11px] font-medium text-g-text-2 mb-[5px] uppercase tracking-[0.04em]';
+const inputCls = 'w-full py-[9px] px-3 rounded-lg box-border border border-g-border text-[13px] text-g-text outline-none';

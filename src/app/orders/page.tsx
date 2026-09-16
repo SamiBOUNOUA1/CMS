@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { btnFilled, btnOutline } from '@/app/components/FormPrimitives';
@@ -33,6 +34,7 @@ interface Order {
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const isMobile = useIsMobile();
   const t = useT();
   const tp = t.ordersPage;
@@ -222,7 +224,11 @@ export default function OrdersPage() {
             const statusBg = sc?.color ? sc.color + '22' : '#f1f3f4';
             const statusFg = sc?.color || '#5f6368';
             return (
-              <div key={order._id} className="bg-white rounded-xl border border-google-gray-200 p-4 shadow-google-1">
+              <div
+                key={order._id}
+                onClick={() => router.push(`/orders/${order._id}`)}
+                className="bg-white rounded-xl border border-google-gray-200 p-4 shadow-google-1 cursor-pointer"
+              >
                 <div className="flex justify-between items-start mb-2.5">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center font-medium text-[15px] text-white" style={{ background: avatarColor(order.clientName) }}>
@@ -245,11 +251,8 @@ export default function OrdersPage() {
                     {sc?.label || order.status}
                   </span>
                   <div className="flex gap-1">
-                    <Link href={`/orders/${order._id}`} className="inline-flex items-center justify-center w-9 h-9 rounded-full text-[#5f6368]">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>
-                    </Link>
                     {perms.delete_orders && (
-                      <button onClick={() => setDeleteId(order._id)} className="inline-flex items-center justify-center w-9 h-9 rounded-full border-none bg-transparent cursor-pointer text-google-red">
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteId(order._id); }} className="inline-flex items-center justify-center w-9 h-9 rounded-full border-none bg-transparent cursor-pointer text-google-red">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                       </button>
                     )}
@@ -277,7 +280,8 @@ export default function OrdersPage() {
             return (
               <div
                 key={order._id}
-                className="flex items-center px-6 py-4 gap-4 bg-white transition-colors"
+                onClick={() => router.push(`/orders/${order._id}`)}
+                className="flex items-center px-6 py-4 gap-4 bg-white transition-colors cursor-pointer"
                 style={{ borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}
                 onMouseEnter={e => (e.currentTarget.style.background = '#f8f9fa')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
@@ -310,11 +314,8 @@ export default function OrdersPage() {
                   {formatCurrency(order.activeQuoteTotal, currency)}
                 </div>
                 <div className="flex-1 flex justify-end gap-1">
-                  <Link href={`/orders/${order._id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#f1f3f4] text-[#5f6368]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>
-                  </Link>
                   {perms.delete_orders && (
-                    <button onClick={() => setDeleteId(order._id)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#f1f3f4] text-google-red border-none cursor-pointer">
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteId(order._id); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#f1f3f4] text-google-red border-none cursor-pointer">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                     </button>
                   )}

@@ -56,7 +56,7 @@ export const defaultLineGroup = (): LineGroup => ({ label: '', count: 1, items: 
 
 export function StepLineItems({ form, setForm, errors, products, isMobile, tn, isTableMode, currency, defaultCount = 1 }: StepLineItemsProps) {
   const tli = tn.lineItems as Record<string, unknown>;
-  const [filterCategory, setFilterCategory] = useState('');
+  const [itemCatFilters, setItemCatFilters] = useState<Record<string, string>>({});
 
   const addGroup = () => setForm(f => ({ ...f, lineGroups: [...f.lineGroups, { ...defaultLineGroup(), count: defaultCount }] }));
   const removeGroup = (gi: number) => setForm(f => ({ ...f, lineGroups: f.lineGroups.filter((_, idx) => idx !== gi) }));
@@ -111,6 +111,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
       groups[gi] = { ...groups[gi], items };
       return { ...f, lineGroups: groups };
     });
+    setItemCatFilters(prev => ({ ...prev, [`${gi}_${ii}`]: found?.category?._id ?? '' }));
   };
 
   const categories: Category[] = [];
@@ -121,10 +122,6 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
       categories.push(p.category);
     }
   }
-
-  const filteredProducts = filterCategory
-    ? products.filter(p => p.category?._id === filterCategory)
-    : products;
 
   const countLabel = isTableMode ? String(tli.groupCountTables) : String(tli.groupCount);
 
@@ -140,19 +137,6 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
           </span>
         )}
       </p>
-
-      {categories.length > 0 && (
-        <div className="mb-4">
-          <FormSelect
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-            style={{ maxWidth: 260 }}
-          >
-            <option value="">{String(tli.selectCategory)}</option>
-            {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </FormSelect>
-        </div>
-      )}
 
       {form.lineGroups.map((group, gi) => (
         <div
@@ -192,7 +176,12 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
 
           <div className="h-px bg-[#dce8fb] mb-3.5" />
 
-          {group.items.map((item, ii) => (
+          {group.items.map((item, ii) => {
+            const itemCatFilter = itemCatFilters[`${gi}_${ii}`] ?? '';
+            const itemFilteredProducts = itemCatFilter
+              ? products.filter(p => p.category?._id === itemCatFilter)
+              : products;
+            return (
             <div
               key={ii}
               className="border border-google-gray-200 rounded-[10px] mb-2.5 bg-white"
@@ -208,11 +197,29 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
               </div>
 
               <div className="flex flex-col gap-2.5">
+                {categories.length > 0 && (
+                  <Field label={String(tli.category)}>
+                    <FormSelect
+                      value={itemCatFilter}
+                      onChange={e => {
+                        const newCat = e.target.value;
+                        setItemCatFilters(prev => ({ ...prev, [`${gi}_${ii}`]: newCat }));
+                        const currentProduct = products.find(p => p._id === item._productId);
+                        if (currentProduct && newCat && currentProduct.category?._id !== newCat) {
+                          handleProductSelect(gi, ii, '');
+                        }
+                      }}
+                    >
+                      <option value="">{String(tli.selectCategory)}</option>
+                      {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    </FormSelect>
+                  </Field>
+                )}
                 <Field label={String(tli.itemName)} error={errors[`item_name_${gi}_${ii}`]}>
-                  {filteredProducts.length > 0 ? (
+                  {itemFilteredProducts.length > 0 ? (
                     <FormSelect value={item._productId || ''} onChange={e => handleProductSelect(gi, ii, e.target.value)}>
                       <option value="">{String(tli.pickItem)}</option>
-                      {filteredProducts.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                      {itemFilteredProducts.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                       <option value="__custom__">{String(tli.custom)}</option>
                     </FormSelect>
                   ) : (
@@ -279,7 +286,8 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           <button
             onClick={() => addItem(gi)}

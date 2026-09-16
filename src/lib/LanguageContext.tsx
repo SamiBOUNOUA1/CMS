@@ -37,6 +37,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, []);
 
+  // Apply the signed-in user's saved default language. The account preference
+  // is the source of truth on load; the nav toggle remains an in-session override.
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const pref = d?.user?.preferredLanguage as Lang | undefined;
+        if (pref === 'en' || pref === 'fr') {
+          setLang(pref);
+          if (typeof window !== 'undefined') localStorage.setItem('lang', pref);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const switchLanguage = (l: Lang) => {
     setLang(l);
     if (typeof window !== 'undefined') localStorage.setItem('lang', l);

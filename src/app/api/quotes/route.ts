@@ -2,10 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Quote, Order } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
+import { requirePermission } from '@/lib/requireAuth';
 
 // POST /api/quotes — snapshot the order's current items/staff into a new quote version
 export async function POST(request: NextRequest) {
   try {
+    const { auth, error } = await requirePermission(request, 'create_quotes');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
 
@@ -67,6 +71,16 @@ export async function POST(request: NextRequest) {
     });
 
     await quote.save();
+
+    const userId = auth.userId;
+    await logActivity({
+      action: 'quote_generated',
+      entityType: 'quote',
+      entityId: quote._id.toString(),
+      entityLabel: `Quote v${nextVersion} – ${order.clientName}`,
+      performedBy: userId,
+      metadata: { orderId: body.orderId, versionNumber: nextVersion },
+    });
 
     return NextResponse.json({ quote }, { status: 201 });
   } catch (err: unknown) {

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useT, useCurrency } from '@/lib/LanguageContext';
-import { Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
+import { btnFilled as btnFilledCls, btnOutline as btnOutlineCls, Field, FormInput, FormSelect, FormTextarea, FormCard, FormSectionLabel, FormGrid } from '@/app/components/FormPrimitives';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -36,6 +36,7 @@ export default function CustomerDetailPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const t = useT();
+  // isMobile kept for table layout differences (orders/events tabs)
   const tp = t.customerDetail;
   const currency = useCurrency();
 
@@ -165,29 +166,8 @@ export default function CustomerDetailPage() {
 
   const typeMap = Object.fromEntries(customerTypes.map(ct => [ct.key, ct.label]));
 
-  const btnFilled = {
-    background: '#1a73e8', color: '#fff', border: 'none',
-    borderRadius: 24, padding: '9px 20px', fontSize: 14,
-    fontFamily: "'Google Sans'", fontWeight: 500, cursor: 'pointer',
-  };
-  const btnOutline = {
-    background: 'transparent', color: '#5f6368', border: '1px solid #dadce0',
-    borderRadius: 24, padding: '9px 20px', fontSize: 14,
-    fontFamily: "'Google Sans'", fontWeight: 500, cursor: 'pointer',
-  };
-
-  const card = {
-    background: '#fff', border: '1px solid #e8eaed', borderRadius: 12,
-    padding: isMobile ? '18px 16px' : '24px', marginBottom: 16,
-  };
-
-  const sectionLabel = {
-    fontSize: 11, fontWeight: 600, color: '#5f6368', textTransform: 'uppercase',
-    letterSpacing: '0.06em', fontFamily: "'Google Sans'", marginBottom: 12, display: 'block',
-  };
-
-  const fieldRow = { fontSize: 14, color: '#202124', fontFamily: 'Roboto, Arial', marginBottom: 8 };
-  const fieldLabel = { fontSize: 12, color: '#9aa0a6', marginBottom: 2 };
+  const fieldRow = 'text-sm text-g-text mb-2';
+  const fieldLabel = 'text-[12px] text-g-text-3 mb-0.5';
 
   if (loading) {
     return (
@@ -208,82 +188,63 @@ export default function CustomerDetailPage() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
-      {/* Toast */}
+    <div className="max-w-[800px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       {notification && (
-        <div style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: notification.type === 'error' ? '#d93025' : '#137333',
-          color: '#fff', padding: '12px 24px', borderRadius: 8,
-          fontFamily: "'Google Sans'", fontSize: 14, fontWeight: 500,
-          zIndex: 200, boxShadow: '0 4px 12px rgba(0,0,0,.2)', whiteSpace: 'nowrap',
-        }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium z-[200] shadow-google-2 whitespace-nowrap"
+          style={{ background: notification.type === 'error' ? '#d93025' : '#137333' }}>
           {notification.msg}
         </div>
       )}
 
-      {/* Delete dialog */}
       {deleteOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 199, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}>
-            <h3 style={{ margin: '0 0 8px', fontFamily: "'Google Sans'", fontSize: 18, fontWeight: 500, color: '#202124' }}>
-              {tp.deleteDialog.title}
-            </h3>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#5f6368', lineHeight: 1.5 }}>
-              {tp.deleteDialog.body}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setDeleteOpen(false)} style={btnOutline}>{tp.deleteDialog.cancel}</button>
-              <button onClick={handleDelete} style={{ ...btnFilled, background: '#d93025' }}>{tp.deleteDialog.delete}</button>
+        <div className="fixed inset-0 bg-black/45 z-[199] flex items-center justify-center p-4">
+          <div className="bg-g-surface rounded-2xl p-7 max-w-[400px] w-full shadow-google-3">
+            <h3 className="m-0 mb-2 text-lg font-medium text-g-text">{tp.deleteDialog.title}</h3>
+            <p className="m-0 mt-2 mb-6 text-sm text-g-text-2 leading-relaxed">{tp.deleteDialog.body}</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setDeleteOpen(false)} className={btnOutlineCls}>{tp.deleteDialog.cancel}</button>
+              <button onClick={handleDelete} className={`${btnFilledCls} bg-google-red`} style={{ background: '#d93025' }}>{tp.deleteDialog.delete}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Back link */}
-      <Link href="/customers" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#5f6368', textDecoration: 'none', fontSize: 14, fontFamily: "'Google Sans'", marginBottom: 20 }}>
+      <Link href="/customers" className="inline-flex items-center gap-1.5 text-g-text-2 no-underline text-sm mb-5 hover:text-google-blue transition-colors">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
         {tp.back}
       </Link>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
-            background: avatarColor(client.name), color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 500, fontFamily: "'Google Sans'",
-          }}>
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <div
+            className="w-[52px] h-[52px] rounded-full flex-shrink-0 flex items-center justify-center text-white font-medium text-[22px]"
+            style={{ background: avatarColor(client.name) }}
+          >
             {(client.name || '?')[0].toUpperCase()}
           </div>
           <div>
-            <h1 style={{ margin: 0, fontFamily: "'Google Sans'", fontSize: isMobile ? 20 : 24, fontWeight: 500, color: '#202124' }}>
-              {client.name}
-            </h1>
-            <p style={{ margin: '3px 0 0', fontSize: 14, color: '#5f6368', fontFamily: 'Roboto, Arial' }}>
-              {client.email}
-              {client.phone && ` · ${client.phone}`}
+            <h1 className="m-0 text-xl sm:text-2xl font-medium text-g-text">{client.name}</h1>
+            <p className="m-0 mt-1 text-sm text-g-text-2">
+              {client.email}{client.phone && ` · ${client.phone}`}
             </p>
             {client.customerType && typeMap[client.customerType] && (
-              <span style={{ display: 'inline-block', marginTop: 6, padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, background: '#e8f0fe', color: '#1a73e8', fontFamily: "'Google Sans'" }}>
+              <span className="inline-block mt-1.5 py-0.5 px-2.5 rounded-full text-[12px] font-medium bg-[#e8f0fe] text-google-blue">
                 {typeMap[client.customerType]}
               </span>
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div className="flex gap-2 flex-shrink-0">
           {perms.edit_customers && !editing && (
-            <button onClick={() => setEditing(true)} style={btnOutline}>{tp.editCustomer}</button>
+            <button onClick={() => setEditing(true)} className={btnOutlineCls}>{tp.editCustomer}</button>
           )}
           {perms.delete_customers && !editing && (
-            <button onClick={() => setDeleteOpen(true)} style={{ ...btnFilled, background: '#d93025' }}>{tp.deleteCustomer}</button>
+            <button onClick={() => setDeleteOpen(true)} className={btnFilledCls} style={{ background: '#d93025' }}>{tp.deleteCustomer}</button>
           )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e8eaed', marginBottom: 24, gap: 4 }}>
+      <div className="flex border-b border-g-border mb-6 gap-1">
         {[
           { key: 'info', label: tp.tabs.info },
           { key: 'orders', label: tp.tabs.orders },
@@ -292,12 +253,10 @@ export default function CustomerDetailPage() {
           <button
             key={tab.key}
             onClick={() => handleTabClick(tab.key)}
+            className="px-4 py-2.5 border-none bg-transparent cursor-pointer text-sm font-medium -mb-px"
             style={{
-              padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-              fontFamily: "'Google Sans'", fontSize: 14, fontWeight: 500,
-              color: activeTab === tab.key ? '#1a73e8' : '#5f6368',
+              color: activeTab === tab.key ? '#1a73e8' : 'var(--google-text-secondary)',
               borderBottom: activeTab === tab.key ? '2px solid #1a73e8' : '2px solid transparent',
-              marginBottom: -1,
             }}
           >
             {tab.label}
@@ -308,11 +267,10 @@ export default function CustomerDetailPage() {
       {/* ── Information Tab ─────────────────────────────────────────────────── */}
       {activeTab === 'info' && (
         <>
-          {/* Contact section */}
-          <div style={card}>
-            <span style={sectionLabel}>{tp.infoSection}</span>
+          <FormCard>
+            <FormSectionLabel>{tp.infoSection}</FormSectionLabel>
             {!editing ? (
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px 24px' }}>
+              <FormGrid>
                 {[
                   { label: tp.fields.name, value: client.name },
                   { label: tp.fields.email, value: client.email },
@@ -321,73 +279,65 @@ export default function CustomerDetailPage() {
                   { label: tp.fields.leadSource, value: (client.leadSource && tp.fields.leadSources[client.leadSource]) || tp.fields.noLeadSource },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <p style={{ margin: 0, ...fieldLabel }}>{label}</p>
-                    <p style={{ margin: 0, ...fieldRow }}>{value}</p>
+                    <p className={`m-0 ${fieldLabel}`}>{label}</p>
+                    <p className={`m-0 mt-0.5 ${fieldRow}`}>{value}</p>
                   </div>
                 ))}
-              </div>
+              </FormGrid>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px 24px' }}>
-                  <Field label={tp.fields.name}>
-                    <FormInput value={editForm.name} onChange={e => set('name', e.target.value)} />
-                  </Field>
-                  <Field label={tp.fields.email}>
-                    <FormInput type="email" value={editForm.email} onChange={e => set('email', e.target.value)} />
-                  </Field>
-                  <Field label={tp.fields.phone}>
-                    <FormInput value={editForm.phone} onChange={e => set('phone', e.target.value)} />
-                  </Field>
-                  <Field label={tp.fields.customerType}>
-                    <FormSelect value={editForm.customerType} onChange={e => set('customerType', e.target.value)}>
-                      <option value="">{tp.fields.noType}</option>
-                      {customerTypes.filter(ct => ct.isActive).map(ct => (
-                        <option key={ct.key} value={ct.key}>{ct.label}</option>
-                      ))}
-                    </FormSelect>
-                  </Field>
-                  <Field label={tp.fields.leadSource}>
-                    <FormSelect value={editForm.leadSource} onChange={e => set('leadSource', e.target.value)}>
-                      <option value="">{tp.fields.noLeadSource}</option>
-                      {Object.entries(tp.fields.leadSources).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </FormSelect>
-                  </Field>
-                </div>
-              </div>
+              <FormGrid>
+                <Field label={tp.fields.name}>
+                  <FormInput value={editForm.name} onChange={e => set('name', e.target.value)} />
+                </Field>
+                <Field label={tp.fields.email}>
+                  <FormInput type="email" value={editForm.email} onChange={e => set('email', e.target.value)} />
+                </Field>
+                <Field label={tp.fields.phone}>
+                  <FormInput value={editForm.phone} onChange={e => set('phone', e.target.value)} />
+                </Field>
+                <Field label={tp.fields.customerType}>
+                  <FormSelect value={editForm.customerType} onChange={e => set('customerType', e.target.value)}>
+                    <option value="">{tp.fields.noType}</option>
+                    {customerTypes.filter(ct => ct.isActive).map(ct => (
+                      <option key={ct.key} value={ct.key}>{ct.label}</option>
+                    ))}
+                  </FormSelect>
+                </Field>
+                <Field label={tp.fields.leadSource}>
+                  <FormSelect value={editForm.leadSource} onChange={e => set('leadSource', e.target.value)}>
+                    <option value="">{tp.fields.noLeadSource}</option>
+                    {Object.entries(tp.fields.leadSources).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </FormSelect>
+                </Field>
+              </FormGrid>
             )}
-          </div>
+          </FormCard>
 
-          {/* Billing Address section */}
-          <div style={card}>
-            <span style={sectionLabel}>{tp.billingSection}</span>
+          <FormCard>
+            <FormSectionLabel>{tp.billingSection}</FormSectionLabel>
             {!editing ? (
               (() => {
                 const addr = client.billingAddress || {};
                 const hasAddr = addr.street || addr.city || addr.postalCode || addr.state || addr.country;
-                if (!hasAddr) return <p style={{ margin: 0, fontSize: 14, color: '#9aa0a6', fontFamily: 'Roboto, Arial' }}>{tp.noAddress}</p>;
+                if (!hasAddr) return <p className="m-0 text-sm text-g-text-3">{tp.noAddress}</p>;
                 return (
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px 24px' }}>
-                    {addr.street && (
-                      <div style={{ gridColumn: isMobile ? undefined : '1 / -1' }}>
-                        <p style={{ margin: 0, ...fieldLabel }}>{tp.fields.street}</p>
-                        <p style={{ margin: 0, ...fieldRow }}>{addr.street}</p>
-                      </div>
-                    )}
-                    {addr.city && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.city}</p><p style={{ margin: 0, ...fieldRow }}>{addr.city}</p></div>}
-                    {addr.postalCode && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.postalCode}</p><p style={{ margin: 0, ...fieldRow }}>{addr.postalCode}</p></div>}
-                    {addr.state && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.state}</p><p style={{ margin: 0, ...fieldRow }}>{addr.state}</p></div>}
-                    {addr.country && <div><p style={{ margin: 0, ...fieldLabel }}>{tp.fields.country}</p><p style={{ margin: 0, ...fieldRow }}>{addr.country}</p></div>}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                    {addr.street && <div className="sm:col-span-2"><p className={`m-0 ${fieldLabel}`}>{tp.fields.street}</p><p className={`m-0 mt-0.5 ${fieldRow}`}>{addr.street}</p></div>}
+                    {addr.city && <div><p className={`m-0 ${fieldLabel}`}>{tp.fields.city}</p><p className={`m-0 mt-0.5 ${fieldRow}`}>{addr.city}</p></div>}
+                    {addr.postalCode && <div><p className={`m-0 ${fieldLabel}`}>{tp.fields.postalCode}</p><p className={`m-0 mt-0.5 ${fieldRow}`}>{addr.postalCode}</p></div>}
+                    {addr.state && <div><p className={`m-0 ${fieldLabel}`}>{tp.fields.state}</p><p className={`m-0 mt-0.5 ${fieldRow}`}>{addr.state}</p></div>}
+                    {addr.country && <div><p className={`m-0 ${fieldLabel}`}>{tp.fields.country}</p><p className={`m-0 mt-0.5 ${fieldRow}`}>{addr.country}</p></div>}
                   </div>
                 );
               })()
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <Field label={tp.fields.street} style={{ gridColumn: '1 / -1' }}>
+              <div className="flex flex-col gap-4">
+                <Field label={tp.fields.street}>
                   <FormInput value={editForm.billingAddress.street} onChange={e => setAddr('street', e.target.value)} />
                 </Field>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px 24px' }}>
+                <FormGrid>
                   <Field label={tp.fields.city}>
                     <FormInput value={editForm.billingAddress.city} onChange={e => setAddr('city', e.target.value)} />
                   </Field>
@@ -400,16 +350,15 @@ export default function CustomerDetailPage() {
                   <Field label={tp.fields.country}>
                     <FormInput value={editForm.billingAddress.country} onChange={e => setAddr('country', e.target.value)} />
                   </Field>
-                </div>
+                </FormGrid>
               </div>
             )}
-          </div>
+          </FormCard>
 
-          {/* Notes section */}
-          <div style={card}>
-            <span style={sectionLabel}>{tp.notesSection}</span>
+          <FormCard>
+            <FormSectionLabel>{tp.notesSection}</FormSectionLabel>
             {!editing ? (
-              <p style={{ margin: 0, fontSize: 14, color: client.notes ? '#202124' : '#9aa0a6', fontFamily: 'Roboto, Arial', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              <p className={`m-0 text-sm leading-relaxed whitespace-pre-wrap ${client.notes ? 'text-g-text' : 'text-g-text-3'}`}>
                 {client.notes || tp.noNotes}
               </p>
             ) : (
@@ -417,15 +366,14 @@ export default function CustomerDetailPage() {
                 <FormTextarea rows={4} value={editForm.notes} onChange={e => set('notes', e.target.value)} />
               </Field>
             )}
-          </div>
+          </FormCard>
 
-          {/* Save / Cancel */}
           {editing && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => { setEditing(false); seedEditForm(client); }} style={btnOutline} disabled={saving}>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setEditing(false); seedEditForm(client); }} className={btnOutlineCls} disabled={saving}>
                 {tp.cancelEdit}
               </button>
-              <button onClick={handleSave} style={btnFilled} disabled={saving}>
+              <button onClick={handleSave} className={btnFilledCls} disabled={saving}>
                 {saving ? '…' : tp.saveCustomer}
               </button>
             </div>
@@ -435,119 +383,92 @@ export default function CustomerDetailPage() {
 
       {/* ── Orders Tab ──────────────────────────────────────────────────────── */}
       {activeTab === 'orders' && (
-        <div style={card}>
+        <FormCard className="!mb-0">
           {ordersLoading && (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ width: 28, height: 28, border: '3px solid #e8eaed', borderTopColor: '#1a73e8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            <div className="flex justify-center py-10">
+              <div className="w-7 h-7 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
             </div>
           )}
           {!ordersLoading && orders.length === 0 && (
-            <p style={{ margin: 0, textAlign: 'center', color: '#9aa0a6', fontFamily: "'Google Sans'", fontSize: 14, padding: '24px 0' }}>
-              {tp.ordersTab.empty}
-            </p>
+            <p className="m-0 text-center text-g-text-3 text-sm py-6">{tp.ordersTab.empty}</p>
           )}
           {!ordersLoading && orders.length > 0 && (
             <div>
-              {/* Table header */}
-              {!isMobile && (
-                <div style={{ display: 'flex', padding: '6px 0 10px', borderBottom: '1px solid #e8eaed', marginBottom: 4 }}>
-                  {[tp.ordersTab.table.date, tp.ordersTab.table.type, tp.ordersTab.table.status, tp.ordersTab.table.total, tp.ordersTab.table.actions].map((h, i) => (
-                    <div key={i} style={{ flex: i === 4 ? 'none' : 1, width: i === 4 ? 80 : undefined, fontSize: 11, fontWeight: 600, color: '#5f6368', fontFamily: "'Google Sans'", textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {h}
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="hidden sm:flex py-2.5 border-b border-g-border mb-1">
+                {[tp.ordersTab.table.date, tp.ordersTab.table.type, tp.ordersTab.table.status, tp.ordersTab.table.total, tp.ordersTab.table.actions].map((h, i) => (
+                  <div key={i} className={`text-[11px] font-semibold text-g-text-2 uppercase tracking-wider ${i === 4 ? 'w-20' : 'flex-1'}`}>{h}</div>
+                ))}
+              </div>
               {orders.map((order, idx) => (
-                <div key={order._id} style={{
-                  display: isMobile ? 'block' : 'flex', alignItems: 'center',
-                  padding: '12px 0', borderBottom: idx < orders.length - 1 ? '1px solid #f1f3f4' : 'none',
-                }}>
-                  {isMobile ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <p style={{ margin: 0, fontSize: 13, color: '#5f6368' }}>{formatDate(order.eventDate)}</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 500, color: '#202124', fontFamily: "'Google Sans'" }}>{order.eventType}</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 13, color: '#5f6368' }}>{formatCurrency(order.totalAmount, currency)}</p>
-                      </div>
-                      <Link href={`/orders/${order._id}`} style={{ color: '#1a73e8', fontSize: 13, fontFamily: "'Google Sans'", textDecoration: 'none' }}>View →</Link>
+                <div key={order._id} className="py-3"
+                  style={{ borderBottom: idx < orders.length - 1 ? '1px solid var(--google-border)' : 'none' }}>
+                  <div className="hidden sm:flex items-center">
+                    <div className="flex-1 text-[13px] text-g-text-2">{formatDate(order.eventDate)}</div>
+                    <div className="flex-1 text-[13px] text-g-text capitalize">{order.eventType}</div>
+                    <div className="flex-1">
+                      <span className="inline-block py-0.5 px-2.5 rounded-full text-xs font-medium bg-g-bg text-g-text-2">{order.status}</span>
                     </div>
-                  ) : (
-                    <>
-                      <div style={{ flex: 1, fontSize: 13, color: '#5f6368' }}>{formatDate(order.eventDate)}</div>
-                      <div style={{ flex: 1, fontSize: 13, color: '#202124', textTransform: 'capitalize' }}>{order.eventType}</div>
-                      <div style={{ flex: 1 }}>
-                        <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 10, fontSize: 12, fontWeight: 500, background: '#f1f3f4', color: '#5f6368', fontFamily: "'Google Sans'" }}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <div style={{ flex: 1, fontSize: 13, color: '#202124', fontWeight: 500 }}>{formatCurrency(order.totalAmount, currency)}</div>
-                      <div style={{ width: 80 }}>
-                        <Link href={`/orders/${order._id}`} style={{ color: '#1a73e8', fontSize: 13, fontFamily: "'Google Sans'", textDecoration: 'none' }}>View →</Link>
-                      </div>
-                    </>
-                  )}
+                    <div className="flex-1 text-[13px] text-g-text font-medium">{formatCurrency(order.totalAmount, currency)}</div>
+                    <div className="w-20">
+                      <Link href={`/orders/${order._id}`} className="text-google-blue text-[13px] no-underline">View →</Link>
+                    </div>
+                  </div>
+                  <div className="sm:hidden flex justify-between items-center">
+                    <div>
+                      <p className="m-0 text-[13px] text-g-text-2">{formatDate(order.eventDate)}</p>
+                      <p className="m-0 mt-0.5 text-sm font-medium text-g-text">{order.eventType}</p>
+                      <p className="m-0 mt-0.5 text-[13px] text-g-text-2">{formatCurrency(order.totalAmount, currency)}</p>
+                    </div>
+                    <Link href={`/orders/${order._id}`} className="text-google-blue text-[13px] no-underline">View →</Link>
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </FormCard>
       )}
 
       {/* ── Events Tab ──────────────────────────────────────────────────────── */}
       {activeTab === 'events' && (
-        <div style={card}>
+        <FormCard className="!mb-0">
           {eventsLoading && (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ width: 28, height: 28, border: '3px solid #e8eaed', borderTopColor: '#1a73e8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            <div className="flex justify-center py-10">
+              <div className="w-7 h-7 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
             </div>
           )}
           {!eventsLoading && events.length === 0 && (
-            <p style={{ margin: 0, textAlign: 'center', color: '#9aa0a6', fontFamily: "'Google Sans'", fontSize: 14, padding: '24px 0' }}>
-              {tp.eventsTab.empty}
-            </p>
+            <p className="m-0 text-center text-g-text-3 text-sm py-6">{tp.eventsTab.empty}</p>
           )}
           {!eventsLoading && events.length > 0 && (
             <div>
-              {!isMobile && (
-                <div style={{ display: 'flex', padding: '6px 0 10px', borderBottom: '1px solid #e8eaed', marginBottom: 4 }}>
-                  {[tp.eventsTab.table.date, tp.eventsTab.table.type, tp.eventsTab.table.guests, tp.eventsTab.table.status].map((h, i) => (
-                    <div key={i} style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#5f6368', fontFamily: "'Google Sans'", textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {h}
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="hidden sm:flex py-2.5 border-b border-g-border mb-1">
+                {[tp.eventsTab.table.date, tp.eventsTab.table.type, tp.eventsTab.table.guests, tp.eventsTab.table.status].map((h, i) => (
+                  <div key={i} className="flex-1 text-[11px] font-semibold text-g-text-2 uppercase tracking-wider">{h}</div>
+                ))}
+              </div>
               {events.map((ev, idx) => (
-                <div key={ev._id} style={{
-                  display: isMobile ? 'block' : 'flex', alignItems: 'center',
-                  padding: '12px 0', borderBottom: idx < events.length - 1 ? '1px solid #f1f3f4' : 'none',
-                }}>
-                  {isMobile ? (
-                    <div>
-                      <p style={{ margin: 0, fontSize: 13, color: '#5f6368' }}>{formatDate(ev.eventDate)}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 500, color: '#202124', fontFamily: "'Google Sans'", textTransform: 'capitalize' }}>{ev.eventType}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: 13, color: '#5f6368' }}>{ev.guestCount} guests · {ev.status}</p>
+                <div key={ev._id}
+                  className="py-3"
+                  style={{ borderBottom: idx < events.length - 1 ? '1px solid var(--google-border)' : 'none' }}
+                >
+                  <div className="hidden sm:flex items-center">
+                    <div className="flex-1 text-[13px] text-g-text-2">{formatDate(ev.eventDate)}</div>
+                    <div className="flex-1 text-[13px] text-g-text capitalize">{ev.eventType}</div>
+                    <div className="flex-1 text-[13px] text-g-text-2">{ev.guestCount}</div>
+                    <div className="flex-1">
+                      <span className="inline-block py-0.5 px-2.5 rounded-full text-xs font-medium bg-g-bg text-g-text-2 capitalize">{ev.status}</span>
                     </div>
-                  ) : (
-                    <>
-                      <div style={{ flex: 1, fontSize: 13, color: '#5f6368' }}>{formatDate(ev.eventDate)}</div>
-                      <div style={{ flex: 1, fontSize: 13, color: '#202124', textTransform: 'capitalize' }}>{ev.eventType}</div>
-                      <div style={{ flex: 1, fontSize: 13, color: '#5f6368' }}>{ev.guestCount}</div>
-                      <div style={{ flex: 1 }}>
-                        <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 10, fontSize: 12, fontWeight: 500, background: '#f1f3f4', color: '#5f6368', fontFamily: "'Google Sans'", textTransform: 'capitalize' }}>
-                          {ev.status}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                  </div>
+                  <div className="sm:hidden">
+                    <p className="m-0 text-[13px] text-g-text-2">{formatDate(ev.eventDate)}</p>
+                    <p className="m-0 mt-0.5 text-sm font-medium text-g-text capitalize">{ev.eventType}</p>
+                    <p className="m-0 mt-0.5 text-[13px] text-g-text-2">{ev.guestCount} guests · {ev.status}</p>
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </FormCard>
       )}
     </div>
   );

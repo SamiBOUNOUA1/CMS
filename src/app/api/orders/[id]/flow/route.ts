@@ -2,14 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
-
-function getPerms(request) {
-  try {
-    return JSON.parse(request.headers.get('x-user-permissions') || '{}');
-  } catch {
-    return {};
-  }
-}
+import { getAuth } from '@/lib/requireAuth';
 
 // GET /api/orders/[id]/flow
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -26,8 +19,10 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 // PATCH /api/orders/[id]/flow
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const perms = auth.permissions;
     await connectDB();
-    const perms = getPerms(request);
     const body = await request.json();
     const { action } = body;
 

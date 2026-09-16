@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment } from '@/lib/models';
+import { logActivity } from '@/lib/activityLogger';
+import { getAuth } from '@/lib/requireAuth';
 
 async function recalculatePaymentStatus(order) {
   const payments = await Payment.find({ order: order._id }).lean();
@@ -20,6 +22,8 @@ async function recalculatePaymentStatus(order) {
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     const payments = await Payment.find({ order: params.id })
       .sort({ paymentDate: -1 })
@@ -32,6 +36,8 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 export async function POST(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
     const body = await request.json();
 
@@ -64,6 +70,16 @@ export async function POST(request: NextRequest, { params }: { params: Record<st
     });
 
     await recalculatePaymentStatus(order);
+
+    const userId = auth.userId;
+    await logActivity({
+      action: 'payment_created',
+      entityType: 'payment',
+      entityId: payment._id.toString(),
+      entityLabel: `${newAmount}€ – ${order.clientName}`,
+      performedBy: userId,
+      metadata: { orderId: params.id, amount: newAmount, method: body.paymentMethod || 'cash' },
+    });
 
     const updatedOrder = await Order.findById(params.id).lean();
     return NextResponse.json({ payment, order: updatedOrder }, { status: 201 });

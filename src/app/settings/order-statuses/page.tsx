@@ -55,7 +55,7 @@ export default function OrderStatusesSettingsPage() {
       const res = await fetch('/api/settings/order-statuses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: newLabel.trim(), color: newColor }),
+        body: JSON.stringify({ label: newLabel.trim(), color: newColor })
       });
       if (!res.ok) throw new Error();
       setNewLabel('');
@@ -74,7 +74,7 @@ export default function OrderStatusesSettingsPage() {
       const res = await fetch(`/api/settings/order-statuses/${status._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ triggerEvent: true }),
+        body: JSON.stringify({ triggerEvent: true })
       });
       if (!res.ok) throw new Error();
       showNotification(ts.notifications.updated);
@@ -106,13 +106,13 @@ export default function OrderStatusesSettingsPage() {
       )}
 
       <div className="mb-7">
-        <h1 className="text-[22px] font-normal text-[#202124] m-0" style={{ fontFamily: "'Google Sans'" }}>{ts.title}</h1>
-        <p className="text-sm text-[#5f6368] mt-1.5 mb-0">{ts.subtitle}</p>
+        <h1 className="text-[22px] font-normal text-g-text m-0">{ts.title}</h1>
+        <p className="text-sm text-g-text-2 mt-1.5 mb-0">{ts.subtitle}</p>
       </div>
 
       {/* Add new status */}
-      <div className="bg-white rounded-xl border border-[#e8eaed] mb-6 shadow-google-1" style={{ padding: '20px 24px' }}>
-        <h2 className="text-[15px] font-medium text-[#202124] m-0 mb-4" style={{ fontFamily: "'Google Sans'" }}>{ts.addNew}</h2>
+      <div className="bg-g-surface rounded-2xl border border-g-border mb-6 shadow-google-1 p-4 sm:p-6">
+        <h2 className="text-[15px] font-medium text-g-text m-0 mb-4">{ts.addNew}</h2>
         <div className="flex gap-2.5 items-end flex-wrap">
           <div style={{ flex: '1 1 200px' }}>
             <label className={labelCls}>{ts.label}</label>
@@ -138,7 +138,7 @@ export default function OrderStatusesSettingsPage() {
             onClick={handleAdd}
             disabled={adding || !newLabel.trim()}
             className="inline-flex items-center justify-center bg-google-blue text-white border-none rounded-full py-[9px] px-5 text-sm font-medium cursor-pointer flex-shrink-0 self-end"
-            style={{ fontFamily: "'Google Sans'", opacity: adding || !newLabel.trim() ? 0.6 : 1 }}
+            style={{ opacity: adding || !newLabel.trim() ? 0.6 : 1 }}
           >
             {adding ? ts.adding : ts.add}
           </button>
@@ -146,9 +146,9 @@ export default function OrderStatusesSettingsPage() {
       </div>
 
       {/* Statuses list */}
-      <div className="bg-white rounded-xl border border-[#e8eaed] shadow-google-1 overflow-hidden">
+      <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 overflow-hidden">
         {/* Table header */}
-        <div className="flex items-center bg-[#f8f9fa] font-semibold text-[11px] text-[#5f6368] uppercase tracking-[0.06em] border-b border-[#e8eaed]" style={{ padding: '14px 20px', gap: 12 }}>
+        <div className="flex items-center bg-g-bg font-semibold text-[11px] text-g-text-2 uppercase tracking-[0.06em] border-b border-g-border" style={{ padding: '14px 20px', gap: 12 }}>
           <div style={{ flex: 2 }}>{ts.table.label}</div>
           <div style={{ flex: 1, textAlign: 'center' }}>{ts.table.color}</div>
           <div style={{ flex: 2, textAlign: 'center' }}>{ts.table.trigger}</div>
@@ -157,17 +157,17 @@ export default function OrderStatusesSettingsPage() {
         </div>
 
         {loading ? (
-          <div className="p-10 text-center text-[#5f6368] text-sm">{ts.loading}</div>
+          <div className="p-10 text-center text-g-text-2 text-sm">{ts.loading}</div>
         ) : statuses.length === 0 ? (
-          <div className="p-10 text-center text-[#5f6368] text-sm">{ts.empty}</div>
+          <div className="p-10 text-center text-g-text-2 text-sm">{ts.empty}</div>
         ) : (
           statuses.map((status, i) => (
             <div key={status._id} className="flex items-center" style={{ padding: '14px 20px', gap: 12, borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}>
               <div style={{ flex: 2 }} className="flex items-center gap-2.5">
                 {/* Dynamic color dot — keep inline */}
                 <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ background: status.color }} />
-                <span className="font-medium text-sm text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>{status.label}</span>
-                <span className="text-[11px] text-[#9aa0a6]" style={{ fontFamily: 'monospace' }}>{status.name}</span>
+                <span className="font-medium text-sm text-g-text">{status.label}</span>
+                <span className="text-[11px] text-g-text-3" style={{ fontFamily: 'monospace' }}>{status.name}</span>
               </div>
               <div style={{ flex: 1, textAlign: 'center' }}>
                 {/* Dynamic color swatch — keep inline */}
@@ -175,14 +175,14 @@ export default function OrderStatusesSettingsPage() {
               </div>
               <div style={{ flex: 2, textAlign: 'center' }}>
                 {status.triggerEvent ? (
-                  <span className="bg-[#e6f4ea] text-[#137333] rounded-full py-1 px-3 text-xs font-semibold" style={{ fontFamily: "'Google Sans'" }}>
+                  <span className="bg-[#e6f4ea] text-[#137333] rounded-full py-1 px-3 text-xs font-semibold">
                     ✓ {ts.triggerEvent}
                   </span>
                 ) : (
                   <button
                     onClick={() => handleSetTrigger(status)}
-                    className="text-xs text-google-blue border border-[#dadce0] rounded-full py-1 px-3 bg-white cursor-pointer"
-                    style={{ fontFamily: "'Google Sans'" }}
+                    className="text-xs text-google-blue border border-g-border rounded-full py-1 px-3 bg-white cursor-pointer"
+                   
                   >
                     Set as trigger
                   </button>
@@ -190,9 +190,9 @@ export default function OrderStatusesSettingsPage() {
               </div>
               <div style={{ flex: 1, textAlign: 'center' }}>
                 {status.isSystem ? (
-                  <span className="text-xs text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>System</span>
+                  <span className="text-xs text-g-text-3">System</span>
                 ) : (
-                  <span className="text-xs text-[#5f6368]">—</span>
+                  <span className="text-xs text-g-text-2">—</span>
                 )}
               </div>
               <div style={{ flex: 1, textAlign: 'right' }}>
@@ -212,11 +212,11 @@ export default function OrderStatusesSettingsPage() {
       </div>
 
       {statuses.some(s => s.isSystem) && (
-        <p className="text-xs text-[#9aa0a6] mt-3 mb-0">{ts.systemNote}</p>
+        <p className="text-xs text-g-text-3 mt-3 mb-0">{ts.systemNote}</p>
       )}
     </div>
   );
 }
 
-const inputCls = 'w-full py-2 px-3 border border-[#dadce0] rounded-lg text-sm outline-none text-[#202124] bg-white box-border';
-const labelCls = 'text-xs font-medium text-[#5f6368] block mb-[5px]';
+const inputCls = 'w-full py-2 px-3 border border-g-border rounded-lg text-sm outline-none text-g-text bg-white box-border';
+const labelCls = 'text-xs font-medium text-g-text-2 block mb-[5px]';

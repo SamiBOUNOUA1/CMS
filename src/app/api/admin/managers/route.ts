@@ -2,20 +2,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
+import { getAuth } from '@/lib/requireAuth';
 
-// GET /api/admin/managers — list all active users with role=manager
+// GET /api/admin/managers — list all active users (assignable to an event team)
 export async function GET(request: NextRequest) {
-  const permsRaw = request.headers.get('x-user-permissions');
-  const perms = permsRaw ? JSON.parse(permsRaw) : {};
+  const auth = await getAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!perms.manage_users && !perms.edit_orders) {
+  if (!auth.permissions.manage_users && !auth.permissions.edit_orders) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
     await connectDB();
-    const managers = await User.find({ role: 'manager', isActive: true })
-      .select('_id name email')
+    const managers = await User.find({ isActive: true })
+      .select('_id name email role')
       .sort({ name: 1 })
       .lean();
 

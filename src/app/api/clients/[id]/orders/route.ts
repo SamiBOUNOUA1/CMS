@@ -7,10 +7,10 @@ import { Client, Order } from '@/lib/models';
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
-    const client = await Client.findById(params.id).select('email').lean();
+    const client = await Client.findById(params.id).select('phone').lean();
     if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const orders = await Order.find({ clientEmail: client.email })
+    const orders = await Order.find({ clientPhone: client.phone })
       .sort({ createdAt: -1 })
       .lean();
     return NextResponse.json({ orders });

@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 
+// Opt out of Next.js static caching so newly confirmed events appear immediately.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await connectDB();

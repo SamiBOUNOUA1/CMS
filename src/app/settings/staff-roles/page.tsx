@@ -55,7 +55,7 @@ export default function StaffRolesSettingsPage() {
       const res = await fetch('/api/settings/staff-roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: newLabel.trim() }),
+        body: JSON.stringify({ label: newLabel.trim() })
       });
       if (!res.ok) throw new Error((await res.json()).error);
       setNewLabel('');
@@ -73,7 +73,7 @@ export default function StaffRolesSettingsPage() {
       await fetch(`/api/settings/staff-roles/${role._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !role.isActive }),
+        body: JSON.stringify({ isActive: !role.isActive })
       });
       setRoles(rs => rs.map(r => r._id === role._id ? { ...r, isActive: !r.isActive } : r));
     } catch {
@@ -107,7 +107,7 @@ export default function StaffRolesSettingsPage() {
       const res = await fetch(`/api/settings/staff-roles/${role._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: edit.label.trim() }),
+        body: JSON.stringify({ label: edit.label.trim() })
       });
       if (!res.ok) throw new Error((await res.json()).error);
       cancelEdit(role._id);
@@ -122,21 +122,21 @@ export default function StaffRolesSettingsPage() {
     <div>
       {notification && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#137333', zIndex: 1000, fontFamily: "'Google Sans'" }}>
+          style={{ background: notification.type === 'error' ? '#d93025' : '#137333', zIndex: 1000}}>
           {notification.msg}
         </div>
       )}
 
       <div className="mb-7">
-        <h2 className="text-xl font-medium text-[#202124] m-0 mb-1" style={{ fontFamily: "'Google Sans'" }}>
+        <h2 className="text-xl font-medium text-g-text m-0 mb-1">
           {tr.title}
         </h2>
-        <p className="text-[13px] text-[#5f6368] m-0">{tr.subtitle}</p>
+        <p className="text-[13px] text-g-text-2 m-0">{tr.subtitle}</p>
       </div>
 
       {/* Add new role */}
-      <div className="bg-white border border-[#e8eaed] rounded-xl mb-6 shadow-google-1" style={{ padding: '20px 24px' }}>
-        <p className="text-sm font-medium text-[#202124] m-0 mb-4" style={{ fontFamily: "'Google Sans'" }}>
+      <div className="bg-g-surface border border-g-border rounded-2xl shadow-google-1 mb-6 p-4 sm:p-6">
+        <p className="text-sm font-medium text-g-text m-0 mb-4">
           {tr.addNew}
         </p>
         <div className="grid gap-3 items-end" style={{ gridTemplateColumns: '1fr auto' }}>
@@ -155,9 +155,8 @@ export default function StaffRolesSettingsPage() {
             disabled={adding || !newLabel.trim()}
             className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium whitespace-nowrap"
             style={{
-              fontFamily: "'Google Sans'",
-              background: adding || !newLabel.trim() ? '#9aa0a6' : '#1a73e8',
-              cursor: adding || !newLabel.trim() ? 'default' : 'pointer',
+                            background: adding || !newLabel.trim() ? '#9aa0a6' : '#1a73e8',
+              cursor: adding || !newLabel.trim() ? 'default' : 'pointer'
             }}
           >
             {adding ? tr.adding : tr.add}
@@ -166,18 +165,18 @@ export default function StaffRolesSettingsPage() {
       </div>
 
       {/* Roles list */}
-      <div className="bg-white border border-[#e8eaed] rounded-xl overflow-hidden shadow-google-1">
+      <div className="bg-g-surface border border-g-border rounded-2xl shadow-google-1 overflow-hidden shadow-google-1">
         {loading ? (
-          <div className="p-10 text-center text-[#9aa0a6] text-sm">{tr.loading}</div>
+          <div className="p-10 text-center text-g-text-3 text-sm">{tr.loading}</div>
         ) : roles.length === 0 ? (
-          <div className="p-10 text-center text-[#9aa0a6] text-sm">{tr.empty}</div>
+          <div className="p-10 text-center text-g-text-3 text-sm">{tr.empty}</div>
         ) : (
           <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="border-b border-[#e8eaed] bg-[#f8f9fa]">
+              <tr className="border-b border-g-border bg-g-bg">
                 {[tr.table.label, tr.table.key, tr.table.status, tr.table.actions].map((h, i) => (
-                  <th key={h} className="py-2.5 px-4 text-xs text-[#5f6368] font-medium"
-                    style={{ textAlign: i >= 2 ? 'center' : 'left', fontFamily: "'Google Sans'" }}>
+                  <th key={h} className="py-2.5 px-4 text-xs text-g-text-2 font-medium"
+                    style={{ textAlign: i >= 2 ? 'center' : 'left'}}>
                     {h}
                   </th>
                 ))}
@@ -187,7 +186,7 @@ export default function StaffRolesSettingsPage() {
               {roles.map(role => {
                 const editing = edits[role._id];
                 return (
-                  <tr key={role._id} className="border-b border-[#f1f3f4]">
+                  <tr key={role._id} className="border-b border-g-border">
                     {/* Label */}
                     <td className="py-3 px-4 font-medium">
                       {editing ? (
@@ -205,7 +204,7 @@ export default function StaffRolesSettingsPage() {
                     </td>
                     {/* Key */}
                     <td className="py-3 px-4">
-                      <span className="text-xs text-[#5f6368] bg-[#f1f3f4] py-[2px] px-2 rounded" style={{ fontFamily: 'monospace' }}>
+                      <span className="text-xs text-g-text-2 bg-[#f1f3f4] py-[2px] px-2 rounded" style={{ fontFamily: 'monospace' }}>
                         {role.key}
                       </span>
                     </td>
@@ -214,9 +213,8 @@ export default function StaffRolesSettingsPage() {
                       <button onClick={() => handleToggleActive(role)}
                         className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
                         style={{
-                          fontFamily: "'Google Sans'",
-                          background: role.isActive ? '#e6f4ea' : '#f1f3f4',
-                          color: role.isActive ? '#137333' : '#5f6368',
+                                                    background: role.isActive ? '#e6f4ea' : '#f1f3f4',
+                          color: role.isActive ? '#137333' : '#5f6368'
                         }}>
                         {role.isActive ? tr.active : tr.inactive}
                       </button>
@@ -225,13 +223,13 @@ export default function StaffRolesSettingsPage() {
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       {editing ? (
                         <span className="inline-flex gap-2">
-                          <button onClick={() => saveEdit(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333', fontFamily: "'Google Sans'" }}>{tr.save}</button>
-                          <button onClick={() => cancelEdit(role._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>{tr.cancel}</button>
+                          <button onClick={() => saveEdit(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333'}}>{tr.save}</button>
+                          <button onClick={() => cancelEdit(role._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368'}}>{tr.cancel}</button>
                         </span>
                       ) : (
                         <span className="inline-flex gap-2">
-                          <button onClick={() => startEdit(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#1a73e8', fontFamily: "'Google Sans'" }}>{tr.edit}</button>
-                          <button onClick={() => handleDelete(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#d93025', fontFamily: "'Google Sans'" }}>{tr.delete}</button>
+                          <button onClick={() => startEdit(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#1a73e8'}}>{tr.edit}</button>
+                          <button onClick={() => handleDelete(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#d93025'}}>{tr.delete}</button>
                         </span>
                       )}
                     </td>
@@ -243,12 +241,12 @@ export default function StaffRolesSettingsPage() {
         )}
       </div>
 
-      <p className="mt-3 text-xs text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>
+      <p className="mt-3 text-xs text-g-text-3">
         {tr.hint}
       </p>
     </div>
   );
 }
 
-const labelCls = 'block text-[11px] font-medium text-[#5f6368] mb-1.5 uppercase tracking-[0.04em]';
-const inputCls = 'py-[9px] px-3 rounded-lg border border-[#dadce0] text-sm text-[#202124] outline-none box-border';
+const labelCls = 'block text-[11px] font-medium text-g-text-2 mb-1.5 uppercase tracking-[0.04em]';
+const inputCls = 'py-[9px] px-3 rounded-lg border border-g-border text-sm text-g-text outline-none box-border';

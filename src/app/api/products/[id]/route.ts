@@ -8,12 +8,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     await connectDB();
     const body = await request.json();
     // Sanitise allowed fields
-    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'isActive'];
+    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'linkedRecipe', 'isActive'];
     const update = {};
     for (const key of allowed) {
       if (key in body) update[key] = body[key];
     }
     if (update.category === '') update.category = null;
+    if (update.linkedRecipe === '' || update.linkedRecipe === null) update.linkedRecipe = null;
     const product = await Product.findByIdAndUpdate(params.id, update, { new: true, runValidators: true }).populate('category', 'name');
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ product });

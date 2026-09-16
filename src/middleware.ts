@@ -84,27 +84,48 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (!permissions.manage_flow_templates) return forbidden(request);
     }
 
+    if (pathname.startsWith('/settings/whatsapp')) {
+      if (!permissions.manage_integrations) return forbidden(request);
+    }
+
     if (pathname.startsWith('/calendar') || pathname.startsWith('/api/calendar')) {
       if (!permissions.view_calendar) return forbidden(request);
     }
 
     // ── API mutation guards ──────────────────────────────────────────────────
     if (pathname.startsWith('/api/') && isMutating) {
-      if (pathname.startsWith('/api/orders')) {
-        if (method === 'POST'   && !permissions.create_orders) return forbidden(request);
-        if (method === 'DELETE' && !permissions.delete_orders) return forbidden(request);
-        if (method === 'PATCH') {
-          if (/^\/api\/orders\/[^/]+\/event-flow$/.test(pathname)) {
-            if (!permissions.update_flow_status) return forbidden(request);
-          } else if (!permissions.edit_orders) {
-            return forbidden(request);
+      // WhatsApp send endpoints (under /api/orders and /api/quotes) — require
+      // edit_orders and bypass the create_* guards below.
+      const isSendWhatsapp = /\/send-whatsapp$/.test(pathname);
+      if (isSendWhatsapp && !permissions.edit_orders) return forbidden(request);
+
+      if (pathname.startsWith('/api/orders') && !isSendWhatsapp) {
+        if (/^\/api\/orders\/[^/]+\/materials$/.test(pathname)) {
+          // Event materials: admin manages the list (PUT), checkers mark received (PATCH)
+          if (method === 'PUT'    && !permissions.manage_event_materials) return forbidden(request);
+          if (method === 'PATCH'  && !permissions.check_event_materials)  return forbidden(request);
+          if (method === 'POST'   && !permissions.manage_event_materials) return forbidden(request);
+          if (method === 'DELETE' && !permissions.manage_event_materials) return forbidden(request);
+        } else {
+          if (method === 'POST'   && !permissions.create_orders) return forbidden(request);
+          if (method === 'DELETE' && !permissions.delete_orders) return forbidden(request);
+          if (method === 'PATCH') {
+            if (/^\/api\/orders\/[^/]+\/event-flow$/.test(pathname)) {
+              if (!permissions.update_flow_status) return forbidden(request);
+            } else if (!permissions.edit_orders) {
+              return forbidden(request);
+            }
           }
         }
       }
 
-      if (pathname.startsWith('/api/quotes')) {
+      if (pathname.startsWith('/api/quotes') && !isSendWhatsapp) {
         if (method === 'POST'   && !permissions.create_quotes) return forbidden(request);
         if (method === 'DELETE' && !permissions.delete_quotes) return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/settings/whatsapp') && !permissions.manage_integrations) {
+        return forbidden(request);
       }
 
       if (pathname.startsWith('/api/settings/order-statuses') && !permissions.manage_order_statuses) {
@@ -141,6 +162,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         return forbidden(request);
       }
 
+      if (pathname.startsWith('/api/inventory/warehouses')) {
+        if (method === 'POST'   && !permissions.edit_warehouses)   return forbidden(request);
+        if (method === 'PATCH'  && !permissions.edit_warehouses)   return forbidden(request);
+        if (method === 'DELETE' && !permissions.delete_warehouses) return forbidden(request);
+      }
+
       if (pathname.startsWith('/api/tasks')) {
         if (method === 'POST'   && !permissions.create_tasks) return forbidden(request);
         if (method === 'DELETE' && !permissions.delete_tasks) return forbidden(request);
@@ -149,6 +176,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
       if (pathname.startsWith('/api/settings/modules') && !permissions.manage_users) {
         return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/laundry')) {
+        if (!permissions.view_laundry) return forbidden(request);
+        if (isMutating && !permissions.manage_laundry) return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/kitchen')) {
+        if (!permissions.view_kitchen) return forbidden(request);
+        if (!permissions.manage_kitchen) return forbidden(request);
       }
     }
 
@@ -160,6 +197,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // ── Tasks page guard ─────────────────────────────────────────────────────
     if (pathname.startsWith('/tasks')) {
       if (!permissions.view_tasks) return forbidden(request);
+    }
+
+    // ── Laundry page guard ───────────────────────────────────────────────────
+    if (pathname.startsWith('/laundry')) {
+      if (!permissions.view_laundry) return forbidden(request);
+    }
+
+    // ── Kitchen page guard ───────────────────────────────────────────────────
+    if (pathname.startsWith('/kitchen')) {
+      if (!permissions.view_kitchen) return forbidden(request);
+    }
+
+    // ── Activities page & API guard ──────────────────────────────────────────
+    if (pathname.startsWith('/activities') || pathname.startsWith('/api/activities')) {
+      if (!permissions.view_activities) return forbidden(request);
     }
 
     // ── Module-level guards ──────────────────────────────────────────────────
@@ -174,11 +226,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const res = NextResponse.next();
-    res.headers.set('x-user-id', String(payload.id));
-    res.headers.set('x-user-role', String(payload.role));
-    res.headers.set('x-user-permissions', JSON.stringify(permissions));
-    return res;
+    // Forward the verified identity to route handlers via *request* headers.
+    // Strip any inbound x-user-* headers first so a client cannot spoof them;
+    // routes additionally re-verify the JWT (see lib/requireAuth.ts).
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete('x-user-id');
+    requestHeaders.delete('x-user-role');
+    requestHeaders.delete('x-user-permissions');
+    requestHeaders.set('x-user-id', String(payload.id));
+    requestHeaders.set('x-user-role', String(payload.role));
+    requestHeaders.set('x-user-permissions', JSON.stringify(permissions));
+    return NextResponse.next({ request: { headers: requestHeaders } });
   } catch {
     return redirectToLogin(request);
   }

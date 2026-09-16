@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useIsMobile } from '@/lib/useIsMobile';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -14,6 +13,11 @@ const EVENT_TYPE_ICONS: Record<string, string> = {
 const EVENT_TYPE_LABELS: Record<string, string> = {
   wedding: 'Wedding', corporate: 'Corporate', birthday: 'Birthday',
   gala: 'Gala', conference: 'Conference', buffet: 'Buffet', other: 'Other',
+};
+
+const ASSIGNEE_ROLE_LABELS: Record<string, string> = {
+  manager: 'Manager', materials: 'Materials', kitchen: 'Kitchen',
+  staff: 'Staff', logistics: 'Logistics', other: 'Other',
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -27,9 +31,10 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export default function ManagerEventDetailPage() {
   const { id } = useParams() as { id: string };
-  const isMobile = useIsMobile();
   const [order, setOrder] = useState<any>(null);
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [userId, setUserId] = useState('');
+  const [perms, setPerms] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -37,11 +42,14 @@ export default function ManagerEventDetailPage() {
     Promise.all([
       fetch(`/api/manager/events/${id}`),
       fetch('/api/settings/order-statuses').then(r => r.ok ? r.json() : { statuses: [] }),
-    ]).then(async ([orderRes, stData]: [any, any]) => {
+      fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
+    ]).then(async ([orderRes, stData, meData]: [any, any, any]) => {
       if (!orderRes.ok) { setNotFound(true); setLoading(false); return; }
       const orderData = await orderRes.json();
       setOrder(orderData.order);
       setStatuses(stData.statuses || []);
+      setUserId(meData?.user?._id || '');
+      setPerms(meData?.user?.permissions || {});
       setLoading(false);
     });
   }, [id]);
@@ -67,9 +75,13 @@ export default function ManagerEventDetailPage() {
   const sc = statusMap[order.status];
   const statusBg = sc?.color ? sc.color + '22' : '#f1f3f4';
   const statusFg = sc?.color || '#5f6368';
+  const myEntry = (order.assignees || []).find((a: any) => String(a.user) === String(userId));
+  const myRoleLabel = myEntry ? (ASSIGNEE_ROLE_LABELS[myEntry.role] || myEntry.role) : null;
+  const canSeeMaterials = perms.manage_event_materials || perms.check_event_materials;
+  const canSeeFlow = perms.update_flow_status;
 
   return (
-    <div className="max-w-[720px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[720px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       <Link href="/manager/events" className="text-[13px] text-google-blue no-underline inline-flex items-center gap-1 mb-5">
         ← My Events
       </Link>
@@ -83,29 +95,59 @@ export default function ManagerEventDetailPage() {
               {order.clientEmail}{order.clientPhone ? ` · ${order.clientPhone}` : ''}
             </div>
           </div>
-          <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold flex-shrink-0" style={{ background: statusBg, color: statusFg }}>
-            {sc?.label || order.status}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {myRoleLabel && (
+              <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold bg-[#e8f0fe] text-google-blue">
+                {myRoleLabel}
+              </span>
+            )}
+            <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold" style={{ background: statusBg, color: statusFg }}>
+              {sc?.label || order.status}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Event details */}
       <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 mb-4 py-5 px-6">
-        <div className="grid gap-4" style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px 24px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
           <Field label="Event type" value={`${EVENT_TYPE_ICONS[order.eventType] || ''} ${EVENT_TYPE_LABELS[order.eventType] || order.eventType}`} />
           <Field label="Event date" value={order.eventDate ? format(new Date(order.eventDate), 'EEEE, dd MMM yyyy') : '—'} />
           <Field label="Guests" value={order.tableCount ? `${order.tableCount} tables (~${order.guestCount} guests)` : `${order.guestCount} guests`} />
           <Field label="Start time" value={order.startTime || '—'} />
           {order.notes && (
-            <div style={{ gridColumn: isMobile ? undefined : '1 / -1' }}>
+            <div className="sm:col-span-2">
               <Field label="Notes" value={order.notes} />
             </div>
           )}
         </div>
       </div>
 
+      {/* Materials list CTA */}
+      {canSeeMaterials && (
+      <Link
+        href={`/events/${id}/materials`}
+        className="flex items-center justify-between bg-g-surface rounded-2xl border border-g-border shadow-google-1 py-5 px-6 no-underline mb-4"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center bg-google-green-light text-google-green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-base font-medium text-g-text">Materials list</div>
+            <div className="text-[13px] text-g-text-2 mt-0.5">Check the items needed for this event</div>
+          </div>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-g-text-3">
+          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+        </svg>
+      </Link>
+      )}
+
       {/* Event flow CTA */}
-      {order.event ? (
+      {canSeeFlow && (order.event ? (
         <Link
           href={`/manager/events/${id}/flow`}
           className="flex items-center justify-between bg-google-blue rounded-2xl py-5 px-6 no-underline shadow-[0_2px_8px_rgba(26,115,232,.3)]"
@@ -129,7 +171,7 @@ export default function ManagerEventDetailPage() {
         <div className="bg-g-surface rounded-2xl border border-g-border py-5 px-6 text-center text-g-text-2 text-sm">
           Event flow not yet available — the event has not been created for this order.
         </div>
-      )}
+      ))}
     </div>
   );
 }

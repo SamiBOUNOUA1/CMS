@@ -2,14 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
-
-function getPerms(request) {
-  try {
-    return JSON.parse(request.headers.get('x-user-permissions') || '{}');
-  } catch {
-    return {};
-  }
-}
+import { logActivity } from '@/lib/activityLogger';
+import { getAuth } from '@/lib/requireAuth';
 
 // GET /api/orders/[id]/event-flow
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -29,8 +23,10 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 // PATCH /api/orders/[id]/event-flow
 export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const auth = await getAuth(request);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const perms = auth.permissions;
     await connectDB();
-    const perms = getPerms(request);
     const body = await request.json();
     const { action } = body;
 
@@ -67,6 +63,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
       const step = event.flowInstance.steps.find(s => s._id.toString() === stepId);
       if (!step) return NextResponse.json({ error: 'Step not found' }, { status: 404 });
       step.status = status;
+
+      event.markModified('flowInstance');
+      await event.save();
+
+      const userId = auth.userId;
+      await logActivity({
+        action: 'event_step_changed',
+        entityType: 'order',
+        entityId: params.id,
+        entityLabel: `${order.clientName} – ${step.label}`,
+        performedBy: userId,
+        metadata: { stepId, newStatus: status, stepLabel: step.label },
+      });
+
+      return NextResponse.json({ flowInstance: event.flowInstance });
     } else {
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
