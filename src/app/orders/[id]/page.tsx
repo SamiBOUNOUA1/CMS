@@ -9,6 +9,7 @@ import { useIsMobile } from '@/lib/useIsMobile';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { btnFilled, btnOutline, fmt } from '@/app/components/FormPrimitives';
 import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
+import { itemLineTotal, lineGroupsTotal } from '@/lib/pricing';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 
 const EVENT_TYPE_ICONS = {
@@ -276,7 +277,7 @@ export default function OrderDetailPage() {
   const orderTotal = order.totalAmount || 0;
   const paidAmount = +payments.reduce((s, p) => s + p.amount, 0).toFixed(2);
   const remainingAmount = +(orderTotal - paidAmount).toFixed(2);
-  const orderItemsTotal = (order.lineGroups || []).reduce((sum, g) => sum + (g.items || []).filter(i => i.name).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0), 0);
+  const orderItemsTotal = lineGroupsTotal(order.lineGroups, i => !!i.name);
   const orderStaffTotal = (order.staffAssignments || []).reduce((sum, sa) => sum + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0);
 
   const paymentStatusColors = {
@@ -761,9 +762,17 @@ function MenuItemsReadView({ groups, currency, emptyLabel }) {
           <div key={gi}>
             <div className="text-xs font-semibold text-google-blue mb-1">{g.label || `Group ${gi + 1}`} — ×{g.count}</div>
             {namedItems.map((item, ii) => (
-              <div key={ii} className="flex justify-between text-sm text-[#202124] py-0.5">
-                <span>· {item.name}</span>
-                <span className="text-[#5f6368]">{fmt(Number(g.count) * Number(item.unitPrice), currency)}</span>
+              <div key={ii}>
+                <div className="flex justify-between text-sm text-[#202124] py-0.5">
+                  <span>· {item.name}</span>
+                  <span className="text-[#5f6368]">{fmt(itemLineTotal(g.count, item), currency)}</span>
+                </div>
+                {(item.selectedOptions || []).map((o, oi) => (
+                  <div key={oi} className="flex justify-between text-xs text-[#5f6368] pl-4">
+                    <span>+ {o.name}</span>
+                    <span>{fmt(Number(o.price) || 0, currency)}</span>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

@@ -4,6 +4,13 @@ import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, FlowTemplate } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { safeRegex } from '@/lib/security';
+import { lineGroupsTotal } from '@/lib/pricing';
+
+// Fields the orders list view needs — excludes the large nested arrays
+// (lineGroups, staffAssignments, materials, flowInstance) to keep responses small.
+const ORDER_LIST_FIELDS =
+  'clientName clientEmail clientPhone eventType eventDate guestCount tableCount status paymentStatus event createdAt totalAmount';
 
 // GET /api/orders — list orders with latest active quote summary
 export async function GET(request: NextRequest) {
@@ -17,22 +24,21 @@ export async function GET(request: NextRequest) {
 
     const filter = {};
     if (status && status !== 'all') filter.status = status;
-
-    let orders = await Order.find(filter).sort({ createdAt: -1 }).lean();
-
     if (search) {
-      const q = search.toLowerCase();
-      orders = orders.filter(
-        o =>
-          o.clientName?.toLowerCase().includes(q) ||
-          o.eventType?.toLowerCase().includes(q)
-      );
+      const rx = safeRegex(search);
+      filter.$or = [{ clientName: rx }, { eventType: rx }];
     }
 
-    // Attach active quote total + quote count to each order
+    const orders = await Order.find(filter)
+      .select(ORDER_LIST_FIELDS)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Attach quote count + active quote version to each order.
+    // The displayed total comes from the order's own totalAmount, not the quote.
     const orderIds = orders.map(o => o._id);
     const quotes = await Quote.find({ order: { $in: orderIds } })
-      .select('order versionNumber isActive total createdAt')
+      .select('order versionNumber isActive createdAt')
       .lean();
 
     const quotesByOrder = {};
@@ -48,7 +54,6 @@ export async function GET(request: NextRequest) {
       return {
         ...o,
         quoteCount: qs.length,
-        activeQuoteTotal: active?.total ?? null,
         activeQuoteVersion: active?.versionNumber ?? null,
       };
     });
@@ -73,9 +78,7 @@ export async function POST(request: NextRequest) {
     const staffAssignments = body.staffAssignments || [];
     const travelPrice = Number(body.travelPrice) || 0;
     const discountAmount = Number(body.discountAmount) || 0;
-    const itemsTotal = lineGroups.reduce(
-      (t, g) => t + (g.items || []).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0), 0
-    );
+    const itemsTotal = lineGroupsTotal(lineGroups);
     const staffTotal = staffAssignments.reduce(
       (s, sa) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
     );

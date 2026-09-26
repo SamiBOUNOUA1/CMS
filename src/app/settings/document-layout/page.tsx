@@ -59,6 +59,7 @@ export default function DocumentLayoutSettingsPage() {
     { key: 'showVatNumber',     label: ts.showVatNumber,     scope: ts.bothDocs },
     { key: 'showStaffSection',  label: ts.showStaffSection,  scope: ts.bothDocs },
     { key: 'showOrderItems',    label: ts.showOrderItems,    scope: ts.receiptOnly },
+    { key: 'showOptionPrices',  label: ts.showOptionPrices,  scope: ts.bothDocs },
     { key: 'showClientNotes',   label: ts.showClientNotes,   scope: ts.quoteOnly },
     { key: 'showInternalNotes', label: ts.showInternalNotes, scope: ts.quoteOnly },
     { key: 'showExternalNotes', label: ts.showExternalNotes, scope: ts.bothDocs },

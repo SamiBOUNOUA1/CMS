@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Quote, Order } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { requirePermission } from '@/lib/requireAuth';
+import { itemUnitPrice, round2 } from '@/lib/pricing';
 
 // POST /api/quotes — snapshot the order's current items/staff into a new quote version
 export async function POST(request: NextRequest) {
@@ -37,10 +38,17 @@ export async function POST(request: NextRequest) {
         name: item.name || '',
         category: item.category || '',
         quantity: Number(g.count) || 1,
-        unitPrice: Number(item.unitPrice) || 0,
-        lineTotal: +((Number(g.count) || 1) * (Number(item.unitPrice) || 0)).toFixed(2),
+        basePrice: round2(Number(item.unitPrice) || 0),
+        // Effective price (base + options) so quantity × unitPrice === lineTotal holds.
+        unitPrice: round2(itemUnitPrice(item)),
+        lineTotal: round2((Number(g.count) || 1) * itemUnitPrice(item)),
         notes: item.notes || '',
         subItems: (item.subItems || []).map(s => ({ name: s.name })),
+        selectedOptions: (item.selectedOptions || []).map(o => ({
+          _optionId: o._optionId || '',
+          name: o.name,
+          price: Number(o.price) || 0,
+        })),
         catalogItem: item.catalogItem || undefined,
       }))
     );

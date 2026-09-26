@@ -20,12 +20,11 @@ export async function GET(request: NextRequest) {
   if (search) {
     filter.$or = [{ name: safeRegex(search) }];
   }
-
-  let items = await KitchenStockItem.find(filter).sort({ name: 1 }).lean();
-
   if (lowStock) {
-    items = items.filter((i: any) => i.currentStock < i.minStock);
+    filter.$expr = { $lt: ['$currentStock', '$minStock'] };
   }
+
+  const items = await KitchenStockItem.find(filter).sort({ name: 1 }).lean();
 
   return NextResponse.json({ items });
 }

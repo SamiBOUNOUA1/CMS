@@ -30,7 +30,7 @@ interface Order {
   _id: string; clientName: string; clientEmail?: string; clientPhone?: string;
   eventType: string; eventDate?: string; guestCount?: number; tableCount?: number;
   status: string; quoteCount?: number; activeQuoteVersion?: number;
-  activeQuoteTotal?: number; createdAt: string; event?: unknown;
+  totalAmount?: number; createdAt: string; event?: unknown;
 }
 
 export default function OrdersPage() {
@@ -75,7 +75,12 @@ export default function OrdersPage() {
     }
   }, [statusFilter, search]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  // Debounced so typing in the search box fires one request after the user pauses,
+  // not one per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => { fetchOrders(); }, 300);
+    return () => clearTimeout(t);
+  }, [fetchOrders]);
 
   const showNotification = (msg: string, type = 'success') => {
     setNotification({ msg, type });
@@ -96,13 +101,13 @@ export default function OrdersPage() {
   const statusMap = Object.fromEntries(statuses.map(s => [s.name, s]));
 
   const sorted = [...orders].sort((a, b) => {
-    if (sortBy === 'total') return (b.activeQuoteTotal || 0) - (a.activeQuoteTotal || 0);
+    if (sortBy === 'total') return (b.totalAmount || 0) - (a.totalAmount || 0);
     if (sortBy === 'client') return (a.clientName || '').localeCompare(b.clientName || '');
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const withEventCount = orders.filter(o => o.event).length;
-  const totalPipeline = orders.reduce((s, o) => s + (o.activeQuoteTotal || 0), 0);
+  const totalPipeline = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
 
   return (
     <div className="max-w-[1200px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
@@ -243,7 +248,7 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div className="font-medium text-[15px] text-[#202124] flex-shrink-0">
-                    {formatCurrency(order.activeQuoteTotal, currency)}
+                    {formatCurrency(order.totalAmount, currency)}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
@@ -311,7 +316,7 @@ export default function OrdersPage() {
                   {order.activeQuoteVersion ? ` (v${order.activeQuoteVersion} active)` : ''}
                 </div>
                 <div className="flex-1 text-right font-medium text-[15px] text-[#202124]">
-                  {formatCurrency(order.activeQuoteTotal, currency)}
+                  {formatCurrency(order.totalAmount, currency)}
                 </div>
                 <div className="flex-1 flex justify-end gap-1">
                   {perms.delete_orders && (

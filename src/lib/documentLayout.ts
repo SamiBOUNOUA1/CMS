@@ -13,6 +13,8 @@ export interface DocumentLayout {
   showVatNumber: boolean;
   showStaffSection: boolean;
   showOrderItems: boolean;
+  /** When false, item options still list by name but their surcharge is hidden. */
+  showOptionPrices: boolean;
   showClientNotes: boolean;
   showInternalNotes: boolean;
   showExternalNotes: boolean;
@@ -29,6 +31,7 @@ export const DEFAULT_LAYOUT: DocumentLayout = {
   showVatNumber: true,
   showStaffSection: true,
   showOrderItems: true,
+  showOptionPrices: true,
   showClientNotes: true,
   showInternalNotes: false,
   showExternalNotes: true,

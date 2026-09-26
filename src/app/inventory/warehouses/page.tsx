@@ -57,7 +57,12 @@ export default function WarehousesPage() {
     }
   }, [search]);
 
-  useEffect(() => { fetchWarehouses(); }, [fetchWarehouses]);
+  // Debounced so typing in the search box fires one request after the user pauses,
+  // not one per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => { fetchWarehouses(); }, 300);
+    return () => clearTimeout(t);
+  }, [fetchWarehouses]);
 
   const showNotification = (msg: string, type = 'success') => {
     setNotification({ msg, type });

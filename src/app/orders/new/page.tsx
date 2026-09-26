@@ -7,6 +7,7 @@ import { useT, useCurrency } from '@/lib/LanguageContext';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
 import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
+import { lineGroupsTotal } from '@/lib/pricing';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 
 export default function NewOrderPage() {
@@ -157,9 +158,7 @@ export default function NewOrderPage() {
     }
   };
 
-  const runningItemsTotal = lineGroups.reduce(
-    (t: number, g: any) => t + (g.items || []).reduce((s: number, i: any) => s + Number(g.count) * Number(i.unitPrice), 0), 0
-  );
+  const runningItemsTotal = lineGroupsTotal(lineGroups);
   const runningStaffTotal = staffAssignments.reduce(
     (s: number, sa: any) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
   );

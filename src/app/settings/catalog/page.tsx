@@ -19,6 +19,13 @@ interface SubItem {
   name: string;
 }
 
+/** A priced supplement a client can add to this product, e.g. "Dish decoration" +10. */
+interface ProductOption {
+  _id: string;
+  name: string;
+  price: number | string;
+}
+
 interface Product {
   _id: string;
   name: string;
@@ -28,6 +35,7 @@ interface Product {
   unit?: string;
   category?: { _id: string; name: string };
   subItems?: SubItem[];
+  options?: ProductOption[];
   linkedRecipe?: { _id: string; name: string; nameFr?: string } | null;
 }
 
@@ -38,6 +46,9 @@ interface EditFields {
   linkedRecipe: string;
   subItems: SubItem[];
   newSubItemInput: string;
+  options: ProductOption[];
+  newOptionName: string;
+  newOptionPrice: string;
 }
 
 interface Notification {
@@ -187,7 +198,10 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
         category: updated.category?._id ?? '',
         linkedRecipe: updated.linkedRecipe?._id ?? updated.linkedRecipe ?? '',
         subItems: updated.subItems ?? [],
-        newSubItemInput: ''
+        newSubItemInput: '',
+        options: updated.options ?? [],
+        newOptionName: '',
+        newOptionPrice: ''
       }
     }));
     if (successMsg) notify(successMsg);
@@ -203,7 +217,10 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
         category: product.category?._id ?? '',
         linkedRecipe: product.linkedRecipe?._id ?? '',
         subItems: product.subItems ?? [],
-        newSubItemInput: ''
+        newSubItemInput: '',
+        options: product.options ?? [],
+        newOptionName: '',
+        newOptionPrice: ''
       }
     }));
   };
@@ -228,6 +245,29 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
     setEdit(id, { subItems: ef.subItems.filter(s => s._id !== subId) });
   };
 
+  const stageAddOption = (id: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    const name = ef.newOptionName.trim();
+    if (!name) return;
+    // Duplicate names would make the wizard's name-fallback matcher toggle both rows.
+    if (ef.options.some(o => o.name.trim().toLowerCase() === name.toLowerCase())) {
+      notify(tp.notifications.duplicateOption, 'error');
+      return;
+    }
+    setEdit(id, {
+      options: [...ef.options, { _id: `new-${Date.now()}`, name, price: Math.max(0, Number(ef.newOptionPrice) || 0) }],
+      newOptionName: '',
+      newOptionPrice: ''
+    });
+  };
+
+  const stageRemoveOption = (id: string, optId: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    setEdit(id, { options: ef.options.filter(o => o._id !== optId) });
+  };
+
   const saveAll = async (product: Product) => {
     const ef = editFields[product._id];
     if (!ef) return;
@@ -236,7 +276,12 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
       shortDescription: (ef.shortDescription as string).trim(),
       category: ef.category || null,
       linkedRecipe: ef.linkedRecipe || null,
-      subItems: ef.subItems.map(s => ({ ...(s._id?.startsWith('new-') ? {} : { _id: s._id }), name: s.name }))
+      subItems: ef.subItems.map(s => ({ ...(s._id?.startsWith('new-') ? {} : { _id: s._id }), name: s.name })),
+      options: ef.options.map(o => ({
+        ...(o._id?.startsWith('new-') ? {} : { _id: o._id }),
+        name: o.name,
+        price: Math.max(0, Number(o.price) || 0)
+      }))
     }, tp.notifications.updated);
   };
 
@@ -527,9 +572,60 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                           onClick={() => stageAddSubItem(product._id)}
                           disabled={!ef.newSubItemInput.trim()}
                           className="bg-transparent text-google-blue border border-google-gray-200 rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
-                         
+
                         >
                           {tp.addSubItem}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Options / supplements */}
+                    <div className="mb-5">
+                      <p className="m-0 mb-1 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em]">
+                        {tp.options}
+                      </p>
+                      <p className="m-0 mb-2.5 text-[12px] text-g-text-3">{tp.optionsHint}</p>
+                      {ef.options.length === 0 ? (
+                        <p className="text-[13px] text-g-text-3 mb-2.5">{tp.noOptions}</p>
+                      ) : (
+                        <div className="mb-2.5">
+                          {ef.options.map(opt => (
+                            <div key={opt._id} className="flex items-center gap-2 py-1 border-b border-g-border">
+                              <span className="text-[13px] text-g-text-2 flex-1">· {opt.name}</span>
+                              <span className="text-[13px] font-medium text-g-text">
+                                + {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(opt.price) || 0)} {currency}
+                              </span>
+                              <button onClick={() => stageRemoveOption(product._id, opt._id)}
+                                className="inline-flex items-center justify-center w-6 h-6 rounded-full border-none bg-transparent cursor-pointer text-google-red">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          value={ef.newOptionName}
+                          onChange={e => setEdit(product._id, { newOptionName: e.target.value })}
+                          onKeyDown={e => e.key === 'Enter' && stageAddOption(product._id)}
+                          placeholder={tp.optionNamePlaceholder}
+                          className={`${inputCls} flex-1`}
+                        />
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={ef.newOptionPrice}
+                          onChange={e => setEdit(product._id, { newOptionPrice: e.target.value })}
+                          onKeyDown={e => e.key === 'Enter' && stageAddOption(product._id)}
+                          placeholder={tp.optionPricePlaceholder}
+                          className={inputCls}
+                          style={{ maxWidth: 110 }}
+                        />
+                        <button
+                          onClick={() => stageAddOption(product._id)}
+                          disabled={!ef.newOptionName.trim()}
+                          className="bg-transparent text-google-blue border border-google-gray-200 rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
+                        >
+                          {tp.addOption}
                         </button>
                       </div>
                     </div>
