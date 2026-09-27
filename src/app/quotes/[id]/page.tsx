@@ -190,7 +190,7 @@ export default function QuoteDetailPage() {
         <div>
           <Section title={td.menuItems} icon="🍽️">
             {quote.lineItems?.length ? (
-              <GroupedLineItems lineItems={quote.lineItems} currency={currency} />
+              <GroupedLineItems lineItems={quote.lineItems} currency={currency} showOptionPrices={layout.showOptionPrices} />
             ) : <p style={{ color: '#9aa0a6', fontSize: 14 }}>{td.noItems}</p>}
           </Section>
 
@@ -280,7 +280,7 @@ export default function QuoteDetailPage() {
   );
 }
 
-function GroupedLineItems({ lineItems, currency }) {
+function GroupedLineItems({ lineItems, currency, showOptionPrices }) {
   const groups = lineItems.reduce((map, li) => {
     const key = li.groupLabel || '';
     if (!map.has(key)) map.set(key, []);
@@ -308,6 +308,18 @@ function GroupedLineItems({ lineItems, currency }) {
                   <div style={{ paddingLeft: 12, paddingBottom: 4 }}>
                     {li.subItems.map((s, si) => (
                       <span key={si} style={{ display: 'inline-block', fontSize: 12, color: '#9aa0a6', marginRight: 12 }}>· {s.name}</span>
+                    ))}
+                  </div>
+                )}
+                {li.selectedOptions?.length > 0 && (
+                  <div style={{ paddingLeft: 12, paddingBottom: 4 }}>
+                    {li.selectedOptions.map((o, oi) => (
+                      <div key={oi} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#5f6368', paddingRight: 8 }}>
+                        <span>+ {o.name}</span>
+                        {showOptionPrices && (
+                          <span style={{ whiteSpace: 'nowrap', marginLeft: 12 }}>{fmt(Number(o.price) || 0, currency)}</span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}

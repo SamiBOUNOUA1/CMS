@@ -115,6 +115,15 @@ const subItemSchema = new Schema({
   name: { type: String, required: true, trim: true },
 });
 
+// Priced supplement a client can add to this product, e.g. "Dish decoration" +10.
+// `price` is PER UNIT — it is added to the line's unit price and therefore multiplied
+// by the order group's count. min: 0 because the quote's lineItemSchema declares
+// min: 0 on unitPrice/lineTotal, which a negative option could otherwise violate.
+const productOptionSchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  price: { type: Number, default: 0, min: 0 },
+});
+
 const productSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, unique: true },
@@ -124,6 +133,7 @@ const productSchema = new Schema(
     unit: { type: String, default: 'item', trim: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
     subItems: [subItemSchema],
+    options: [productOptionSchema],
     linkedRecipe: { type: Schema.Types.ObjectId, ref: 'KitchenRecipe', default: null },
     isActive: { type: Boolean, default: true },
   },
@@ -237,6 +247,8 @@ const eventSchema = new Schema(
   },
   { timestamps: true }
 );
+eventSchema.index({ eventDate: 1 });
+eventSchema.index({ client: 1 });
 export const Event = models.Event || model('Event', eventSchema);
 
 // ── STAFF ASSIGNMENT (shared by Order and Quote) ──────────────────────────────
@@ -275,6 +287,14 @@ const orderLineGroupItemSchema = new Schema({
   category: String,
   notes: String,
   subItems: [{ name: String }],
+  // Supplements ticked on this line, snapshotted by value from Product.options.
+  // `_optionId` is an advisory back-link used only to keep the wizard's checkboxes
+  // matched when an option is renamed in the catalog.
+  selectedOptions: [{
+    _optionId: { type: String, default: '' },
+    name: { type: String, required: true },
+    price: { type: Number, default: 0 },
+  }],
 }, { _id: false });
 
 const orderLineGroupSchema = new Schema({
@@ -356,6 +376,12 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
+orderSchema.index({ status: 1 });
+orderSchema.index({ eventDate: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ event: 1 });
+orderSchema.index({ clientPhone: 1 });
+orderSchema.index({ paymentStatus: 1 });
 export const Order = models.Order || model('Order', orderSchema);
 
 // ── QUOTE ─────────────────────────────────────────────────────────────────────
@@ -365,10 +391,18 @@ const lineItemSchema = new Schema({
   groupLabel: { type: String, default: '' },
   category: String,
   quantity: { type: Number, required: true, min: 0 },
+  basePrice: { type: Number, default: 0, min: 0 },
+  // Effective price: basePrice + selectedOptions. Kept effective (not base) so the
+  // quantity × unitPrice === lineTotal invariant holds for this snapshot document.
   unitPrice: { type: Number, required: true, min: 0 },
   lineTotal: { type: Number, required: true, min: 0 },
   notes: String,
   subItems: [{ name: { type: String, required: true } }],
+  selectedOptions: [{
+    _optionId: { type: String, default: '' },
+    name: { type: String, required: true },
+    price: { type: Number, default: 0 },
+  }],
 });
 
 const quoteSchema = new Schema(
@@ -402,6 +436,7 @@ quoteSchema.pre('save', function (next) {
   next();
 });
 
+quoteSchema.index({ order: 1, isActive: 1 });
 export const Quote = models.Quote || model('Quote', quoteSchema);
 
 // ── INVOICE ───────────────────────────────────────────────────────────────────
@@ -443,6 +478,7 @@ const paymentSchema = new Schema(
   },
   { timestamps: true }
 );
+paymentSchema.index({ order: 1 });
 export const Payment = models.Payment || model('Payment', paymentSchema);
 
 // ── MODULE CONFIG ─────────────────────────────────────────────────────────────
@@ -528,6 +564,9 @@ const inventoryItemSchema = new Schema(
   },
   { timestamps: true }
 );
+inventoryItemSchema.index({ isActive: 1, name: 1 });
+inventoryItemSchema.index({ warehouse: 1 });
+inventoryItemSchema.index({ category: 1 });
 export const InventoryItem = models.InventoryItem || model('InventoryItem', inventoryItemSchema);
 
 // ── INVENTORY ADJUSTMENT ──────────────────────────────────────────────────────
@@ -568,6 +607,7 @@ const laundryBatchSchema = new Schema(
   },
   { timestamps: true }
 );
+laundryBatchSchema.index({ order: 1 });
 export const LaundryBatch = models.LaundryBatch || model('LaundryBatch', laundryBatchSchema);
 
 // ── COMPANY SETTINGS ──────────────────────────────────────────────────────────
@@ -620,6 +660,7 @@ const documentLayoutSettingsSchema = new Schema(
     showVatNumber:     { type: Boolean, default: true },
     showStaffSection:  { type: Boolean, default: true },  // both docs
     showOrderItems:    { type: Boolean, default: true },  // receipt only
+    showOptionPrices:  { type: Boolean, default: true },  // both docs
     showClientNotes:   { type: Boolean, default: true },  // quote only
     showInternalNotes: { type: Boolean, default: false }, // quote only
     showExternalNotes: { type: Boolean, default: true },  // both docs
@@ -641,6 +682,7 @@ const taskSchema = new Schema(
   },
   { timestamps: true }
 );
+taskSchema.index({ owner: 1, scheduledDate: 1 });
 export const Task = models.Task || model('Task', taskSchema);
 
 // ── ACTIVITY ──────────────────────────────────────────────────────────────────

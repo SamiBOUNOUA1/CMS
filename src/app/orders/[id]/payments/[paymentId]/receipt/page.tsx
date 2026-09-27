@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
 import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
+import { groupItemsTotal, lineGroupsTotal } from '@/lib/pricing';
 
 function formatCurrency(n: number | null | undefined, cur = '€') {
   if (n == null) return '—';
@@ -77,8 +78,7 @@ export default function PaymentReceiptPage() {
   const totalPaid = +allPayments.reduce((s: number, p: any) => s + p.amount, 0).toFixed(2);
   const remaining = +(orderTotal - totalPaid).toFixed(2);
 
-  const itemsSubtotal = (order.lineGroups || []).reduce((s: number, g: any) =>
-    s + (g.items || []).reduce((gi: number, item: any) => gi + Number(g.count) * Number(item.unitPrice), 0), 0);
+  const itemsSubtotal = lineGroupsTotal(order.lineGroups);
   const staffSubtotal = (order.staffAssignments || []).reduce((s: number, sa: any) =>
     s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0);
   const subtotal = +(itemsSubtotal + staffSubtotal).toFixed(2);
@@ -236,7 +236,7 @@ export default function PaymentReceiptPage() {
           <p style={sectionTitle}>{tr.orderItems}</p>
           <hr className="pdf-rule-thin" style={{ margin: '0 0 10px' }} />
           {(order.lineGroups || []).filter((g: any) => g.items?.length > 0).map((g: any, gi: number, arr: any[]) => {
-            const groupTotal = (g.items || []).reduce((s: number, i: any) => s + Number(g.count) * Number(i.unitPrice), 0);
+            const groupTotal = groupItemsTotal(g);
             return (
               <div key={gi} className="receipt-item" style={{ marginBottom: gi < arr.length - 1 ? 14 : 0 }}>
                 <div className="receipt-group-header flex justify-between items-center rounded-md py-2 px-3 mb-1.5" style={{ background: '#f5f2ec' }}>
@@ -253,6 +253,18 @@ export default function PaymentReceiptPage() {
                       <div className="pl-2 pb-1">
                         {item.subItems.map((s: any, si: number) => (
                           <span key={si} className="inline-block mr-2.5" style={{ fontFamily: docFont, fontSize: '8pt', color: '#9a8c7a' }}>· {s.name}</span>
+                        ))}
+                      </div>
+                    )}
+                    {item.selectedOptions?.length > 0 && (
+                      <div className="pl-2 pb-1">
+                        {item.selectedOptions.map((o: any, oi: number) => (
+                          <div key={oi} className="flex justify-between" style={{ fontFamily: docFont, fontSize: '8pt', color: '#6b5e4e' }}>
+                            <span>+ {o.name}</span>
+                            {layout.showOptionPrices && (
+                              <span style={{ whiteSpace: 'nowrap', marginLeft: 12 }}>{formatCurrency(Number(o.price) || 0, currency)}</span>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}

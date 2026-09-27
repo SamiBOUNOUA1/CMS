@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const { name, shortDescription, productType, defaultPrice, unit, category, subItems } = await request.json();
+    const { name, shortDescription, productType, defaultPrice, unit, category, subItems, options } = await request.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
     const product = await Product.create({
       name: name.trim(),
@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
       unit: unit?.trim() || 'item',
       category: category || null,
       subItems: subItems ?? [],
+      options: (options ?? [])
+        .map(o => ({ name: String(o?.name ?? '').trim(), price: Math.max(0, Number(o?.price) || 0) }))
+        .filter(o => o.name),
     });
     const populated = await product.populate('category', 'name');
     return NextResponse.json({ product: populated }, { status: 201 });

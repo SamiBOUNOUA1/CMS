@@ -24,16 +24,16 @@ export async function GET(request: NextRequest) {
     if (categoryId) query.category = categoryId;
     if (laundryEligible) query.laundryEligible = true;
     if (warehouseId) query.warehouse = warehouseId;
+    if (lowStock) {
+      query.$expr = { $lte: ['$currentStock', '$minStock'] };
+    }
 
-    let items = await InventoryItem.find(query)
+    const items = await InventoryItem.find(query)
       .populate('category', 'name color')
       .populate('supplier', 'name')
       .populate('warehouse', 'name')
-      .sort({ name: 1 });
-
-    if (lowStock) {
-      items = items.filter(i => i.currentStock <= i.minStock);
-    }
+      .sort({ name: 1 })
+      .lean();
 
     return NextResponse.json({ items });
   } catch (err: unknown) {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SectionTitle, Field, FormInput, FormSelect, fmt, btnOutline, removeBtn } from './FormPrimitives';
+import { itemLineTotal, itemUnitPrice, optionsTotal } from '@/lib/pricing';
 
 interface SubItem {
   name: string;
@@ -12,22 +13,44 @@ interface Category {
   name: string;
 }
 
+/** A priced supplement offered by a product, as configured in the catalog. */
+interface ProductOption {
+  _id: string;
+  name: string;
+  price?: number;
+  /** Set when the option no longer exists in the catalog but is still on the line. */
+  _orphan?: boolean;
+}
+
+/** A supplement ticked on a line, snapshotted by value so it survives catalog edits. */
+interface SelectedOption {
+  _optionId?: string;
+  name: string;
+  price: number;
+}
+
 interface Product {
   _id: string;
   name: string;
   defaultPrice?: number;
   subItems?: SubItem[];
+  options?: ProductOption[];
   category?: Category;
 }
 
 interface GroupItem {
   name: string;
   category: string;
+  /** BASE price per unit — selected options are added on top, never folded in here. */
   unitPrice: number;
   notes: string;
   subItems: SubItem[];
+  selectedOptions: SelectedOption[];
   _productId: string;
 }
+
+const sameOption = (sel: SelectedOption, opt: { _id?: string; name: string }) =>
+  sel._optionId ? sel._optionId === opt._id : sel.name === opt.name;
 
 interface LineGroup {
   label: string;
@@ -51,7 +74,7 @@ interface StepLineItemsProps {
   defaultCount?: number;
 }
 
-export const defaultGroupItem = (): GroupItem => ({ name: '', category: '', unitPrice: 0, notes: '', subItems: [], _productId: '' });
+export const defaultGroupItem = (): GroupItem => ({ name: '', category: '', unitPrice: 0, notes: '', subItems: [], selectedOptions: [], _productId: '' });
 export const defaultLineGroup = (): LineGroup => ({ label: '', count: 1, items: [defaultGroupItem()] });
 
 export function StepLineItems({ form, setForm, errors, products, isMobile, tn, isTableMode, currency, defaultCount = 1 }: StepLineItemsProps) {
@@ -92,8 +115,10 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
     setForm(f => {
       const groups = [...f.lineGroups];
       const items = [...groups[gi].items];
+      // Options are per-product, so switching or clearing the product always drops them —
+      // a supplement chosen for one dish is meaningless on another.
       if (productId === '__custom__') {
-        items[ii] = { ...items[ii], _productId: '__custom__', name: '', unitPrice: 0, subItems: [], category: '' };
+        items[ii] = { ...items[ii], _productId: '__custom__', name: '', unitPrice: 0, subItems: [], selectedOptions: [], category: '' };
       } else if (found) {
         items[ii] = {
           ...items[ii],
@@ -101,10 +126,11 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
           name: found.name,
           unitPrice: found.defaultPrice ?? 0,
           subItems: found.subItems?.map(s => ({ name: s.name })) ?? [],
+          selectedOptions: [],
           category: found.category?.name ?? '',
         };
       } else if (!productId) {
-        items[ii] = { ...items[ii], _productId: '', name: '', unitPrice: 0, subItems: [], category: '' };
+        items[ii] = { ...items[ii], _productId: '', name: '', unitPrice: 0, subItems: [], selectedOptions: [], category: '' };
       } else {
         return f;
       }
@@ -112,6 +138,35 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
       return { ...f, lineGroups: groups };
     });
     setItemCatFilters(prev => ({ ...prev, [`${gi}_${ii}`]: found?.category?._id ?? '' }));
+  };
+
+  const toggleOption = (gi: number, ii: number, opt: ProductOption) => setForm(f => {
+    const groups = [...f.lineGroups];
+    const items = [...groups[gi].items];
+    const current = items[ii].selectedOptions || [];
+    const isOn = current.some(o => sameOption(o, opt));
+    items[ii] = {
+      ...items[ii],
+      selectedOptions: isOn
+        ? current.filter(o => !sameOption(o, opt))
+        : [...current, { _optionId: opt._id, name: opt.name, price: Number(opt.price) || 0 }],
+    };
+    groups[gi] = { ...groups[gi], items };
+    return { ...f, lineGroups: groups };
+  });
+
+  /**
+   * Catalog options for the item's product, unioned with any already-selected option that
+   * has since been removed from the catalog. Without the union an orphaned option would
+   * keep being charged while being invisible (and so unremovable) in the picker.
+   */
+  const optionsFor = (item: GroupItem): ProductOption[] => {
+    if (!item._productId || item._productId === '__custom__') return [];
+    const catalog = products.find(p => p._id === item._productId)?.options ?? [];
+    const orphans = (item.selectedOptions || [])
+      .filter(sel => !catalog.some(opt => sameOption(sel, opt)))
+      .map(sel => ({ _id: sel._optionId || `orphan-${sel.name}`, name: sel.name, price: Number(sel.price) || 0, _orphan: true }));
+    return [...catalog, ...orphans];
   };
 
   const categories: Category[] = [];
@@ -181,6 +236,8 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
             const itemFilteredProducts = itemCatFilter
               ? products.filter(p => p.category?._id === itemCatFilter)
               : products;
+            const itemOptions = optionsFor(item);
+            const itemOptionsTotal = optionsTotal(item);
             return (
             <div
               key={ii}
@@ -252,6 +309,34 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                   </div>
                 )}
 
+                {itemOptions.length > 0 && (
+                  <div className="border border-g-border rounded-lg py-2 px-3">
+                    <p className="m-0 mb-1.5 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em] font-sans">{String(tli.options)}</p>
+                    {itemOptions.map(opt => {
+                      const checked = (item.selectedOptions || []).some(o => sameOption(o, opt));
+                      return (
+                        <label key={opt._id} className="flex items-center gap-2 py-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleOption(gi, ii, opt)}
+                            className="accent-google-blue cursor-pointer"
+                          />
+                          <span className="text-[13px] text-g-text flex-1">
+                            {opt.name}
+                            {opt._orphan && (
+                              <span className="text-[11px] text-g-text-3 ml-1.5">({String(tli.optionUnavailable)})</span>
+                            )}
+                          </span>
+                          <span className="text-[13px] font-medium text-g-text-2 whitespace-nowrap">
+                            + {fmt(Number(opt.price) || 0, currency)}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <div
                   className="grid gap-3 items-end"
                   style={{ gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr auto' }}
@@ -270,18 +355,23 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                       value={item.unitPrice}
                       onChange={e => setItemField(gi, ii, 'unitPrice', e.target.value)}
                     />
+                    {itemOptionsTotal > 0 && (
+                      <span className="block mt-1 text-[11px] text-g-text-2">
+                        + {fmt(itemOptionsTotal, currency)} {String(tli.inOptions)} = {fmt(itemUnitPrice(item), currency)}
+                      </span>
+                    )}
                   </Field>
                   {!isMobile && (
                     <div className="pb-0.5">
                       <span className="font-sans text-base font-medium text-g-text">
-                        = {fmt(Number(group.count) * Number(item.unitPrice), currency)}
+                        = {fmt(itemLineTotal(group.count, item), currency)}
                       </span>
                     </div>
                   )}
                 </div>
                 {isMobile && (
                   <div className="text-right font-sans text-[15px] font-medium text-g-text">
-                    = {fmt(Number(group.count) * Number(item.unitPrice), currency)}
+                    = {fmt(itemLineTotal(group.count, item), currency)}
                   </div>
                 )}
               </div>

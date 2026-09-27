@@ -8,10 +8,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     await connectDB();
     const body = await request.json();
     // Sanitise allowed fields
-    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'linkedRecipe', 'isActive'];
+    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'options', 'linkedRecipe', 'isActive'];
     const update = {};
     for (const key of allowed) {
       if (key in body) update[key] = body[key];
+    }
+    if (Array.isArray(update.options)) {
+      update.options = update.options
+        .map(o => ({ ...(o?._id ? { _id: o._id } : {}), name: String(o?.name ?? '').trim(), price: Math.max(0, Number(o?.price) || 0) }))
+        .filter(o => o.name);
     }
     if (update.category === '') update.category = null;
     if (update.linkedRecipe === '' || update.linkedRecipe === null) update.linkedRecipe = null;

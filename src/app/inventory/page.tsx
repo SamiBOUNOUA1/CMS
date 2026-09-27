@@ -74,15 +74,20 @@ export default function InventoryPage() {
       .then((d: any) => setWarehouses(d.warehouses ?? []));
   }, []);
 
+  // Debounced so typing in the search box fires one request after the user pauses,
+  // not one per keystroke.
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (filterCategory) params.set('category', filterCategory);
-    if (filterWarehouse) params.set('warehouse', filterWarehouse);
-    if (filterLowStock) params.set('lowStock', 'true');
-    fetch(`/api/inventory/items?${params}`)
-      .then(r => r.ok ? r.json() : { items: [] })
-      .then((d: any) => { setItems(d.items ?? []); setLoading(false); });
+    const t = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (filterCategory) params.set('category', filterCategory);
+      if (filterWarehouse) params.set('warehouse', filterWarehouse);
+      if (filterLowStock) params.set('lowStock', 'true');
+      fetch(`/api/inventory/items?${params}`)
+        .then(r => r.ok ? r.json() : { items: [] })
+        .then((d: any) => { setItems(d.items ?? []); setLoading(false); });
+    }, 300);
+    return () => clearTimeout(t);
   }, [search, filterCategory, filterWarehouse, filterLowStock]);
 
   useEffect(() => {

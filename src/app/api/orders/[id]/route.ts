@@ -1,16 +1,21 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Quote, Event, OrderStatusConfig, FlowTemplate, Payment } from '@/lib/models';
+import { Order, Quote, Payment } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { lineGroupsTotal } from '@/lib/pricing';
+import { applyStatusEventTrigger } from '@/lib/orderStatus';
 
 export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     await connectDB();
-    const order = await Order.findById(params.id).populate('event').populate('assignees.user', 'name email').lean();
+    const order = await Order.findById(params.id)
+      .populate('event', 'eventDate eventType guestCount status eventLocation')
+      .populate('assignees.user', 'name email')
+      .lean();
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const quotes = await Quote.find({ order: params.id })
@@ -61,36 +66,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 
     // If status changed and new status has triggerEvent, create event if not yet created
     if (body.status && body.status !== prevStatus) {
-      const statusConfig = await OrderStatusConfig.findOne({ name: body.status });
-      if (statusConfig?.triggerEvent && !order.event) {
-        const template = await FlowTemplate.findOne({ eventTypeKey: order.eventType, isActive: true }).lean();
-        const instanceSteps = template?.steps?.length
-          ? template.steps
-              .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((s, i) => ({ label: s.label, description: s.description || '', sortOrder: i, status: 'pending' }))
-          : [];
-
-        const event = await Event.create({
-          client: await ensureClient(order),
-          eventDate: order.eventDate,
-          eventType: order.eventType,
-          guestCount: order.guestCount,
-          tableCount: order.tableCount,
-          startTime: order.startTime,
-          eventLocation: order.eventLocation,
-          notes: order.notes,
-          status: 'confirmed',
-          flowInstance: template
-            ? { templateId: template._id, templateName: template.name, steps: instanceSteps }
-            : { steps: [] },
-        });
-        order.event = event._id;
-      }
+      await applyStatusEventTrigger(order, body.status);
     }
 
-    const _iTotal = (order.lineGroups || []).reduce(
-      (t, g) => t + (g.items || []).reduce((s, i) => s + Number(g.count) * Number(i.unitPrice), 0), 0
-    );
+    const _iTotal = lineGroupsTotal(order.lineGroups);
     const _sTotal = (order.staffAssignments || []).reduce(
       (s, sa) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
     );
@@ -137,9 +116,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
       });
     }
 
-    const updated = await Order.findById(params.id).populate('event').populate('assignees.user', 'name email').lean();
+    // Reuse the doc we just saved; populate its refs instead of re-fetching the order.
+    await order.populate('event', 'eventDate eventType guestCount status eventLocation');
+    await order.populate('assignees.user', 'name email');
     const quotes = await Quote.find({ order: params.id }).sort({ versionNumber: 1 }).lean();
-    return NextResponse.json({ order: updated, quotes });
+    return NextResponse.json({ order: order.toObject(), quotes });
   } catch (err: unknown) {
     console.error(err);
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
@@ -157,17 +138,4 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
-}
-
-async function ensureClient(order) {
-  const { Client } = await import('@/lib/models');
-  let client = await Client.findOne({ phone: order.clientPhone });
-  if (!client) {
-    client = await Client.create({
-      name: order.clientName,
-      email: order.clientEmail || '',
-      phone: order.clientPhone,
-    });
-  }
-  return client._id;
 }

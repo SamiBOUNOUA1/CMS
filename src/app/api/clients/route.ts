@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
       filter.customerType = customerType;
     }
 
-    const clients = await Client.find(filter).sort({ name: 1 }).lean();
+    const clients = await Client.find(filter)
+      .select('name email phone customerType createdAt')
+      .sort({ name: 1 })
+      .lean();
     return NextResponse.json({ clients });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

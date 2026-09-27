@@ -95,9 +95,9 @@ export default function CalendarPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-[#e8eaed] shadow-google-1 overflow-hidden">
-        <div className="grid border-b border-[#e8eaed]" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
+        <div className="grid border-b border-[#e8eaed]" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
           {weekDayLabels.map(label => (
-            <div key={label} className="py-2.5 text-center text-xs font-medium text-[#5f6368] uppercase tracking-wide">
+            <div key={label} className="min-w-0 py-2.5 text-center text-xs font-medium text-[#5f6368] uppercase tracking-wide">
               {label}
             </div>
           ))}
@@ -106,7 +106,7 @@ export default function CalendarPage() {
         {loading ? (
           <div className="flex justify-center items-center h-[300px]"><Spinner /></div>
         ) : (
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
             {days.map((day, idx) => {
               const dayOrders = ordersOnDay(day);
               const isCurrentMonth = isSameMonth(day, currentDate);
@@ -117,7 +117,7 @@ export default function CalendarPage() {
               return (
                 <div
                   key={day.toISOString()}
-                  className="min-h-[110px]"
+                  className="min-h-[110px] min-w-0 overflow-hidden"
                   style={{
                     padding: '8px 6px 6px',
                     borderRight: col < 6 ? '1px solid #f1f3f4' : 'none',

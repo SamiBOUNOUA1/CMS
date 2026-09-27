@@ -60,7 +60,12 @@ export default function CustomersPage() {
     }
   }, [search, typeFilter]);
 
-  useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+  // Debounced so typing in the search box fires one request after the user pauses,
+  // not one per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => { fetchCustomers(); }, 300);
+    return () => clearTimeout(t);
+  }, [fetchCustomers]);
 
   const showNotification = (msg: string, type = 'success') => {
     setNotification({ msg, type });
