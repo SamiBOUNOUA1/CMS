@@ -46,7 +46,7 @@ const SearchIcon = () => (
 );
 
 function Spinner() {
-  return <div className="w-8 h-8 rounded-full border-[3px] border-[#e8eaed] border-t-google-blue animate-spin" />;
+  return <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />;
 }
 
 function MaterialImage({ url, name, size, onPreview }: { url?: string; name: string; size: number; onPreview?: (url: string) => void }) {

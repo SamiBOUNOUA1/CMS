@@ -25,16 +25,16 @@ const SearchIcon = () => (
 const ACCENT = '#e37400';
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
-  starter: { bg: '#e8f0fe', color: '#1a73e8' },
-  main:    { bg: '#e6f4ea', color: '#137333' },
-  dessert: { bg: '#fce8e6', color: '#d93025' },
+  starter: { bg: 'var(--google-blue-light)', color: '#1a73e8' },
+  main:    { bg: 'var(--google-green-light)', color: '#137333' },
+  dessert: { bg: 'var(--google-red-light)', color: '#d93025' },
   side:    { bg: '#fff3e0', color: '#b06000' },
-  other:   { bg: '#f1f3f4', color: '#5f6368' },
+  other:   { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' },
 };
 
 function availabilityDot(recipe: any) {
   const ings = recipe.ingredients ?? [];
-  if (ings.length === 0) return { color: '#9aa0a6', label: '—' };
+  if (ings.length === 0) return { color: 'var(--google-text-tertiary)', label: '—' };
   const out = ings.some((i: any) => i.stockItem && i.stockItem.currentStock === 0);
   const low = ings.some((i: any) => i.stockItem && i.stockItem.currentStock < i.stockItem.minStock);
   if (out) return { color: '#d93025', label: 'out' };
@@ -102,7 +102,7 @@ export default function KitchenRecipesPage() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#202124', margin: 0 }}>{tk.title}</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--google-text-primary)', margin: 0 }}>{tk.title}</h1>
         {canManage && (
           <button
             onClick={() => router.push('/kitchen/recipes/new')}
@@ -119,9 +119,9 @@ export default function KitchenRecipesPage() {
           { label: tk.stats.total, value: recipes.length, color: ACCENT },
           { label: tk.stats.active, value: recipes.length, color: '#137333' },
         ].map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 2px rgba(60,64,67,.3)' }}>
+          <div key={s.label} style={{ background: 'var(--google-surface)', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 2px rgba(60,64,67,.3)' }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: '#5f6368', marginTop: 2 }}>{s.label}</div>
+            <div style={{ fontSize: 13, color: 'var(--google-text-secondary)', marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -129,12 +129,12 @@ export default function KitchenRecipesPage() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px' }}>
-          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#5f6368' }}><SearchIcon /></span>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--google-text-secondary)' }}><SearchIcon /></span>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={tk.search}
-            style={{ width: '100%', padding: '9px 12px 9px 38px', border: '1px solid #dadce0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '9px 12px 9px 38px', border: '1px solid var(--google-border)', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
         {/* Category filter pills */}
@@ -149,7 +149,7 @@ export default function KitchenRecipesPage() {
             <button
               key={c}
               onClick={() => setFilterCategory(c === filterCategory ? '' : c)}
-              style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid #dadce0', background: filterCategory === c ? '#f1f3f4' : '#fff', color: '#5f6368' }}
+              style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid var(--google-border)', background: filterCategory === c ? '#f1f3f4' : '#fff', color: 'var(--google-text-secondary)' }}
             >
               {tk.categories[c]}
             </button>
@@ -158,21 +158,21 @@ export default function KitchenRecipesPage() {
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--google-surface)', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#5f6368' }}>{tk.loading}</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--google-text-secondary)' }}>{tk.loading}</div>
         ) : recipes.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
-            <div style={{ fontWeight: 600, color: '#202124', marginBottom: 4 }}>{tk.empty.title}</div>
-            <div style={{ color: '#5f6368', fontSize: 14 }}>{tk.empty.body}</div>
+            <div style={{ fontWeight: 600, color: 'var(--google-text-primary)', marginBottom: 4 }}>{tk.empty.title}</div>
+            <div style={{ color: 'var(--google-text-secondary)', fontSize: 14 }}>{tk.empty.body}</div>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #e8eaed' }}>
+              <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
                 {[tk.table.name, tk.table.nameFr, tk.table.category, tk.table.servings, tk.table.costPerServing, tk.table.availability, ''].map((h, i) => (
-                  <th key={i} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#5f6368', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</th>
+                  <th key={i} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--google-text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -185,22 +185,22 @@ export default function KitchenRecipesPage() {
                   <tr
                     key={recipe._id}
                     onClick={() => router.push(`/kitchen/recipes/${recipe._id}`)}
-                    style={{ borderBottom: '1px solid #f1f3f4', cursor: 'pointer' }}
+                    style={{ borderBottom: '1px solid var(--google-border)', cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#f8f9fa')}
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#202124' }}>{recipe.name}</td>
-                    <td style={{ padding: '12px 16px', color: '#5f6368', fontSize: 13 }}>{recipe.nameFr || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--google-text-primary)' }}>{recipe.name}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--google-text-secondary)', fontSize: 13 }}>{recipe.nameFr || '—'}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ background: catCfg.bg, color: catCfg.color, borderRadius: 12, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
                         {tk.categories[recipe.category as keyof typeof tk.categories] || recipe.category}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#5f6368' }}>{recipe.servings}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#202124' }}>{fmt(cost)}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--google-text-secondary)' }}>{recipe.servings}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--google-text-primary)' }}>{fmt(cost)}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: avail.color, marginRight: 6 }} />
-                      <span style={{ fontSize: 12, color: '#5f6368' }}>
+                      <span style={{ fontSize: 12, color: 'var(--google-text-secondary)' }}>
                         {avail.label === 'ok' ? tk.availability.ok : avail.label === 'low' ? tk.availability.low : avail.label === 'out' ? tk.availability.out : '—'}
                       </span>
                     </td>
@@ -208,7 +208,7 @@ export default function KitchenRecipesPage() {
                       {canManage && (
                         <button
                           onClick={() => setDeleteId(recipe._id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5f6368', padding: 4 }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--google-text-secondary)', padding: 4 }}
                         >
                           <TrashIcon />
                         </button>
@@ -225,11 +225,11 @@ export default function KitchenRecipesPage() {
       {/* Delete Dialog */}
       {deleteId && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: '#202124' }}>{tk.deleteDialog.title}</div>
-            <div style={{ color: '#5f6368', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: 'var(--google-text-primary)' }}>{tk.deleteDialog.title}</div>
+            <div style={{ color: 'var(--google-text-secondary)', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteId(null)} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.cancel}</button>
+              <button onClick={() => setDeleteId(null)} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.cancel}</button>
               <button onClick={handleDelete} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#d93025', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.delete}</button>
             </div>
           </div>

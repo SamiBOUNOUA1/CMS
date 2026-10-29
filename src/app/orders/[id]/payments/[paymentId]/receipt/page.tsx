@@ -17,7 +17,7 @@ function formatCurrency(n: number | null | undefined, cur = '€') {
 function Spinner() {
   return (
     <>
-      <div className="w-8 h-8 rounded-full border-[3px] border-[#e8eaed] border-t-google-blue animate-spin" />
+      <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
   );
@@ -69,7 +69,7 @@ export default function PaymentReceiptPage() {
   }
 
   if (!order || !payment) {
-    return <div className="p-10 text-center text-[#5f6368]">Receipt not found.</div>;
+    return <div className="p-10 text-center text-g-text-2">Receipt not found.</div>;
   }
 
   const travelFee = order.travelPrice || 0;

@@ -42,7 +42,7 @@ export default function QuoteDetailPage() {
   }, [quote]);
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spinner /></div>;
-  if (!quote) return <div style={{ padding: 40, textAlign: 'center', color: '#5f6368' }}>Quote not found.</div>;
+  if (!quote) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--google-text-secondary)' }}>Quote not found.</div>;
 
   const order = quote.order;
   const clientName = order?.clientName || '—';
@@ -60,7 +60,7 @@ export default function QuoteDetailPage() {
     <div className="quote-page" style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
       {/* Back breadcrumb + Print */}
       <div className="no-print quote-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#5f6368', fontFamily: "'Google Sans'" }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'" }}>
           <Link href="/orders" style={{ color: '#1a73e8', textDecoration: 'none' }}>Orders</Link>
           <span>›</span>
           {orderId && (
@@ -71,7 +71,7 @@ export default function QuoteDetailPage() {
           )}
           <span>{td.version(quote.versionNumber)}</span>
           {quote.isActive && (
-            <span style={{ background: '#e6f4ea', color: '#137333', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>Active</span>
+            <span style={{ background: 'var(--google-green-light)', color: '#137333', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>Active</span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -151,7 +151,7 @@ export default function QuoteDetailPage() {
       </div>
 
       {/* Header card (screen only) */}
-      <div className="no-print" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8eaed', boxShadow: '0 1px 3px rgba(60,64,67,.1)', padding: '28px 32px', marginBottom: 20 }}>
+      <div className="no-print" style={{ background: 'var(--google-surface)', borderRadius: 16, border: '1px solid #e8eaed', boxShadow: '0 1px 3px rgba(60,64,67,.1)', padding: '28px 32px', marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -159,8 +159,8 @@ export default function QuoteDetailPage() {
                 {clientName[0].toUpperCase()}
               </div>
               <div>
-                <h1 style={{ fontFamily: "'Google Sans'", fontSize: 24, fontWeight: 400, color: '#202124', margin: 0 }}>{clientName}</h1>
-                <p style={{ fontSize: 14, color: '#5f6368', margin: '2px 0 0' }}>
+                <h1 style={{ fontFamily: "'Google Sans'", fontSize: 24, fontWeight: 400, color: 'var(--google-text-primary)', margin: 0 }}>{clientName}</h1>
+                <p style={{ fontSize: 14, color: 'var(--google-text-secondary)', margin: '2px 0 0' }}>
                   {clientEmail}{clientPhone ? ` · ${clientPhone}` : ''}
                 </p>
               </div>
@@ -179,7 +179,7 @@ export default function QuoteDetailPage() {
             <div style={{ fontSize: 32, fontFamily: "'Google Sans'", fontWeight: 400, color: '#1a73e8', marginBottom: 8 }}>
               {fmt(quote.total, currency)}
             </div>
-            <span style={{ background: quote.isActive ? '#e6f4ea' : '#f1f3f4', color: quote.isActive ? '#137333' : '#5f6368', borderRadius: 20, padding: '6px 16px', fontSize: 13, fontFamily: "'Google Sans'", fontWeight: 500 }}>
+            <span style={{ background: quote.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: quote.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)', borderRadius: 20, padding: '6px 16px', fontSize: 13, fontFamily: "'Google Sans'", fontWeight: 500 }}>
               {quote.isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
@@ -191,7 +191,7 @@ export default function QuoteDetailPage() {
           <Section title={td.menuItems} icon="🍽️">
             {quote.lineItems?.length ? (
               <GroupedLineItems lineItems={quote.lineItems} currency={currency} showOptionPrices={layout.showOptionPrices} />
-            ) : <p style={{ color: '#9aa0a6', fontSize: 14 }}>{td.noItems}</p>}
+            ) : <p style={{ color: 'var(--google-text-tertiary)', fontSize: 14 }}>{td.noItems}</p>}
           </Section>
 
           {staffTotal > 0 && layout.showStaffSection && (
@@ -199,19 +199,19 @@ export default function QuoteDetailPage() {
               <div className="quote-scroll-x">
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, minWidth: 380 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #e8eaed' }}>
+                  <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
                     {[td.table.role, td.table.count, td.table.hours, td.table.ratePerHour, td.table.total].map((h, idx) => (
-                      <th key={h} style={{ textAlign: idx >= 3 ? 'right' : 'left', padding: '8px 12px', fontSize: 12, color: '#5f6368', fontWeight: 500, fontFamily: "'Google Sans'" }}>{h}</th>
+                      <th key={h} style={{ textAlign: idx >= 3 ? 'right' : 'left', padding: '8px 12px', fontSize: 12, color: 'var(--google-text-secondary)', fontWeight: 500, fontFamily: "'Google Sans'" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {quote.staffAssignments.map((sa, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #f1f3f4' }}>
+                    <tr key={i} style={{ borderBottom: '1px solid var(--google-border)' }}>
                       <td style={{ padding: '12px', fontWeight: 500, textTransform: 'capitalize' }}>{sa.role.replace('-', ' ')}</td>
-                      <td style={{ padding: '12px', color: '#5f6368' }}>{sa.count}</td>
-                      <td style={{ padding: '12px', color: '#5f6368' }}>{sa.hours}h</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: '#5f6368' }}>{fmt(sa.ratePerHour, currency)}</td>
+                      <td style={{ padding: '12px', color: 'var(--google-text-secondary)' }}>{sa.count}</td>
+                      <td style={{ padding: '12px', color: 'var(--google-text-secondary)' }}>{sa.hours}h</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: 'var(--google-text-secondary)' }}>{fmt(sa.ratePerHour, currency)}</td>
                       <td style={{ padding: '12px', textAlign: 'right', fontWeight: 500 }}>{fmt(sa.lineTotal, currency)}</td>
                     </tr>
                   ))}
@@ -225,20 +225,20 @@ export default function QuoteDetailPage() {
             <Section title={td.notes} icon="📝" style={{ marginTop: 20 }}>
               {layout.showExternalNotes && order?.externalNotes && (
                 <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.externalNotes}</p>
-                  <p style={{ fontSize: 14, color: '#202124', margin: 0, whiteSpace: 'pre-wrap' }}>{order.externalNotes}</p>
+                  <p style={{ fontSize: 12, color: 'var(--google-text-secondary)', margin: '0 0 4px', fontWeight: 500 }}>{td.externalNotes}</p>
+                  <p style={{ fontSize: 14, color: 'var(--google-text-primary)', margin: 0, whiteSpace: 'pre-wrap' }}>{order.externalNotes}</p>
                 </div>
               )}
               {layout.showClientNotes && quote.clientNotes && (
                 <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.clientNotes}</p>
-                  <p style={{ fontSize: 14, color: '#202124', margin: 0, whiteSpace: 'pre-wrap' }}>{quote.clientNotes}</p>
+                  <p style={{ fontSize: 12, color: 'var(--google-text-secondary)', margin: '0 0 4px', fontWeight: 500 }}>{td.clientNotes}</p>
+                  <p style={{ fontSize: 14, color: 'var(--google-text-primary)', margin: 0, whiteSpace: 'pre-wrap' }}>{quote.clientNotes}</p>
                 </div>
               )}
               {layout.showInternalNotes && quote.internalNotes && (
                 <div>
-                  <p style={{ fontSize: 12, color: '#5f6368', margin: '0 0 4px', fontWeight: 500 }}>{td.internalNotes}</p>
-                  <p style={{ fontSize: 14, color: '#202124', margin: 0 }}>{quote.internalNotes}</p>
+                  <p style={{ fontSize: 12, color: 'var(--google-text-secondary)', margin: '0 0 4px', fontWeight: 500 }}>{td.internalNotes}</p>
+                  <p style={{ fontSize: 14, color: 'var(--google-text-primary)', margin: 0 }}>{quote.internalNotes}</p>
                 </div>
               )}
             </Section>
@@ -294,27 +294,27 @@ function GroupedLineItems({ lineItems, currency, showOptionPrices }) {
         const groupTotal = items.reduce((s, li) => s + li.lineTotal, 0);
         return (
           <div key={gi} style={{ marginBottom: gi < groups.size - 1 ? 16 : 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', marginBottom: 6 }}>
-              <span style={{ fontFamily: "'Google Sans'", fontSize: 14, fontWeight: 600, color: '#202124' }}>{label || '—'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--google-bg)', borderRadius: 8, padding: '10px 14px', marginBottom: 6 }}>
+              <span style={{ fontFamily: "'Google Sans'", fontSize: 14, fontWeight: 600, color: 'var(--google-text-primary)' }}>{label || '—'}</span>
               <span style={{ fontFamily: "'Google Sans'", fontSize: 14, fontWeight: 600, color: '#1a73e8' }}>{fmt(groupTotal, currency)}</span>
             </div>
             {items.map((li, i) => (
               <div key={i} style={{ paddingLeft: 14, borderLeft: '2px solid #e8eaed', marginLeft: 8, marginBottom: i < items.length - 1 ? 8 : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '6px 8px 2px' }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#202124' }}>{li.name}</span>
-                  <span style={{ fontSize: 13, color: '#5f6368', whiteSpace: 'nowrap', marginLeft: 12 }}>×{li.quantity}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--google-text-primary)' }}>{li.name}</span>
+                  <span style={{ fontSize: 13, color: 'var(--google-text-secondary)', whiteSpace: 'nowrap', marginLeft: 12 }}>×{li.quantity}</span>
                 </div>
                 {li.subItems?.length > 0 && (
                   <div style={{ paddingLeft: 12, paddingBottom: 4 }}>
                     {li.subItems.map((s, si) => (
-                      <span key={si} style={{ display: 'inline-block', fontSize: 12, color: '#9aa0a6', marginRight: 12 }}>· {s.name}</span>
+                      <span key={si} style={{ display: 'inline-block', fontSize: 12, color: 'var(--google-text-tertiary)', marginRight: 12 }}>· {s.name}</span>
                     ))}
                   </div>
                 )}
                 {li.selectedOptions?.length > 0 && (
                   <div style={{ paddingLeft: 12, paddingBottom: 4 }}>
                     {li.selectedOptions.map((o, oi) => (
-                      <div key={oi} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#5f6368', paddingRight: 8 }}>
+                      <div key={oi} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--google-text-secondary)', paddingRight: 8 }}>
                         <span>+ {o.name}</span>
                         {showOptionPrices && (
                           <span style={{ whiteSpace: 'nowrap', marginLeft: 12 }}>{fmt(Number(o.price) || 0, currency)}</span>
@@ -334,10 +334,10 @@ function GroupedLineItems({ lineItems, currency, showOptionPrices }) {
 
 function Section({ title, icon, children, style }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8eaed', boxShadow: '0 1px 2px rgba(60,64,67,.06)', overflow: 'hidden', ...style }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f3f4', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ background: 'var(--google-surface)', borderRadius: 12, border: '1px solid #e8eaed', boxShadow: '0 1px 2px rgba(60,64,67,.06)', overflow: 'hidden', ...style }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--google-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span>{icon}</span>
-        <h2 style={{ fontFamily: "'Google Sans'", fontSize: 15, fontWeight: 500, color: '#202124', margin: 0 }}>{title}</h2>
+        <h2 style={{ fontFamily: "'Google Sans'", fontSize: 15, fontWeight: 500, color: 'var(--google-text-primary)', margin: 0 }}>{title}</h2>
       </div>
       <div style={{ padding: '16px 20px' }}>{children}</div>
     </div>
@@ -346,7 +346,7 @@ function Section({ title, icon, children, style }) {
 
 function Chip({ icon, label }) {
   return (
-    <span style={{ background: '#f1f3f4', borderRadius: 20, padding: '4px 12px', fontSize: 13, color: '#5f6368', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+    <span style={{ background: 'var(--google-bg)', borderRadius: 20, padding: '4px 12px', fontSize: 13, color: 'var(--google-text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       {icon} {label}
     </span>
   );
@@ -355,7 +355,7 @@ function Chip({ icon, label }) {
 function TotalRow({ label, value, bold, large, color, currency }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-      <span style={{ fontSize: 13, color: '#5f6368', fontFamily: "'Google Sans'" }}>{label}</span>
+      <span style={{ fontSize: 13, color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'" }}>{label}</span>
       <span style={{ fontSize: large ? 18 : 13, fontWeight: bold ? 500 : 400, color: color || '#202124', fontFamily: "'Google Sans'" }}>
         {fmt(value, currency)}
       </span>
@@ -366,8 +366,8 @@ function TotalRow({ label, value, bold, large, color, currency }) {
 function MetaRow({ label, value, mono }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-      <span style={{ fontSize: 12, color: '#5f6368', fontFamily: "'Google Sans'", textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#202124', fontFamily: mono ? 'monospace' : "'Google Sans'" }}>{value}</span>
+      <span style={{ fontSize: 12, color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'", textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: 13, color: 'var(--google-text-primary)', fontFamily: mono ? 'monospace' : "'Google Sans'" }}>{value}</span>
     </div>
   );
 }

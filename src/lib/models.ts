@@ -133,6 +133,7 @@ const productSchema = new Schema(
     unit: { type: String, default: 'item', trim: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
     subItems: [subItemSchema],
+    packingItems: [subItemSchema],
     options: [productOptionSchema],
     linkedRecipe: { type: Schema.Types.ObjectId, ref: 'KitchenRecipe', default: null },
     isActive: { type: Boolean, default: true },
@@ -279,6 +280,15 @@ const flowTemplateSchema = new Schema({
 export const FlowTemplate = models.FlowTemplate || model('FlowTemplate', flowTemplateSchema);
 
 // ── ORDER LINE GROUPS (editable working state stored on Order) ─────────────────
+// Packing checklist entries ride on each line item. They are snapshotted from
+// Product.packingItems when the dish is added to the order (see LineItemsStep)
+// and each row has its own _id so the PATCH /packing-items route can toggle a
+// single checkbox without a wholesale re-save of the order.
+const orderPackingItemSchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  checked: { type: Boolean, default: false },
+}, { _id: true });
+
 const orderLineGroupItemSchema = new Schema({
   catalogItem: { type: Schema.Types.ObjectId, ref: 'CatalogItem' },
   _productId: { type: String, default: '' },
@@ -287,6 +297,7 @@ const orderLineGroupItemSchema = new Schema({
   category: String,
   notes: String,
   subItems: [{ name: String }],
+  packingItems: [orderPackingItemSchema],
   // Supplements ticked on this line, snapshotted by value from Product.options.
   // `_optionId` is an advisory back-link used only to keep the wizard's checkboxes
   // matched when an option is renamed in the catalog.

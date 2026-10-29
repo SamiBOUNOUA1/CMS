@@ -8,7 +8,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     await connectDB();
     const body = await request.json();
     // Sanitise allowed fields
-    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'options', 'linkedRecipe', 'isActive'];
+    const allowed = ['name', 'shortDescription', 'productType', 'defaultPrice', 'unit', 'category', 'subItems', 'packingItems', 'options', 'linkedRecipe', 'isActive'];
     const update = {};
     for (const key of allowed) {
       if (key in body) update[key] = body[key];

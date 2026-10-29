@@ -59,7 +59,7 @@ export default function ManagerEventsPage() {
   if (loading) {
     return (
       <div className="flex justify-center p-20">
-        <div className="w-8 h-8 rounded-full border-[3px] border-[#e8eaed] border-t-google-blue animate-spin" />
+        <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
       </div>
     );
   }
@@ -82,8 +82,8 @@ export default function ManagerEventsPage() {
         <div className="flex flex-col gap-3">
           {orders.map((order: any) => {
             const sc = statusMap[order.status];
-            const statusBg = sc?.color ? sc.color + '22' : '#f1f3f4';
-            const statusFg = sc?.color || '#5f6368';
+            const statusBg = sc?.color ? sc.color + '22' : 'var(--google-bg)';
+            const statusFg = sc?.color || 'var(--google-text-secondary)';
             return (
               <Link
                 key={order._id}
@@ -108,7 +108,7 @@ export default function ManagerEventsPage() {
                     </div>
                   </div>
                   {myRole(order, userId) && (
-                    <span className="rounded-full py-1 px-3 text-xs font-semibold flex-shrink-0 bg-[#e8f0fe] text-google-blue">
+                    <span className="rounded-full py-1 px-3 text-xs font-semibold flex-shrink-0 bg-google-blue-light text-google-blue">
                       {myRole(order, userId)}
                     </span>
                   )}

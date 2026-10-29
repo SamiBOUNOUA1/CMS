@@ -34,8 +34,8 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-google-gray-50 font-[Roboto,Arial,sans-serif]">
-      <div className="bg-white rounded-2xl border border-google-gray-200 w-full max-w-[400px] px-10 py-12"
+    <div className="min-h-screen flex items-center justify-center bg-g-bg font-[Roboto,Arial,sans-serif]">
+      <div className="bg-g-surface rounded-2xl border border-g-border w-full max-w-[400px] px-10 py-12"
         style={{ boxShadow: '0 4px 20px rgba(60,64,67,.12)' }}
       >
         {/* Logo */}

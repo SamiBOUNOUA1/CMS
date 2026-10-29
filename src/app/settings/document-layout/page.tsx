@@ -82,7 +82,7 @@ export default function DocumentLayoutSettingsPage() {
                 type="color"
                 value={form.accentColor}
                 onChange={e => set('accentColor', e.target.value)}
-                className="w-11 h-11 rounded-lg border border-g-border bg-white p-1 cursor-pointer"
+                className="w-11 h-11 rounded-lg border border-g-border bg-g-surface p-1 cursor-pointer"
                 aria-label={ts.accentColor}
               />
               <FormInput

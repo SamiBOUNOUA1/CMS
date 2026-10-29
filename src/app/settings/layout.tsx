@@ -164,7 +164,7 @@ function Sidebar({ groups, pathname, onNavigate }: { groups: NavGroup[]; pathnam
             onClick={() => toggle(group.key)}
             className="w-full flex items-center justify-between py-2 px-3 border-none bg-transparent cursor-pointer rounded-lg gap-2"
           >
-            <span className="text-[11px] font-semibold tracking-[0.06em] uppercase text-[#9aa0a6]" style={{ fontFamily: "'Google Sans'" }}>
+            <span className="text-[11px] font-semibold tracking-[0.06em] uppercase text-g-text-3" style={{ fontFamily: "'Google Sans'" }}>
               {group.label}
             </span>
             <IconChevron open={open[group.key]} />
@@ -183,12 +183,12 @@ function Sidebar({ groups, pathname, onNavigate }: { groups: NavGroup[]; pathnam
                     style={{
                       fontFamily: "'Google Sans'",
                       fontWeight: active ? 600 : 400,
-                      color: active ? '#1a73e8' : '#3c4043',
-                      background: active ? '#e8f0fe' : 'transparent',
+                      color: active ? '#1a73e8' : 'var(--google-text-primary)',
+                      background: active ? 'var(--google-blue-light)' : 'transparent',
                       borderLeft: active ? '3px solid #1a73e8' : '3px solid transparent',
                     }}
                   >
-                    <span className="flex flex-shrink-0" style={{ color: active ? '#1a73e8' : '#5f6368' }}>
+                    <span className="flex flex-shrink-0" style={{ color: active ? '#1a73e8' : 'var(--google-text-secondary)' }}>
                       {item.icon}
                     </span>
                     {item.label}
@@ -228,11 +228,11 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
       {/* ── Desktop sidebar ─────────────────────────────────────────────────── */}
       <aside
-        className="hidden sm:block flex-shrink-0 border-r border-google-gray-200 sticky top-0 self-start overflow-y-auto"
+        className="hidden sm:block flex-shrink-0 border-r border-g-border sticky top-0 self-start overflow-y-auto"
         style={{ width: 220, padding: '28px 12px 40px', maxHeight: 'calc(100vh - 104px)' }}
       >
         <div className="mb-5 pl-3">
-          <h1 className="text-lg font-medium text-[#202124] m-0" style={{ fontFamily: "'Google Sans'" }}>
+          <h1 className="text-lg font-medium text-g-text m-0" style={{ fontFamily: "'Google Sans'" }}>
             {ts.title}
           </h1>
         </div>
@@ -241,17 +241,17 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
       {/* ── Mobile: top bar ──────────────────────────────────────────────────── */}
       <div
-        className="flex sm:hidden fixed left-0 right-0 bg-white border-b border-google-gray-200 items-center gap-3 py-2.5 px-4"
+        className="flex sm:hidden fixed left-0 right-0 bg-g-surface border-b border-g-border items-center gap-3 py-2.5 px-4"
         style={{ top: 104, zIndex: 80 }}
       >
         <button
           onClick={() => setMobileOpen(true)}
-          className="border-none bg-transparent cursor-pointer text-[#5f6368] p-1 flex"
+          className="border-none bg-transparent cursor-pointer text-g-text-2 p-1 flex"
           aria-label="Open settings menu"
         >
           <IconMenu />
         </button>
-        <span className="text-[15px] font-medium text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>
+        <span className="text-[15px] font-medium text-g-text" style={{ fontFamily: "'Google Sans'" }}>
           {ts.title}
         </span>
       </div>
@@ -264,15 +264,15 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             className="fixed inset-0"
             style={{ background: 'rgba(0,0,0,.35)', zIndex: 149 }}
           />
-          <div className="fixed top-0 left-0 bottom-0 flex flex-col overflow-y-auto bg-white"
+          <div className="fixed top-0 left-0 bottom-0 flex flex-col overflow-y-auto bg-g-surface"
             style={{ width: 260, zIndex: 150, boxShadow: '4px 0 24px rgba(0,0,0,.15)' }}>
-            <div className="flex items-center justify-between border-b border-[#f1f3f4]" style={{ padding: '18px 16px' }}>
-              <span className="text-[17px] font-medium text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>
+            <div className="flex items-center justify-between border-b border-g-border" style={{ padding: '18px 16px' }}>
+              <span className="text-[17px] font-medium text-g-text" style={{ fontFamily: "'Google Sans'" }}>
                 {ts.title}
               </span>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="border-none bg-transparent cursor-pointer text-[#5f6368] p-1 flex"
+                className="border-none bg-transparent cursor-pointer text-g-text-2 p-1 flex"
               >
                 <IconClose />
               </button>

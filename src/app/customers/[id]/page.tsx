@@ -171,7 +171,7 @@ export default function CustomerDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px', textAlign: 'center', color: '#9aa0a6' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px', textAlign: 'center', color: 'var(--google-text-tertiary)' }}>
         <div style={{ width: 32, height: 32, border: '3px solid #e8eaed', borderTopColor: '#1a73e8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
@@ -181,7 +181,7 @@ export default function CustomerDetailPage() {
   if (!client) {
     return (
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px', textAlign: 'center' }}>
-        <p style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>{tp.loadFailed}</p>
+        <p style={{ color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'" }}>{tp.loadFailed}</p>
         <Link href="/customers" style={{ color: '#1a73e8' }}>← {tp.back}</Link>
       </div>
     );
@@ -228,7 +228,7 @@ export default function CustomerDetailPage() {
               {client.email}{client.phone && ` · ${client.phone}`}
             </p>
             {client.customerType && typeMap[client.customerType] && (
-              <span className="inline-block mt-1.5 py-0.5 px-2.5 rounded-full text-[12px] font-medium bg-[#e8f0fe] text-google-blue">
+              <span className="inline-block mt-1.5 py-0.5 px-2.5 rounded-full text-[12px] font-medium bg-google-blue-light text-google-blue">
                 {typeMap[client.customerType]}
               </span>
             )}

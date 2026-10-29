@@ -200,8 +200,8 @@ export default function NewOrderPage() {
               <div
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
                 style={{
-                  background: i < step ? '#137333' : i === step ? '#1a73e8' : '#e8eaed',
-                  color: i <= step ? '#fff' : '#5f6368',
+                  background: i < step ? 'var(--google-green)' : i === step ? 'var(--google-blue)' : 'var(--google-border)',
+                  color: i <= step ? '#fff' : 'var(--google-text-secondary)',
                 }}
               >
                 {i < step ? '✓' : i + 1}
@@ -210,7 +210,7 @@ export default function NewOrderPage() {
                 className="whitespace-nowrap text-[9px] sm:text-[11px]"
                 style={{
                   fontWeight: i === step ? 600 : 400,
-                  color: i === step ? '#1a73e8' : i < step ? '#137333' : '#5f6368',
+                  color: i === step ? 'var(--google-blue)' : i < step ? 'var(--google-green)' : 'var(--google-text-secondary)',
                 }}
               >
                 {label}
@@ -219,7 +219,7 @@ export default function NewOrderPage() {
             {i < displaySteps.length - 1 && (
               <div
                 className="flex-1 h-0.5 mx-1 sm:mx-2 mb-3.5 sm:mb-[18px] transition-colors duration-300"
-                style={{ background: i < step ? '#137333' : '#e8eaed' }}
+                style={{ background: i < step ? 'var(--google-green)' : 'var(--google-border)' }}
               />
             )}
           </div>
@@ -355,7 +355,7 @@ export default function NewOrderPage() {
                     <div className="flex items-center gap-3">
                       <div
                         className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ border: `2px solid ${isSelected ? '#1a73e8' : '#9aa0a6'}` }}
+                        style={{ border: `2px solid ${isSelected ? 'var(--google-blue)' : 'var(--google-text-tertiary)'}` }}
                       >
                         {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-google-blue" />}
                       </div>

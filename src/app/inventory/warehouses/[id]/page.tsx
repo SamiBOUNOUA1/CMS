@@ -194,7 +194,7 @@ export default function WarehouseDetailPage() {
             )}
             <span
               className="inline-block mt-2 py-0.5 px-2.5 rounded-full text-[12px] font-medium"
-              style={{ background: warehouse.isActive ? '#e6f4ea' : '#f1f3f4', color: warehouse.isActive ? '#137333' : '#5f6368' }}
+              style={{ background: warehouse.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: warehouse.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)' }}
             >
               {warehouse.isActive ? 'Active' : 'Inactive'}
             </span>

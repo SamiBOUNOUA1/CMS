@@ -7,10 +7,10 @@ import { useT } from '@/lib/LanguageContext';
 import { format } from 'date-fns';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  pending:     { bg: '#f1f3f4', text: '#5f6368', dot: '#9aa0a6' },
-  in_progress: { bg: '#e8f0fe', text: '#1a73e8', dot: '#1a73e8' },
-  completed:   { bg: '#e6f4ea', text: '#137333', dot: '#34a853' },
-  skipped:     { bg: '#fef7e0', text: '#b45309', dot: '#f9ab00' },
+  pending:     { bg: 'var(--google-bg)', text: '#5f6368', dot: '#9aa0a6' },
+  in_progress: { bg: 'var(--google-blue-light)', text: '#1a73e8', dot: '#1a73e8' },
+  completed:   { bg: 'var(--google-green-light)', text: '#137333', dot: '#34a853' },
+  skipped:     { bg: 'var(--google-yellow-light)', text: '#b45309', dot: '#f9ab00' },
 };
 
 export default function OrderFlowPage() {
@@ -121,7 +121,7 @@ export default function OrderFlowPage() {
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
 
   if (loading) {
-    return <div className="p-8 text-[14px] text-[#9aa0a6]">Loading…</div>;
+    return <div className="p-8 text-[14px] text-g-text-3">Loading…</div>;
   }
 
   return (
@@ -138,13 +138,13 @@ export default function OrderFlowPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-[22px] font-medium text-[#202124] mb-1">{tf.title}</h2>
+        <h2 className="text-[22px] font-medium text-g-text mb-1">{tf.title}</h2>
         {order && (
-          <p className="text-sm text-[#5f6368] m-0">
+          <p className="text-sm text-g-text-2 m-0">
             {order.clientName}
             {order.eventDate && ` — ${format(new Date(order.eventDate), 'dd MMM yyyy')}`}
             {order.eventType && (
-              <span className="ml-2 text-[11px] py-0.5 px-2 rounded-xl bg-[#e8f0fe] text-google-blue font-medium">
+              <span className="ml-2 text-[11px] py-0.5 px-2 rounded-xl bg-google-blue-light text-google-blue font-medium">
                 {order.eventType}
               </span>
             )}
@@ -154,11 +154,11 @@ export default function OrderFlowPage() {
 
       {/* No flow state */}
       {steps.length === 0 && !showAddForm && (
-        <div className="bg-white border border-[#e8eaed] rounded-xl p-8 text-center">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="#dadce0" className="mb-3">
+        <div className="bg-g-surface border border-g-border rounded-xl p-8 text-center">
+          <svg width="48" height="48" viewBox="0 0 24 24" className="mb-3 text-g-border fill-current">
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
           </svg>
-          <p className="text-sm text-[#5f6368] mb-4">{tf.noFlow}</p>
+          <p className="text-sm text-g-text-2 mb-4">{tf.noFlow}</p>
           {perms.manage_flow_templates && (
             <button onClick={() => setShowAddForm(true)} className="py-2 px-5 bg-google-blue text-white border-none rounded-lg cursor-pointer text-sm font-medium">
               {tf.addStep}
@@ -169,12 +169,12 @@ export default function OrderFlowPage() {
 
       {/* Progress bar */}
       {steps.length > 0 && (
-        <div className="bg-white border border-[#e8eaed] rounded-xl p-4 mb-5">
+        <div className="bg-g-surface border border-g-border rounded-xl p-4 mb-5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-[#202124]">{tf.progress(completedCount, steps.length)}</span>
-            <span className="text-[13px] text-[#5f6368]">{progressPct}%</span>
+            <span className="text-sm font-medium text-g-text">{tf.progress(completedCount, steps.length)}</span>
+            <span className="text-[13px] text-g-text-2">{progressPct}%</span>
           </div>
-          <div className="h-2 bg-[#f1f3f4] rounded overflow-hidden">
+          <div className="h-2 bg-g-bg rounded overflow-hidden">
             <div
               className="h-full rounded transition-all duration-300 ease-out"
               style={{ width: `${progressPct}%`, background: progressPct === 100 ? '#34a853' : '#1a73e8' }}
@@ -189,7 +189,7 @@ export default function OrderFlowPage() {
           {steps.map((step: any, idx: number) => {
             const colors = STATUS_COLORS[step.status] || STATUS_COLORS.pending;
             return (
-              <div key={step._id} className="bg-white border border-[#e8eaed] rounded-xl p-3.5 flex gap-3.5 items-start">
+              <div key={step._id} className="bg-g-surface border border-g-border rounded-xl p-3.5 flex gap-3.5 items-start">
                 <div
                   className="min-w-[32px] h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ background: colors.bg }}
@@ -198,20 +198,20 @@ export default function OrderFlowPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap mb-1">
-                    <span className="text-[15px] font-medium text-[#202124]">{step.label}</span>
+                    <span className="text-[15px] font-medium text-g-text">{step.label}</span>
                     <span className="text-[11px] py-0.5 px-2 rounded-xl font-medium" style={{ background: colors.bg, color: colors.text }}>
                       {tf.status[step.status] || step.status}
                     </span>
                   </div>
                   {step.description && (
-                    <p className="text-[13px] text-[#5f6368] m-0">{step.description}</p>
+                    <p className="text-[13px] text-g-text-2 m-0">{step.description}</p>
                   )}
                   {perms.update_flow_status && (
                     <div className="mt-2.5">
                       <select
                         value={step.status}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleStatusChange(step._id, e.target.value)}
-                        className="py-1.5 px-2.5 border border-[#dadce0] rounded-lg text-[13px] bg-white cursor-pointer outline-none"
+                        className="py-1.5 px-2.5 border border-g-border rounded-lg text-[13px] bg-g-surface cursor-pointer outline-none"
                         style={{ color: colors.text }}
                       >
                         {['pending', 'in_progress', 'completed', 'skipped'].map(s => (
@@ -224,13 +224,13 @@ export default function OrderFlowPage() {
                 {perms.manage_flow_templates && (
                   <div className="flex gap-1.5 flex-shrink-0">
                     <button onClick={() => handleMove(steps, idx, -1)} disabled={idx === 0}
-                      className="py-1 px-2 bg-none border border-[#dadce0] rounded-md cursor-pointer text-[#5f6368] text-xs"
+                      className="py-1 px-2 bg-none border border-g-border rounded-md cursor-pointer text-g-text-2 text-xs"
                       style={{ opacity: idx === 0 ? 0.4 : 1 }} title={tf.moveUp}>↑</button>
                     <button onClick={() => handleMove(steps, idx, 1)} disabled={idx === steps.length - 1}
-                      className="py-1 px-2 bg-none border border-[#dadce0] rounded-md cursor-pointer text-[#5f6368] text-xs"
+                      className="py-1 px-2 bg-none border border-g-border rounded-md cursor-pointer text-g-text-2 text-xs"
                       style={{ opacity: idx === steps.length - 1 ? 0.4 : 1 }} title={tf.moveDown}>↓</button>
                     <button onClick={() => handleRemoveStep(step._id)}
-                      className="py-1 px-2 bg-none border border-[#f5c6c4] rounded-md cursor-pointer text-google-red text-xs" title={tf.deleteStep}>
+                      className="py-1 px-2 bg-none border border-g-border rounded-md cursor-pointer text-google-red text-xs" title={tf.deleteStep}>
                       ✕
                     </button>
                   </div>
@@ -243,22 +243,22 @@ export default function OrderFlowPage() {
 
       {/* Add step button */}
       {perms.manage_flow_templates && steps.length > 0 && !showAddForm && (
-        <button onClick={() => setShowAddForm(true)} className="flex items-center gap-2 w-full justify-center py-2.5 px-[18px] bg-white border border-dashed border-[#dadce0] rounded-xl cursor-pointer text-sm text-google-blue">
+        <button onClick={() => setShowAddForm(true)} className="flex items-center gap-2 w-full justify-center py-2.5 px-[18px] bg-g-surface border border-dashed border-g-border rounded-xl cursor-pointer text-sm text-google-blue">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
           {tf.addStep}
         </button>
       )}
 
       {perms.manage_flow_templates && showAddForm && (
-        <div className="bg-white border border-[#e8eaed] rounded-xl p-5">
-          <p className="text-[13px] font-medium uppercase tracking-wide text-[#5f6368] mb-3">{tf.addStep}</p>
+        <div className="bg-g-surface border border-g-border rounded-xl p-5">
+          <p className="text-[13px] font-medium uppercase tracking-wide text-g-text-2 mb-3">{tf.addStep}</p>
           <div className="flex flex-col gap-2.5">
             <input
               type="text"
               placeholder={tf.stepLabelPlaceholder}
               value={newStepLabel}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewStepLabel(e.target.value)}
-              className="py-2 px-3 border border-[#dadce0] rounded-lg text-sm bg-white w-full outline-none box-border"
+              className="py-2 px-3 border border-g-border rounded-lg text-sm bg-g-surface w-full outline-none box-border"
               autoFocus
             />
             <input
@@ -266,7 +266,7 @@ export default function OrderFlowPage() {
               placeholder={tf.stepDescriptionPlaceholder}
               value={newStepDesc}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewStepDesc(e.target.value)}
-              className="py-2 px-3 border border-[#dadce0] rounded-lg text-sm bg-white w-full outline-none box-border"
+              className="py-2 px-3 border border-g-border rounded-lg text-sm bg-g-surface w-full outline-none box-border"
             />
             <div className="flex gap-2.5">
               <button
@@ -279,7 +279,7 @@ export default function OrderFlowPage() {
               </button>
               <button
                 onClick={() => { setShowAddForm(false); setNewStepLabel(''); setNewStepDesc(''); }}
-                className="py-2 px-[18px] bg-none border border-[#dadce0] rounded-lg cursor-pointer text-sm text-[#5f6368]"
+                className="py-2 px-[18px] bg-none border border-g-border rounded-lg cursor-pointer text-sm text-g-text-2"
               >
                 Cancel
               </button>

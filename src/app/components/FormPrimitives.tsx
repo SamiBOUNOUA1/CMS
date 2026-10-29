@@ -73,7 +73,7 @@ export function FormInput({ error, className, ...props }: FormInputProps) {
   return (
     <input
       {...props}
-      className={`w-full py-2.5 px-3.5 rounded-lg border text-sm text-g-text bg-white outline-none font-[Roboto,Arial] transition-[border-color] duration-150 box-border focus:border-google-blue ${error ? 'border-google-red' : 'border-g-border'} ${className ?? ''}`}
+      className={`w-full py-2.5 px-3.5 rounded-lg border text-sm text-g-text bg-g-surface outline-none font-[Roboto,Arial] transition-[border-color] duration-150 box-border focus:border-google-blue ${error ? 'border-google-red' : 'border-g-border'} ${className ?? ''}`}
     />
   );
 }
@@ -87,7 +87,7 @@ export function FormSelect({ children, className, style, ...props }: FormSelectP
     <select
       {...props}
       style={style}
-      className={`w-full py-2.5 px-3.5 rounded-lg border border-g-border text-sm text-g-text bg-white outline-none font-[Roboto,Arial] cursor-pointer box-border appearance-auto focus:border-google-blue ${className ?? ''}`}
+      className={`w-full py-2.5 px-3.5 rounded-lg border border-g-border text-sm text-g-text bg-g-surface outline-none font-[Roboto,Arial] cursor-pointer box-border appearance-auto focus:border-google-blue ${className ?? ''}`}
     >
       {children}
     </select>
@@ -101,7 +101,7 @@ export function FormTextarea({ rows = 3, className, ...props }: FormTextareaProp
     <textarea
       {...props}
       rows={rows}
-      className={`w-full py-2.5 px-3.5 rounded-lg border border-g-border text-sm text-g-text bg-white outline-none font-[Roboto,Arial] resize-y box-border focus:border-google-blue ${className ?? ''}`}
+      className={`w-full py-2.5 px-3.5 rounded-lg border border-g-border text-sm text-g-text bg-g-surface outline-none font-[Roboto,Arial] resize-y box-border focus:border-google-blue ${className ?? ''}`}
     />
   );
 }

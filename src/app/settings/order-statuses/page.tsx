@@ -162,7 +162,7 @@ export default function OrderStatusesSettingsPage() {
           <div className="p-10 text-center text-g-text-2 text-sm">{ts.empty}</div>
         ) : (
           statuses.map((status, i) => (
-            <div key={status._id} className="flex items-center" style={{ padding: '14px 20px', gap: 12, borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}>
+            <div key={status._id} className="flex items-center" style={{ padding: '14px 20px', gap: 12, borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}>
               <div style={{ flex: 2 }} className="flex items-center gap-2.5">
                 {/* Dynamic color dot — keep inline */}
                 <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ background: status.color }} />
@@ -175,13 +175,13 @@ export default function OrderStatusesSettingsPage() {
               </div>
               <div style={{ flex: 2, textAlign: 'center' }}>
                 {status.triggerEvent ? (
-                  <span className="bg-[#e6f4ea] text-[#137333] rounded-full py-1 px-3 text-xs font-semibold">
+                  <span className="bg-google-green-light text-google-green rounded-full py-1 px-3 text-xs font-semibold">
                     ✓ {ts.triggerEvent}
                   </span>
                 ) : (
                   <button
                     onClick={() => handleSetTrigger(status)}
-                    className="text-xs text-google-blue border border-g-border rounded-full py-1 px-3 bg-white cursor-pointer"
+                    className="text-xs text-google-blue border border-g-border rounded-full py-1 px-3 bg-g-surface cursor-pointer"
                    
                   >
                     Set as trigger
@@ -218,5 +218,5 @@ export default function OrderStatusesSettingsPage() {
   );
 }
 
-const inputCls = 'w-full py-2 px-3 border border-g-border rounded-lg text-sm outline-none text-g-text bg-white box-border';
+const inputCls = 'w-full py-2 px-3 border border-g-border rounded-lg text-sm outline-none text-g-text bg-g-surface box-border';
 const labelCls = 'text-xs font-medium text-g-text-2 block mb-[5px]';

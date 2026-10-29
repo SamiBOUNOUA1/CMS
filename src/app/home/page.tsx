@@ -213,7 +213,7 @@ export default function HomePage() {
                 onClick={() => handleToggleComplete(task._id, task.completed)}
                 className="w-5 h-5 rounded flex-shrink-0 p-0 flex items-center justify-center cursor-pointer"
                 style={{
-                  border: `2px solid ${task.completed ? '#137333' : '#5f6368'}`,
+                  border: `2px solid ${task.completed ? 'var(--google-green)' : 'var(--google-text-secondary)'}`,
                   background: task.completed ? '#137333' : 'transparent',
                 }}
                 title={task.completed ? tt.statusCompleted : tt.statusPending}

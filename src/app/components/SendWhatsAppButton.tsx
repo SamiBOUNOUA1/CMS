@@ -77,12 +77,12 @@ export default function SendWhatsAppButton({ endpoint, defaultPhone = '', button
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: 14, padding: 24, width: '100%', maxWidth: 380, fontFamily: "'Google Sans', Arial", boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}
+            style={{ background: 'var(--google-surface)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 380, fontFamily: "'Google Sans', Arial", boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}
           >
-            <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 500, color: '#202124' }}>{tw.dialogTitle}</h3>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#5f6368' }}>{tw.dialogIntro}</p>
+            <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 500, color: 'var(--google-text-primary)' }}>{tw.dialogTitle}</h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--google-text-secondary)' }}>{tw.dialogIntro}</p>
 
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em', color: '#5f6368', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--google-text-secondary)', marginBottom: 6 }}>
               {tw.phoneLabel}
             </label>
             <input
@@ -91,14 +91,14 @@ export default function SendWhatsAppButton({ endpoint, defaultPhone = '', button
               onChange={e => setPhone(e.target.value)}
               placeholder={tw.phonePlaceholder}
               autoFocus
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #dadce0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--google-border)', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'var(--google-surface)', color: 'var(--google-text-primary)' }}
             />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
               <button
                 onClick={() => setOpen(false)}
                 disabled={sending}
-                style={{ background: 'transparent', color: '#5f6368', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+                style={{ background: 'transparent', color: 'var(--google-text-secondary)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
               >
                 {tw.cancel}
               </button>

@@ -57,7 +57,7 @@ export default function ManagerEventDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center p-20">
-        <div className="w-8 h-8 rounded-full border-[3px] border-[#e8eaed] border-t-google-blue animate-spin" />
+        <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
       </div>
     );
   }
@@ -73,8 +73,8 @@ export default function ManagerEventDetailPage() {
 
   const statusMap = Object.fromEntries(statuses.map((s: any) => [s.name, s]));
   const sc = statusMap[order.status];
-  const statusBg = sc?.color ? sc.color + '22' : '#f1f3f4';
-  const statusFg = sc?.color || '#5f6368';
+  const statusBg = sc?.color ? sc.color + '22' : 'var(--google-bg)';
+  const statusFg = sc?.color || 'var(--google-text-secondary)';
   const myEntry = (order.assignees || []).find((a: any) => String(a.user) === String(userId));
   const myRoleLabel = myEntry ? (ASSIGNEE_ROLE_LABELS[myEntry.role] || myEntry.role) : null;
   const canSeeMaterials = perms.manage_event_materials || perms.check_event_materials;
@@ -97,7 +97,7 @@ export default function ManagerEventDetailPage() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {myRoleLabel && (
-              <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold bg-[#e8f0fe] text-google-blue">
+              <span className="rounded-full py-1.5 px-3.5 text-[13px] font-semibold bg-google-blue-light text-google-blue">
                 {myRoleLabel}
               </span>
             )}

@@ -10,10 +10,10 @@ const CATEGORIES = ['vegetables', 'dairy', 'meat', 'dry', 'spices', 'beverages',
 const ADJ_TYPES = ['purchase', 'usage', 'write-off', 'return'] as const;
 
 const ADJ_COLORS: Record<string, { bg: string; color: string }> = {
-  purchase:   { bg: '#e6f4ea', color: '#137333' },
-  usage:      { bg: '#fce8e6', color: '#d93025' },
+  purchase:   { bg: 'var(--google-green-light)', color: '#137333' },
+  usage:      { bg: 'var(--google-red-light)', color: '#d93025' },
   'write-off':{ bg: '#fff3e0', color: '#b06000' },
-  return:     { bg: '#e8f0fe', color: '#1a73e8' },
+  return:     { bg: 'var(--google-blue-light)', color: '#1a73e8' },
 };
 
 export default function KitchenStockItemPage({ params }: { params: { id: string } }) {
@@ -125,7 +125,7 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   if (loading) {
-    return <div style={{ padding: 48, textAlign: 'center', color: '#5f6368' }}>{(t as any).kitchenPage.stock.loading}</div>;
+    return <div style={{ padding: 48, textAlign: 'center', color: 'var(--google-text-secondary)' }}>{(t as any).kitchenPage.stock.loading}</div>;
   }
 
   return (
@@ -137,19 +137,19 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#202124', margin: 0 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--google-text-primary)', margin: 0 }}>
           {isNew ? tk.newTitle : item.name}
         </h1>
         {canManage && !isNew && (
           <div style={{ display: 'flex', gap: 10 }}>
             {editing ? (
               <>
-                <button onClick={() => { setEditing(false); }} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.cancel}</button>
+                <button onClick={() => { setEditing(false); }} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.cancel}</button>
                 <button onClick={handleSave} disabled={saving} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: ACCENT, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{saving ? tk.saving : tk.save}</button>
               </>
             ) : (
               <>
-                <button onClick={() => setEditing(true)} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.edit}</button>
+                <button onClick={() => setEditing(true)} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.edit}</button>
                 <button onClick={() => setDeleteDialog(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#d93025', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.delete}</button>
               </>
             )}
@@ -162,13 +162,13 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
 
       {/* Low stock warning */}
       {isLow && (
-        <div style={{ background: '#fce8e6', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#d93025', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ background: 'var(--google-red-light)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#d93025', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
           ⚠ {tk.lowStockWarning}
         </div>
       )}
 
       {/* Info Card */}
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
+      <div style={{ background: 'var(--google-surface)', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px 24px' }}>
           <Field label={tk.fields.name}>
             <FormInput value={item.name} onChange={e => setItem((p: any) => ({ ...p, name: e.target.value }))} disabled={!editing} />
@@ -196,7 +196,7 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
         </div>
         {editing && (
           <div style={{ marginTop: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: '#202124' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--google-text-primary)' }}>
               <input type="checkbox" checked={item.isActive} onChange={e => setItem((p: any) => ({ ...p, isActive: e.target.checked }))} />
               {tk.fields.isActive}
             </label>
@@ -206,9 +206,9 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
 
       {/* Stock Adjustment Section */}
       {!isNew && canManage && (
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
+        <div style={{ background: 'var(--google-surface)', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showAdjForm ? 20 : 0 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#202124' }}>{tk.adjustStock}</h3>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--google-text-primary)' }}>{tk.adjustStock}</h3>
             <button
               onClick={() => setShowAdjForm(v => !v)}
               style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${ACCENT}`, background: showAdjForm ? ACCENT : '#fff', color: showAdjForm ? '#fff' : ACCENT, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
@@ -241,25 +241,25 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
 
       {/* Adjustment History */}
       {!isNew && (
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px' }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#202124' }}>{tk.adjustmentHistory}</h3>
+        <div style={{ background: 'var(--google-surface)', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px' }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: 'var(--google-text-primary)' }}>{tk.adjustmentHistory}</h3>
           {adjustments.length === 0 ? (
-            <p style={{ color: '#5f6368', fontSize: 14, margin: 0 }}>{tk.noAdjustments}</p>
+            <p style={{ color: 'var(--google-text-secondary)', fontSize: 14, margin: 0 }}>{tk.noAdjustments}</p>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #e8eaed' }}>
+                <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
                   {[tk.adjTable.date, tk.adjTable.type, tk.adjTable.qty, tk.adjTable.by, tk.adjTable.notes].map((h, i) => (
-                    <th key={i} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#5f6368', textTransform: 'uppercase' }}>{h}</th>
+                    <th key={i} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--google-text-secondary)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {adjustments.map((adj: any) => {
-                  const cfg = ADJ_COLORS[adj.adjustmentType] ?? { bg: '#f1f3f4', color: '#5f6368' };
+                  const cfg = ADJ_COLORS[adj.adjustmentType] ?? { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' };
                   return (
-                    <tr key={adj._id} style={{ borderBottom: '1px solid #f1f3f4' }}>
-                      <td style={{ padding: '10px 12px', color: '#5f6368', fontSize: 13 }}>{fmtDate(adj.createdAt)}</td>
+                    <tr key={adj._id} style={{ borderBottom: '1px solid var(--google-border)' }}>
+                      <td style={{ padding: '10px 12px', color: 'var(--google-text-secondary)', fontSize: 13 }}>{fmtDate(adj.createdAt)}</td>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{ background: cfg.bg, color: cfg.color, borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
                           {tAdj.types[adj.adjustmentType as keyof typeof tAdj.types] || adj.adjustmentType}
@@ -268,8 +268,8 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
                       <td style={{ padding: '10px 12px', fontWeight: 700, color: adj.quantity >= 0 ? '#137333' : '#d93025' }}>
                         {adj.quantity > 0 ? '+' : ''}{adj.quantity} {item.unit}
                       </td>
-                      <td style={{ padding: '10px 12px', color: '#5f6368', fontSize: 13 }}>{adj.performedBy?.name || '—'}</td>
-                      <td style={{ padding: '10px 12px', color: '#5f6368', fontSize: 13 }}>{adj.notes || '—'}</td>
+                      <td style={{ padding: '10px 12px', color: 'var(--google-text-secondary)', fontSize: 13 }}>{adj.performedBy?.name || '—'}</td>
+                      <td style={{ padding: '10px 12px', color: 'var(--google-text-secondary)', fontSize: 13 }}>{adj.notes || '—'}</td>
                     </tr>
                   );
                 })}
@@ -282,11 +282,11 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
       {/* Delete Dialog */}
       {deleteDialog && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: '#202124' }}>{tk.deleteDialog.title}</div>
-            <div style={{ color: '#5f6368', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: 'var(--google-text-primary)' }}>{tk.deleteDialog.title}</div>
+            <div style={{ color: 'var(--google-text-secondary)', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteDialog(false)} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.cancel}</button>
+              <button onClick={() => setDeleteDialog(false)} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.cancel}</button>
               <button onClick={handleDelete} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#d93025', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.delete}</button>
             </div>
           </div>

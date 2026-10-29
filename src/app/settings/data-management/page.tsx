@@ -94,7 +94,7 @@ const EXPORT_GROUPS: ExportGroup[] = [
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="rounded-xl border border-[#dadce0] bg-white"
+      className="rounded-xl border border-g-border bg-g-surface"
       style={{ padding: '24px 28px' }}
     >
       {children}
@@ -106,14 +106,14 @@ function SectionTitle({ icon, title, subtitle }: { icon: React.ReactNode; title:
   return (
     <div className="flex items-start gap-3 mb-5">
       <span className="flex items-center justify-center rounded-lg flex-shrink-0"
-        style={{ width: 36, height: 36, background: '#e8f0fe', color: '#1a73e8' }}>
+        style={{ width: 36, height: 36, background: 'var(--google-blue-light)', color: '#1a73e8' }}>
         {icon}
       </span>
       <div>
-        <h2 className="text-base font-semibold text-[#202124] m-0" style={{ fontFamily: "'Google Sans'" }}>
+        <h2 className="text-base font-semibold text-g-text m-0" style={{ fontFamily: "'Google Sans'" }}>
           {title}
         </h2>
-        <p className="text-sm text-[#5f6368] m-0 mt-0.5" style={{ fontFamily: "'Google Sans'" }}>
+        <p className="text-sm text-g-text-2 m-0 mt-0.5" style={{ fontFamily: "'Google Sans'" }}>
           {subtitle}
         </p>
       </div>
@@ -283,7 +283,7 @@ export default function DataManagementPage() {
   if (permLoading) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
-        <span className="text-sm text-[#5f6368]" style={{ fontFamily: "'Google Sans'" }}>Loading…</span>
+        <span className="text-sm text-g-text-2" style={{ fontFamily: "'Google Sans'" }}>Loading…</span>
       </div>
     );
   }
@@ -291,7 +291,7 @@ export default function DataManagementPage() {
   if (!perms.manage_data) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
-        <span className="text-sm text-[#d93025]" style={{ fontFamily: "'Google Sans'" }}>Access denied.</span>
+        <span className="text-sm text-google-red" style={{ fontFamily: "'Google Sans'" }}>Access denied.</span>
       </div>
     );
   }
@@ -301,10 +301,10 @@ export default function DataManagementPage() {
     <div style={{ maxWidth: 780 }}>
       {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-[22px] font-medium text-[#202124] m-0" style={{ fontFamily: "'Google Sans'" }}>
+        <h1 className="text-[22px] font-medium text-g-text m-0" style={{ fontFamily: "'Google Sans'" }}>
           {td.title}
         </h1>
-        <p className="text-sm text-[#5f6368] mt-1 m-0" style={{ fontFamily: "'Google Sans'" }}>
+        <p className="text-sm text-g-text-2 mt-1 m-0" style={{ fontFamily: "'Google Sans'" }}>
           {td.subtitle}
         </p>
       </div>
@@ -322,22 +322,22 @@ export default function DataManagementPage() {
           {/* Group selection */}
           <div className="mb-4">
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-[11px] font-semibold text-[#5f6368] uppercase tracking-[0.05em]"
+              <span className="text-[11px] font-semibold text-g-text-2 uppercase tracking-[0.05em]"
                 style={{ fontFamily: "'Google Sans'" }}>
                 Data groups
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={selectAllGroups}
-                  className="text-[12px] text-[#1a73e8] border-none bg-transparent cursor-pointer p-0 hover:underline"
+                  className="text-[12px] text-google-blue border-none bg-transparent cursor-pointer p-0 hover:underline"
                   style={{ fontFamily: "'Google Sans'" }}
                 >
                   {td.selectAll}
                 </button>
-                <span className="text-[#dadce0]">·</span>
+                <span className="text-g-text-3">·</span>
                 <button
                   onClick={deselectAllGroups}
-                  className="text-[12px] text-[#1a73e8] border-none bg-transparent cursor-pointer p-0 hover:underline"
+                  className="text-[12px] text-google-blue border-none bg-transparent cursor-pointer p-0 hover:underline"
                   style={{ fontFamily: "'Google Sans'" }}
                 >
                   {td.deselectAll}
@@ -354,8 +354,8 @@ export default function DataManagementPage() {
                     className="flex items-center gap-2.5 cursor-pointer rounded-lg border transition-colors duration-[120ms]"
                     style={{
                       padding: '10px 14px',
-                      borderColor: checked ? '#1a73e8' : '#dadce0',
-                      background: checked ? '#f0f4ff' : 'transparent',
+                      borderColor: checked ? 'var(--google-blue)' : 'var(--google-border)',
+                      background: checked ? 'var(--google-blue-light)' : 'transparent',
                     }}
                   >
                     <input
@@ -367,7 +367,7 @@ export default function DataManagementPage() {
                     <span className="text-sm font-medium"
                       style={{
                         fontFamily: "'Google Sans'",
-                        color: checked ? '#1a73e8' : '#3c4043',
+                        color: checked ? 'var(--google-blue)' : 'var(--google-text-primary)',
                       }}>
                       {td.groups[group.labelKey as keyof typeof td.groups]}
                     </span>
@@ -377,8 +377,8 @@ export default function DataManagementPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-[#f1f3f4]">
-            <span className="text-xs text-[#5f6368]" style={{ fontFamily: "'Google Sans'" }}>
+          <div className="flex items-center justify-between pt-3 border-t border-g-border">
+            <span className="text-xs text-g-text-2" style={{ fontFamily: "'Google Sans'" }}>
               {selectedGroups.size} of {EXPORT_GROUPS.length} groups selected
             </span>
             <button
@@ -386,8 +386,8 @@ export default function DataManagementPage() {
               disabled={exporting || selectedGroups.size === 0}
               className="flex items-center gap-2 rounded-lg text-sm font-medium text-white border-none cursor-pointer"
               style={{
-                background: exporting || selectedGroups.size === 0 ? '#dadce0' : '#1a73e8',
-                color: exporting || selectedGroups.size === 0 ? '#80868b' : 'white',
+                background: exporting || selectedGroups.size === 0 ? 'var(--google-border)' : 'var(--google-blue)',
+                color: exporting || selectedGroups.size === 0 ? 'var(--google-text-secondary)' : 'white',
                 padding: '9px 18px',
                 fontFamily: "'Google Sans'",
                 cursor: exporting || selectedGroups.size === 0 ? 'not-allowed' : 'pointer',
@@ -412,7 +412,7 @@ export default function DataManagementPage() {
             <>
               {importError && (
                 <div className="flex items-center gap-2 rounded-lg mb-4 text-sm"
-                  style={{ padding: '10px 14px', background: '#fce8e6', color: '#d93025', fontFamily: "'Google Sans'" }}>
+                  style={{ padding: '10px 14px', background: 'var(--google-red-light)', color: 'var(--google-red)', fontFamily: "'Google Sans'" }}>
                   <IconWarning />
                   {importError}
                 </div>
@@ -425,16 +425,16 @@ export default function DataManagementPage() {
                 className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed cursor-pointer transition-colors duration-[150ms]"
                 style={{
                   padding: '40px 20px',
-                  borderColor: dragging ? '#1a73e8' : '#dadce0',
-                  background: dragging ? '#f0f4ff' : '#fafafa',
+                  borderColor: dragging ? 'var(--google-blue)' : 'var(--google-border)',
+                  background: dragging ? 'var(--google-blue-light)' : 'var(--google-bg)',
                 }}
               >
-                <span style={{ color: '#9aa0a6' }}><IconFile /></span>
-                <p className="text-sm text-[#5f6368] mt-3 mb-1" style={{ fontFamily: "'Google Sans'" }}>
+                <span style={{ color: 'var(--google-text-tertiary)' }}><IconFile /></span>
+                <p className="text-sm text-g-text-2 mt-3 mb-1" style={{ fontFamily: "'Google Sans'" }}>
                   {td.importDropzone}{' '}
-                  <span className="text-[#1a73e8] font-medium">{td.importBrowse}</span>
+                  <span className="text-google-blue font-medium">{td.importBrowse}</span>
                 </p>
-                <p className="text-xs text-[#9aa0a6] m-0" style={{ fontFamily: "'Google Sans'" }}>
+                <p className="text-xs text-g-text-3 m-0" style={{ fontFamily: "'Google Sans'" }}>
                   {td.importJsonOnly}
                 </p>
                 <input
@@ -451,11 +451,11 @@ export default function DataManagementPage() {
           {/* ── State: validating ── */}
           {importState === 'validating' && (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
-              <span className="text-[#1a73e8]"><IconSpinner /></span>
-              <p className="text-sm text-[#5f6368] m-0" style={{ fontFamily: "'Google Sans'" }}>
+              <span className="text-google-blue"><IconSpinner /></span>
+              <p className="text-sm text-g-text-2 m-0" style={{ fontFamily: "'Google Sans'" }}>
                 {td.validating}
               </p>
-              <p className="text-xs text-[#9aa0a6] m-0" style={{ fontFamily: "'Google Sans'" }}>
+              <p className="text-xs text-g-text-3 m-0" style={{ fontFamily: "'Google Sans'" }}>
                 {fileName}
               </p>
             </div>
@@ -466,10 +466,10 @@ export default function DataManagementPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm font-medium text-[#202124] m-0" style={{ fontFamily: "'Google Sans'" }}>
+                  <p className="text-sm font-medium text-g-text m-0" style={{ fontFamily: "'Google Sans'" }}>
                     {td.review.title}
                   </p>
-                  <p className="text-xs text-[#5f6368] mt-0.5 m-0" style={{ fontFamily: "'Google Sans'" }}>
+                  <p className="text-xs text-g-text-2 mt-0.5 m-0" style={{ fontFamily: "'Google Sans'" }}>
                     {fileName}
                   </p>
                 </div>
@@ -478,24 +478,24 @@ export default function DataManagementPage() {
               {/* Warnings */}
               {validation.warnings.length > 0 && (
                 <div className="rounded-lg mb-4 text-sm"
-                  style={{ padding: '12px 14px', background: '#fef7e0', color: '#f9ab00', fontFamily: "'Google Sans'" }}>
+                  style={{ padding: '12px 14px', background: 'var(--google-yellow-light)', color: 'var(--google-yellow)', fontFamily: "'Google Sans'" }}>
                   <p className="font-medium m-0 mb-1 flex items-center gap-1.5">
                     <IconWarning /> {td.review.warnings}
                   </p>
                   {validation.warnings.map((w, i) => (
-                    <p key={i} className="m-0 text-xs text-[#202124]">{w}</p>
+                    <p key={i} className="m-0 text-xs text-g-text">{w}</p>
                   ))}
                 </div>
               )}
 
               {/* Validation table */}
-              <div className="rounded-lg border border-[#dadce0] overflow-hidden mb-5">
+              <div className="rounded-lg border border-g-border overflow-hidden mb-5">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr style={{ background: '#f8f9fa' }}>
+                    <tr style={{ background: 'var(--google-bg)' }}>
                       {[td.review.colCollection, td.review.colNew, td.review.colConflicts, td.review.colAction].map(h => (
-                        <th key={h} className="text-left text-[11px] font-semibold text-[#5f6368] uppercase tracking-[0.04em]"
-                          style={{ padding: '10px 14px', fontFamily: "'Google Sans'", borderBottom: '1px solid #dadce0' }}>
+                        <th key={h} className="text-left text-[11px] font-semibold text-g-text-2 uppercase tracking-[0.04em]"
+                          style={{ padding: '10px 14px', fontFamily: "'Google Sans'", borderBottom: '1px solid var(--google-border)' }}>
                           {h}
                         </th>
                       ))}
@@ -506,25 +506,25 @@ export default function DataManagementPage() {
                       const newCount = info.total - info.conflicts;
                       const hasConflicts = info.conflicts > 0;
                       return (
-                        <tr key={key} style={{ borderTop: idx > 0 ? '1px solid #f1f3f4' : 'none' }}>
-                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: '#202124', fontWeight: 500 }}>
+                        <tr key={key} style={{ borderTop: idx > 0 ? '1px solid var(--google-border)' : 'none' }}>
+                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: 'var(--google-text-primary)', fontWeight: 500 }}>
                             {td.collections[key as keyof typeof td.collections] ?? key}
                           </td>
-                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: newCount > 0 ? '#137333' : '#9aa0a6' }}>
+                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: newCount > 0 ? 'var(--google-green)' : 'var(--google-text-tertiary)' }}>
                             {newCount}
                           </td>
-                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: hasConflicts ? '#f9ab00' : '#9aa0a6' }}>
+                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: hasConflicts ? 'var(--google-yellow)' : 'var(--google-text-tertiary)' }}>
                             {info.conflicts}
                           </td>
-                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: '#5f6368', fontSize: 12 }}>
+                          <td style={{ padding: '10px 14px', fontFamily: "'Google Sans'", color: 'var(--google-text-secondary)', fontSize: 12 }}>
                             {newCount > 0 && (
-                              <span className="flex items-center gap-1 text-[#137333]">
+                              <span className="flex items-center gap-1 text-google-green">
                                 <IconCheck /> {td.review.actionInsert}
                               </span>
                             )}
                             {hasConflicts && (
                               <span className="flex items-center gap-1 mt-0.5"
-                                style={{ color: conflictMode === 'overwrite' ? '#d93025' : '#9aa0a6' }}>
+                                style={{ color: conflictMode === 'overwrite' ? 'var(--google-red)' : 'var(--google-text-tertiary)' }}>
                                 {conflictMode === 'overwrite' ? td.review.actionOverwrite : td.review.actionSkip}
                               </span>
                             )}
@@ -538,8 +538,8 @@ export default function DataManagementPage() {
 
               {/* Conflict resolution */}
               {Object.values(validation.collections).some(c => c.conflicts > 0) && (
-                <div className="rounded-lg border border-[#dadce0] mb-5" style={{ padding: '14px 16px' }}>
-                  <p className="text-xs font-semibold text-[#5f6368] uppercase tracking-[0.04em] m-0 mb-3"
+                <div className="rounded-lg border border-g-border mb-5" style={{ padding: '14px 16px' }}>
+                  <p className="text-xs font-semibold text-g-text-2 uppercase tracking-[0.04em] m-0 mb-3"
                     style={{ fontFamily: "'Google Sans'" }}>
                     {td.review.conflictMode}
                   </p>
@@ -554,7 +554,7 @@ export default function DataManagementPage() {
                           onChange={() => setConflictMode(mode)}
                           className="mt-0.5 accent-[#1a73e8]"
                         />
-                        <span className="text-sm text-[#202124]" style={{ fontFamily: "'Google Sans'" }}>
+                        <span className="text-sm text-g-text" style={{ fontFamily: "'Google Sans'" }}>
                           {mode === 'skip' ? td.review.modeSkip : td.review.modeOverwrite}
                         </span>
                       </label>
@@ -565,7 +565,7 @@ export default function DataManagementPage() {
 
               {importError && (
                 <div className="flex items-center gap-2 rounded-lg mb-4 text-sm"
-                  style={{ padding: '10px 14px', background: '#fce8e6', color: '#d93025', fontFamily: "'Google Sans'" }}>
+                  style={{ padding: '10px 14px', background: 'var(--google-red-light)', color: 'var(--google-red)', fontFamily: "'Google Sans'" }}>
                   <IconWarning />
                   {importError}
                 </div>
@@ -579,9 +579,9 @@ export default function DataManagementPage() {
                   style={{
                     padding: '9px 18px',
                     fontFamily: "'Google Sans'",
-                    color: '#1a73e8',
+                    color: 'var(--google-blue)',
                     background: 'transparent',
-                    borderColor: '#dadce0',
+                    borderColor: 'var(--google-border)',
                   }}
                 >
                   {td.review.cancel}
@@ -591,7 +591,7 @@ export default function DataManagementPage() {
                   className="flex items-center gap-2 rounded-lg text-sm font-medium text-white border-none cursor-pointer"
                   style={{
                     padding: '9px 18px',
-                    background: '#1a73e8',
+                    background: 'var(--google-blue)',
                     fontFamily: "'Google Sans'",
                   }}
                 >
@@ -605,8 +605,8 @@ export default function DataManagementPage() {
           {/* ── State: importing ── */}
           {importState === 'importing' && (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
-              <span className="text-[#1a73e8]"><IconSpinner /></span>
-              <p className="text-sm text-[#5f6368] m-0" style={{ fontFamily: "'Google Sans'" }}>
+              <span className="text-google-blue"><IconSpinner /></span>
+              <p className="text-sm text-g-text-2 m-0" style={{ fontFamily: "'Google Sans'" }}>
                 {td.importing}
               </p>
             </div>
@@ -616,21 +616,21 @@ export default function DataManagementPage() {
           {importState === 'done' && importResult && (
             <div>
               <div className="flex items-center gap-3 rounded-lg mb-5"
-                style={{ padding: '14px 16px', background: '#e6f4ea' }}>
+                style={{ padding: '14px 16px', background: 'var(--google-green-light)' }}>
                 <span className="flex items-center justify-center rounded-full"
-                  style={{ width: 32, height: 32, background: '#137333', color: 'white', flexShrink: 0 }}>
+                  style={{ width: 32, height: 32, background: 'var(--google-green)', color: 'white', flexShrink: 0 }}>
                   <IconCheck />
                 </span>
-                <p className="text-sm font-medium text-[#137333] m-0" style={{ fontFamily: "'Google Sans'" }}>
+                <p className="text-sm font-medium text-google-green m-0" style={{ fontFamily: "'Google Sans'" }}>
                   {td.done.title}
                 </p>
               </div>
 
               <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 {[
-                  { label: td.done.inserted(importResult.inserted), color: '#137333', bg: '#e6f4ea' },
-                  { label: td.done.updated(importResult.updated), color: '#1a73e8', bg: '#e8f0fe' },
-                  { label: td.done.skipped(importResult.skipped), color: '#5f6368', bg: '#f1f3f4' },
+                  { label: td.done.inserted(importResult.inserted), color: 'var(--google-green)', bg: 'var(--google-green-light)' },
+                  { label: td.done.updated(importResult.updated), color: 'var(--google-blue)', bg: 'var(--google-blue-light)' },
+                  { label: td.done.skipped(importResult.skipped), color: 'var(--google-text-secondary)', bg: 'var(--google-bg)' },
                 ].map((stat, i) => (
                   <div key={i} className="rounded-lg text-center"
                     style={{ padding: '12px 8px', background: stat.bg }}>
@@ -643,10 +643,10 @@ export default function DataManagementPage() {
 
               {importResult.errors.length > 0 && (
                 <div className="rounded-lg mb-5 text-sm"
-                  style={{ padding: '12px 14px', background: '#fce8e6', fontFamily: "'Google Sans'" }}>
-                  <p className="font-medium m-0 mb-1 text-[#d93025]">{td.done.errors}</p>
+                  style={{ padding: '12px 14px', background: 'var(--google-red-light)', fontFamily: "'Google Sans'" }}>
+                  <p className="font-medium m-0 mb-1 text-google-red">{td.done.errors}</p>
                   {importResult.errors.map((e, i) => (
-                    <p key={i} className="m-0 text-xs text-[#202124]">{e}</p>
+                    <p key={i} className="m-0 text-xs text-g-text">{e}</p>
                   ))}
                 </div>
               )}
@@ -658,9 +658,9 @@ export default function DataManagementPage() {
                   style={{
                     padding: '9px 18px',
                     fontFamily: "'Google Sans'",
-                    color: '#1a73e8',
+                    color: 'var(--google-blue)',
                     background: 'transparent',
-                    borderColor: '#dadce0',
+                    borderColor: 'var(--google-border)',
                   }}
                 >
                   {td.done.importAnother}

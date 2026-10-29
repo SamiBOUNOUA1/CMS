@@ -90,7 +90,7 @@ export default function WarehouseMap({ lat, lng, onLocationChange, address, heig
 
   if (!mounted) {
     return (
-      <div style={{ height }} className="rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+      <div style={{ height }} className="rounded-lg border border-g-border bg-g-bg flex items-center justify-center text-sm text-g-text-3">
         Loading map…
       </div>
     );
@@ -98,7 +98,7 @@ export default function WarehouseMap({ lat, lng, onLocationChange, address, heig
 
   return (
     <div className="space-y-2">
-      <div ref={mapRef} style={{ height }} className="rounded-lg border border-gray-200 overflow-hidden z-0" />
+      <div ref={mapRef} style={{ height }} className="rounded-lg border border-g-border overflow-hidden z-0" />
 
       <div className="flex items-center gap-3 flex-wrap">
         {editable && (
@@ -106,13 +106,13 @@ export default function WarehouseMap({ lat, lng, onLocationChange, address, heig
             type="button"
             onClick={handleGeocode}
             disabled={searching || !address?.trim()}
-            className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-g-border bg-g-surface hover:bg-g-bg text-g-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {searching ? 'Searching…' : 'Find on map'}
           </button>
         )}
         {notFound && <span className="text-xs text-red-500">Address not found</span>}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-g-text-3">
           {lat !== null && lng !== null
             ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
             : editable

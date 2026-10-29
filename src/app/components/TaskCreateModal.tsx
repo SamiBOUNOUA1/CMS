@@ -154,7 +154,7 @@ export default function TaskCreateModal({ open, onClose, onCreated }: TaskCreate
                 onClick={() => set('completed', !form.completed)}
                 className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 p-0 cursor-pointer"
                 style={{
-                  border: `2px solid ${form.completed ? '#137333' : '#5f6368'}`,
+                  border: `2px solid ${form.completed ? '#137333' : 'var(--google-text-secondary)'}`,
                   background: form.completed ? '#137333' : 'transparent',
                 }}
               >
