@@ -6,10 +6,10 @@ import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  pending:     { bg: '#f1f3f4', text: '#5f6368' },
-  in_progress: { bg: '#e8f0fe', text: '#1a73e8' },
-  completed:   { bg: '#e6f4ea', text: '#137333' },
-  skipped:     { bg: '#fef7e0', text: '#b45309' },
+  pending:     { bg: 'var(--google-bg)', text: '#5f6368' },
+  in_progress: { bg: 'var(--google-blue-light)', text: '#1a73e8' },
+  completed:   { bg: 'var(--google-green-light)', text: '#137333' },
+  skipped:     { bg: 'var(--google-yellow-light)', text: '#b45309' },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -78,7 +78,7 @@ export default function ManagerEventFlowPage() {
   if (loading) {
     return (
       <div className="p-8 flex justify-center items-center h-[200px]">
-        <div className="w-9 h-9 rounded-full border-[3px] border-[#e8eaed] border-t-google-blue animate-spin">
+        <div className="w-9 h-9 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin">
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -124,11 +124,11 @@ export default function ManagerEventFlowPage() {
             <span className="text-sm font-medium text-g-text">{completedCount} of {steps.length} steps completed</span>
             <span className="text-[13px] text-g-text-2">{progressPct}%</span>
           </div>
-          <div className="h-2 bg-[#f1f3f4] rounded overflow-hidden">
+          <div className="h-2 bg-g-bg rounded overflow-hidden">
             <div className="h-full rounded transition-all duration-300 ease-out" style={{ width: `${progressPct}%`, background: progressPct === 100 ? '#34a853' : '#1a73e8' }} />
           </div>
           {flowInstance?.templateName && (
-            <p className="text-xs text-[#9aa0a6] mt-2 mb-0">Template: {flowInstance.templateName}</p>
+            <p className="text-xs text-g-text-3 mt-2 mb-0">Template: {flowInstance.templateName}</p>
           )}
         </div>
       )}
@@ -154,7 +154,7 @@ export default function ManagerEventFlowPage() {
                     <select
                       value={step.status}
                       onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleStatusChange(step._id, e.target.value)}
-                      className="py-1.5 px-2.5 border border-[#dadce0] rounded-lg text-[13px] bg-white cursor-pointer outline-none"
+                      className="py-1.5 px-2.5 border border-g-border rounded-lg text-[13px] bg-g-surface cursor-pointer outline-none"
                       style={{ color: colors.text }}
                     >
                       {Object.entries(STATUS_LABELS).map(([val, label]) => (

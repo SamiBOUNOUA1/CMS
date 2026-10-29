@@ -226,7 +226,7 @@ export default function FlowTemplatesSettingsPage() {
               value={newEventTypeKey}
               onChange={e => setNewEventTypeKey(e.target.value)}
               className={inpCls}
-              style={{ color: newEventTypeKey ? '#202124' : '#9aa0a6' }}
+              style={{ color: newEventTypeKey ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)' }}
             >
               <option value="">{tf.selectEventType}</option>
               {eventTypes.map(et => (
@@ -273,7 +273,7 @@ export default function FlowTemplatesSettingsPage() {
             const steps = tmpl.steps || [];
 
             return (
-              <div key={tmpl._id} style={{ borderBottom: tmplIdx < templates.length - 1 ? '1px solid #f1f3f4' : 'none' }}>
+              <div key={tmpl._id} style={{ borderBottom: tmplIdx < templates.length - 1 ? '1px solid var(--google-border)' : 'none' }}>
                 {/* Template header row */}
                 <div className="flex items-center gap-3" style={{ padding: '14px 20px' }}>
                   <button
@@ -290,7 +290,7 @@ export default function FlowTemplatesSettingsPage() {
                     <span className="text-[15px] font-medium text-g-text">
                       {tmpl.name}
                     </span>
-                    <span className="ml-2.5 text-[11px] py-[2px] px-2 rounded-xl bg-[#e8f0fe] text-google-blue font-medium">
+                    <span className="ml-2.5 text-[11px] py-[2px] px-2 rounded-xl bg-google-blue-light text-google-blue font-medium">
                       {etLabel}
                     </span>
                     <span className="ml-2 text-xs text-g-text-3">
@@ -303,15 +303,15 @@ export default function FlowTemplatesSettingsPage() {
                       className="py-[7px] px-3.5 border rounded-md cursor-pointer text-xs"
                       style={{
                                                 background: 'none',
-                        color: tmpl.isActive ? '#137333' : '#9aa0a6',
-                        borderColor: tmpl.isActive ? '#a8d5b5' : '#dadce0',
-                        backgroundColor: tmpl.isActive ? '#e6f4ea' : 'transparent'
+                        color: tmpl.isActive ? 'var(--google-green)' : 'var(--google-text-tertiary)',
+                        borderColor: tmpl.isActive ? 'var(--google-green)' : 'var(--google-border)',
+                        backgroundColor: tmpl.isActive ? 'var(--google-green-light)' : 'transparent'
                       }}
                     >
                       {tmpl.isActive ? tf.active : tf.inactive}
                     </button>
                     <button onClick={() => handleDelete(tmpl)}
-                      className="py-[7px] px-3.5 bg-transparent text-google-red border border-[#f5c6c4] rounded-lg cursor-pointer text-[13px]"
+                      className="py-[7px] px-3.5 bg-transparent text-google-red border border-g-border rounded-lg cursor-pointer text-[13px]"
                      >
                       {tf.delete}
                     </button>
@@ -331,10 +331,10 @@ export default function FlowTemplatesSettingsPage() {
                           const editing = stepEdits[step._id];
                           return (
                             <div key={step._id}
-                              className="bg-white border border-g-border rounded-lg flex gap-2.5 items-start"
+                              className="bg-g-surface border border-g-border rounded-lg flex gap-2.5 items-start"
                               style={{ padding: '10px 14px' }}
                             >
-                              <span className="min-w-[24px] h-6 rounded-full bg-[#e8eaed] flex items-center justify-center text-[11px] font-semibold text-g-text-2 flex-shrink-0">
+                              <span className="min-w-[24px] h-6 rounded-full bg-g-bg flex items-center justify-center text-[11px] font-semibold text-g-text-2 flex-shrink-0">
                                 {idx + 1}
                               </span>
                               <div className="flex-1 min-w-0">
@@ -385,7 +385,7 @@ export default function FlowTemplatesSettingsPage() {
                                     className="py-1 px-2 bg-transparent border border-g-border rounded-md cursor-pointer text-g-text-2 text-xs"
                                    >{tf.edit}</button>
                                   <button onClick={() => handleDeleteStep(tmpl, step._id)}
-                                    className="py-1 px-2 bg-transparent border border-[#f5c6c4] rounded-md cursor-pointer text-google-red text-xs"
+                                    className="py-1 px-2 bg-transparent border border-g-border rounded-md cursor-pointer text-google-red text-xs"
                                    >{tf.delete}</button>
                                 </div>
                               )}
@@ -396,7 +396,7 @@ export default function FlowTemplatesSettingsPage() {
                     )}
 
                     {/* Add step form */}
-                    <div className="border border-dashed border-[#dadce0] rounded-lg p-3.5 bg-white">
+                    <div className="border border-dashed border-g-border rounded-lg p-3.5 bg-g-surface">
                       <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-g-text-2 mb-2.5">{tf.addStep}</p>
                       <div className="flex flex-col gap-2">
                         <input
@@ -444,5 +444,5 @@ export default function FlowTemplatesSettingsPage() {
   );
 }
 
-const inpCls = 'py-[9px] px-3 border border-g-border rounded-lg text-sm outline-none bg-white w-full box-border';
+const inpCls = 'py-[9px] px-3 border border-g-border rounded-lg text-sm outline-none bg-g-surface text-g-text w-full box-border';
 const lblCls = 'text-[11px] font-medium uppercase tracking-[0.04em] text-g-text-2 block mb-1';

@@ -17,11 +17,11 @@ interface Notification {
 }
 
 const SYSTEM_COLORS: Record<string, { bg: string; color: string }> = {
-  admin:   { bg: '#fce8e6', color: '#d93025' },
-  manager: { bg: '#e8f0fe', color: '#1a73e8' },
-  viewer:  { bg: '#f1f3f4', color: '#5f6368' }
+  admin:   { bg: 'var(--google-red-light)', color: '#d93025' },
+  manager: { bg: 'var(--google-blue-light)', color: '#1a73e8' },
+  viewer:  { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' }
 };
-const FALLBACK_COLOR = { bg: '#f1f3f4', color: '#5f6368' };
+const FALLBACK_COLOR = { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' };
 
 function roleColor(name: string) {
   return SYSTEM_COLORS[name] ?? FALLBACK_COLOR;
@@ -281,8 +281,8 @@ export default function RolesPage() {
                   disabled={saving === role._id}
                   className="border-none rounded-xl py-[3px] px-2.5 text-xs font-medium cursor-pointer"
                   style={{
-                                        background: role.isDefault ? '#e6f4ea' : '#f1f3f4',
-                    color: role.isDefault ? '#137333' : '#5f6368'
+                                        background: role.isDefault ? 'var(--google-green-light)' : 'var(--google-bg)',
+                    color: role.isDefault ? 'var(--google-green)' : 'var(--google-text-secondary)'
                   }}
                 >
                   {role.isDefault ? 'Yes' : 'No'}

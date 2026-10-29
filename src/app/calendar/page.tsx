@@ -6,18 +6,18 @@ import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 
 const EVENT_TYPE_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
-  wedding:    { bg: '#fce8e6', border: '#d93025', text: '#b31412', dot: '#d93025' },
-  corporate:  { bg: '#e8f0fe', border: '#1a73e8', text: '#1557b0', dot: '#1a73e8' },
-  birthday:   { bg: '#fef7e0', border: '#f9ab00', text: '#b06000', dot: '#f9ab00' },
+  wedding:    { bg: 'var(--google-red-light)', border: '#d93025', text: '#b31412', dot: '#d93025' },
+  corporate:  { bg: 'var(--google-blue-light)', border: '#1a73e8', text: '#1557b0', dot: '#1a73e8' },
+  birthday:   { bg: 'var(--google-yellow-light)', border: '#f9ab00', text: '#b06000', dot: '#f9ab00' },
   gala:       { bg: '#f3e8fd', border: '#9334e6', text: '#6e1ca3', dot: '#9334e6' },
-  conference: { bg: '#e6f4ea', border: '#1e8e3e', text: '#0d652d', dot: '#1e8e3e' },
+  conference: { bg: 'var(--google-green-light)', border: '#1e8e3e', text: '#0d652d', dot: '#1e8e3e' },
   buffet:     { bg: '#fde8f0', border: '#e52592', text: '#a50e4c', dot: '#e52592' },
-  other:      { bg: '#f1f3f4', border: '#5f6368', text: '#3c4043', dot: '#5f6368' },
+  other:      { bg: 'var(--google-bg)', border: '#5f6368', text: '#3c4043', dot: '#5f6368' },
 };
 
 function Spinner() {
   return (
-    <div className="w-9 h-9 rounded-full border-[3px] border-[#e8eaed] border-t-google-blue animate-spin" />
+    <div className="w-9 h-9 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
   );
 }
 
@@ -61,8 +61,8 @@ export default function CalendarPage() {
     <div className="max-w-[1100px] mx-auto px-6 py-8">
       <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-[28px] font-normal text-[#202124] m-0">{t.calendar?.title || 'Calendar'}</h1>
-          <p className="text-sm text-[#5f6368] mt-1 mb-0">{t.calendar?.subtitle || 'Confirmed events'}</p>
+          <h1 className="text-[28px] font-normal page-title m-0">{t.calendar?.title || 'Calendar'}</h1>
+          <p className="text-sm text-g-text-2 mt-1 mb-0">{t.calendar?.subtitle || 'Confirmed events'}</p>
         </div>
         {usedTypes.length > 0 && (
           <div className="flex flex-wrap gap-2 items-center">
@@ -80,24 +80,24 @@ export default function CalendarPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => setCurrentDate(d => subMonths(d, 1))} className="w-9 h-9 rounded-full border border-[#dadce0] bg-white cursor-pointer text-[#5f6368] flex items-center justify-center">
+        <button onClick={() => setCurrentDate(d => subMonths(d, 1))} className="w-9 h-9 rounded-full border border-g-border bg-g-surface cursor-pointer text-g-text-2 flex items-center justify-center">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" /></svg>
         </button>
-        <h2 className="text-xl font-medium text-[#202124] m-0 min-w-[180px] text-center">
+        <h2 className="text-xl font-medium text-g-text m-0 min-w-[180px] text-center">
           {format(currentDate, 'MMMM yyyy')}
         </h2>
-        <button onClick={() => setCurrentDate(d => addMonths(d, 1))} className="w-9 h-9 rounded-full border border-[#dadce0] bg-white cursor-pointer text-[#5f6368] flex items-center justify-center">
+        <button onClick={() => setCurrentDate(d => addMonths(d, 1))} className="w-9 h-9 rounded-full border border-g-border bg-g-surface cursor-pointer text-g-text-2 flex items-center justify-center">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
         </button>
-        <button onClick={() => setCurrentDate(new Date())} className="ml-1 py-1.5 px-3.5 rounded-full border border-[#dadce0] bg-white cursor-pointer text-[13px] text-[#5f6368] font-medium">
+        <button onClick={() => setCurrentDate(new Date())} className="ml-1 py-1.5 px-3.5 rounded-full border border-g-border bg-g-surface cursor-pointer text-[13px] text-g-text-2 font-medium">
           {t.calendar?.today || 'Today'}
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#e8eaed] shadow-google-1 overflow-hidden">
-        <div className="grid border-b border-[#e8eaed]" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+      <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 overflow-hidden">
+        <div className="grid border-b border-g-border" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
           {weekDayLabels.map(label => (
-            <div key={label} className="min-w-0 py-2.5 text-center text-xs font-medium text-[#5f6368] uppercase tracking-wide">
+            <div key={label} className="min-w-0 py-2.5 text-center text-xs font-medium text-g-text-2 uppercase tracking-wide">
               {label}
             </div>
           ))}
@@ -120,9 +120,9 @@ export default function CalendarPage() {
                   className="min-h-[110px] min-w-0 overflow-hidden"
                   style={{
                     padding: '8px 6px 6px',
-                    borderRight: col < 6 ? '1px solid #f1f3f4' : 'none',
-                    borderBottom: !isLastRow ? '1px solid #f1f3f4' : 'none',
-                    background: isCurrentMonth ? '#fff' : '#fafafa',
+                    borderRight: col < 6 ? '1px solid var(--google-border)' : 'none',
+                    borderBottom: !isLastRow ? '1px solid var(--google-border)' : 'none',
+                    background: isCurrentMonth ? 'var(--google-surface)' : 'var(--google-bg)',
                   }}
                 >
                   <div className="mb-1 flex justify-end">
@@ -130,7 +130,7 @@ export default function CalendarPage() {
                       className="w-[26px] h-[26px] flex items-center justify-center rounded-full text-[13px]"
                       style={{
                         background: isToday ? '#1a73e8' : 'transparent',
-                        color: isToday ? '#fff' : isCurrentMonth ? '#202124' : '#bdc1c6',
+                        color: isToday ? '#fff' : isCurrentMonth ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)',
                         fontWeight: isToday ? 500 : 400,
                       }}
                     >
@@ -153,7 +153,7 @@ export default function CalendarPage() {
                       );
                     })}
                     {dayOrders.length > 3 && (
-                      <span className="text-[11px] text-[#5f6368] pl-1.5">+{dayOrders.length - 3} more</span>
+                      <span className="text-[11px] text-g-text-2 pl-1.5">+{dayOrders.length - 3} more</span>
                     )}
                   </div>
                 </div>
@@ -184,7 +184,7 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
   return (
     <>
       <div onClick={onClose} className="fixed inset-0 bg-black/35 z-[200]" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] bg-white rounded-[20px] shadow-google-2 w-full max-w-[460px] overflow-hidden">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] bg-g-surface rounded-[20px] shadow-google-2 w-full max-w-[460px] overflow-hidden">
         <div className="pb-4 pt-5 px-6" style={{ background: c.bg, borderBottom: `3px solid ${c.border}` }}>
           <div className="flex justify-between items-start">
             <div>
@@ -192,15 +192,15 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
                 <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
                 {t.eventTypes?.[type] || type}
               </span>
-              <h2 className="text-xl font-medium text-[#202124] m-0">{order.clientName || '—'}</h2>
+              <h2 className="text-xl font-medium m-0" style={{ color: c.text }}>{order.clientName || '—'}</h2>
               {ev?.eventDate && (
-                <p className="text-sm text-[#5f6368] mt-1 mb-0">
+                <p className="text-sm mt-1 mb-0" style={{ color: c.text }}>
                   {format(parseISO(ev.eventDate), 'EEEE, d MMMM yyyy')}
                   {ev.startTime && ` · ${ev.startTime}`}
                 </p>
               )}
             </div>
-            <button onClick={onClose} className="border-none bg-transparent cursor-pointer text-[#5f6368] p-1 flex-shrink-0">
+            <button onClick={onClose} className="border-none bg-transparent cursor-pointer p-1 flex-shrink-0" style={{ color: c.text }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
             </button>
           </div>
@@ -220,7 +220,7 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
             <InfoBlock
               label={t.calendar?.eventStatus || 'Status'}
               value={
-                <span className="bg-[#e6f4ea] text-[#137333] rounded-xl py-0.5 px-2.5 text-xs font-medium">
+                <span className="bg-google-green-light text-google-green rounded-xl py-0.5 px-2.5 text-xs font-medium">
                   {t.calendar?.confirmed || 'Confirmed'}
                 </span>
               }
@@ -229,8 +229,8 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
 
           {order.notes && (
             <div className="mb-4">
-              <p className="text-xs text-[#9aa0a6] mb-1 font-medium uppercase tracking-wider">{t.calendar?.notes || 'Notes'}</p>
-              <p className="text-sm text-[#202124] m-0">{order.notes}</p>
+              <p className="text-xs text-g-text-3 mb-1 font-medium uppercase tracking-wider">{t.calendar?.notes || 'Notes'}</p>
+              <p className="text-sm text-g-text m-0">{order.notes}</p>
             </div>
           )}
 
@@ -239,12 +239,12 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" /></svg>
               {t.calendar?.viewOrder || 'View order'}
             </Link>
-            <Link href={`/orders/${order._id}/event-flow`} className="flex-1 flex items-center justify-center gap-1.5 bg-white text-google-blue border border-google-blue rounded-xl py-3 px-4 text-sm font-medium no-underline">
+            <Link href={`/orders/${order._id}/event-flow`} className="flex-1 flex items-center justify-center gap-1.5 bg-g-surface text-google-blue border border-google-blue rounded-xl py-3 px-4 text-sm font-medium no-underline">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm10-16H7v2h6V1zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 7h2V5h-2v2zm0 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zM7 5h2V3H7v2zm6 16h-2v2h2v-2zm4 0h-2v2h2v-2zm2-18v2h2c0-1.1-.9-2-2-2z" /></svg>
               {t.calendar?.eventFlow || 'Event Flow'}
             </Link>
           </div>
-          <Link href={`/events/${order._id}/materials`} className="mt-2.5 flex items-center justify-center gap-1.5 bg-white text-g-text border border-g-border rounded-xl py-3 px-4 text-sm font-medium no-underline">
+          <Link href={`/events/${order._id}/materials`} className="mt-2.5 flex items-center justify-center gap-1.5 bg-g-surface text-g-text border border-g-border rounded-xl py-3 px-4 text-sm font-medium no-underline">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z" /></svg>
             {t.calendar?.materialsList || 'Materials list'}
           </Link>
@@ -257,8 +257,8 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
 function InfoBlock({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] text-[#9aa0a6] mb-0.5 font-medium uppercase tracking-wider">{label}</p>
-      <p className="text-sm text-[#202124] m-0">{value}</p>
+      <p className="text-[11px] text-g-text-3 mb-0.5 font-medium uppercase tracking-wider">{label}</p>
+      <p className="text-sm text-g-text m-0">{value}</p>
     </div>
   );
 }

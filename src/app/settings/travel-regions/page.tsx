@@ -188,9 +188,9 @@ export default function TravelRegionsSettingsPage() {
       {/* Regions list */}
       <div className="bg-g-surface border border-g-border rounded-2xl overflow-hidden shadow-google-1">
         {loading ? (
-          <div className="p-10 text-center text-[#9aa0a6] text-sm">{tr.loading}</div>
+          <div className="p-10 text-center text-g-text-3 text-sm">{tr.loading}</div>
         ) : regions.length === 0 ? (
-          <div className="p-10 text-center text-[#9aa0a6] text-sm">{tr.empty}</div>
+          <div className="p-10 text-center text-g-text-3 text-sm">{tr.empty}</div>
         ) : (
           <>
             {/* Desktop table — hidden on small screens */}
@@ -198,7 +198,7 @@ export default function TravelRegionsSettingsPage() {
               <thead>
                 <tr className="border-b border-g-border bg-g-bg">
                   {[tr.table.label, tr.table.travelPrice, tr.table.default, tr.table.status, tr.table.actions].map((h, i) => (
-                    <th key={h} className="py-2.5 px-4 text-xs text-[#5f6368] font-medium"
+                    <th key={h} className="py-2.5 px-4 text-xs text-g-text-2 font-medium"
                       style={{ textAlign: i >= 2 ? 'center' : 'left', fontFamily: "'Google Sans'" }}>
                       {h}
                     </th>
@@ -209,7 +209,7 @@ export default function TravelRegionsSettingsPage() {
                 {regions.map(region => {
                   const editing = edits[region._id];
                   return (
-                    <tr key={region._id} className="border-b border-[#f1f3f4]">
+                    <tr key={region._id} className="border-b border-g-border">
                       <td className="py-3 px-4 font-medium">
                         {editing ? (
                           <FormInput
@@ -230,19 +230,19 @@ export default function TravelRegionsSettingsPage() {
                             className="w-[120px]"
                           />
                         ) : (
-                          <span style={{ color: region.travelPrice > 0 ? '#202124' : '#9aa0a6' }}>
+                          <span style={{ color: region.travelPrice > 0 ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)' }}>
                             {priceDisplay(region.travelPrice)}
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         {region.isDefault ? (
-                          <span className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-semibold bg-[#e8f0fe] text-google-blue" style={{ fontFamily: "'Google Sans'" }}>
+                          <span className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-semibold bg-google-blue-light text-google-blue" style={{ fontFamily: "'Google Sans'" }}>
                             {tr.isDefault}
                           </span>
                         ) : (
                           <button onClick={() => handleSetDefault(region)}
-                            className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>
+                            className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'" }}>
                             {tr.setDefault}
                           </button>
                         )}
@@ -252,8 +252,8 @@ export default function TravelRegionsSettingsPage() {
                           className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
                           style={{
                             fontFamily: "'Google Sans'",
-                            background: region.isActive ? '#e6f4ea' : '#f1f3f4',
-                            color: region.isActive ? '#137333' : '#5f6368',
+                            background: region.isActive ? 'var(--google-green-light)' : 'var(--google-bg)',
+                            color: region.isActive ? '#137333' : 'var(--google-text-secondary)',
                           }}>
                           {region.isActive ? tr.active : tr.inactive}
                         </button>
@@ -261,8 +261,8 @@ export default function TravelRegionsSettingsPage() {
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         {editing ? (
                           <span className="inline-flex gap-2">
-                            <button onClick={() => saveEdit(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333', fontFamily: "'Google Sans'" }}>{tr.save}</button>
-                            <button onClick={() => cancelEdit(region._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368', fontFamily: "'Google Sans'" }}>{tr.cancel}</button>
+                            <button onClick={() => saveEdit(region)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-green)', fontFamily: "'Google Sans'" }}>{tr.save}</button>
+                            <button onClick={() => cancelEdit(region._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'" }}>{tr.cancel}</button>
                           </span>
                         ) : (
                           <span className="inline-flex gap-2">
@@ -278,7 +278,7 @@ export default function TravelRegionsSettingsPage() {
             </table>
 
             {/* Mobile cards — shown only on small screens */}
-            <div className="sm:hidden divide-y divide-[#f1f3f4]">
+            <div className="sm:hidden divide-y divide-g-border">
               {regions.map(region => {
                 const editing = edits[region._id];
                 return (
@@ -309,13 +309,13 @@ export default function TravelRegionsSettingsPage() {
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             {region.isDefault && (
-                              <span className="inline-block py-0.5 px-2.5 rounded-xl text-xs font-semibold bg-[#e8f0fe] text-google-blue">
+                              <span className="inline-block py-0.5 px-2.5 rounded-xl text-xs font-semibold bg-google-blue-light text-google-blue">
                                 {tr.isDefault}
                               </span>
                             )}
                             <button onClick={() => handleToggleActive(region)}
                               className="inline-block py-0.5 px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
-                              style={{ background: region.isActive ? '#e6f4ea' : '#f1f3f4', color: region.isActive ? '#137333' : '#5f6368' }}>
+                              style={{ background: region.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: region.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)' }}>
                               {region.isActive ? tr.active : tr.inactive}
                             </button>
                           </div>
@@ -326,8 +326,8 @@ export default function TravelRegionsSettingsPage() {
                             <button onClick={() => handleSetDefault(region)} className={`${btnOutline} flex-1 justify-center`}>{tr.setDefault}</button>
                           )}
                           <button onClick={() => handleDelete(region)}
-                            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-[#dadce0] bg-white"
-                            style={{ color: '#d93025', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
+                            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-g-border bg-g-surface"
+                            style={{ color: 'var(--google-red)', fontFamily: "'Google Sans'", cursor: 'pointer' }}>
                             {tr.delete}
                           </button>
                         </div>

@@ -17,8 +17,8 @@ function getDeadlineStyle(task: Task): React.CSSProperties {
   const now = Date.now();
   const due = new Date(task.scheduledDate).getTime();
   const oneDay = 86400000;
-  if (due < now) return { background: '#fce8e6', borderLeft: '3px solid #d93025' };
-  if (due - now <= oneDay) return { background: '#fef7e0', borderLeft: '3px solid #f9ab00' };
+  if (due < now) return { background: 'var(--google-red-light)', borderLeft: '3px solid #d93025' };
+  if (due - now <= oneDay) return { background: 'var(--google-yellow-light)', borderLeft: '3px solid #f9ab00' };
   return {};
 }
 
@@ -125,12 +125,12 @@ export default function TasksPage() {
         onCreated={() => { setShowCreate(false); fetchTasks(); showNotif(tm.created); }}
       />
 
-      {loading && <div className="text-[#9aa0a6] text-sm py-5">…</div>}
+      {loading && <div className="text-g-text-3 text-sm py-5">…</div>}
 
       {!loading && pendingTasks.length === 0 && (
         <div className="text-center py-12 px-6 bg-g-surface border border-g-border rounded-xl">
-          <p className="text-base font-medium text-[#202124] mb-2">{tp.empty.title}</p>
-          <p className="text-sm text-[#9aa0a6] m-0">{tp.empty.body}</p>
+          <p className="text-base font-medium text-g-text mb-2">{tp.empty.title}</p>
+          <p className="text-sm text-g-text-3 m-0">{tp.empty.body}</p>
         </div>
       )}
 
@@ -145,19 +145,19 @@ export default function TasksPage() {
                     <button
                       onClick={() => handleToggleComplete(task._id, task.completed)}
                       className="w-5 h-5 rounded flex-shrink-0 p-0 mt-0.5 flex items-center justify-center cursor-pointer"
-                      style={{ border: `2px solid ${task.completed ? '#137333' : '#5f6368'}`, background: task.completed ? '#137333' : 'transparent' }}
+                      style={{ border: `2px solid ${task.completed ? '#137333' : 'var(--google-text-secondary)'}`, background: task.completed ? '#137333' : 'transparent' }}
                     >
                       {task.completed && <CheckIcon />}
                     </button>
                     <div className="flex-1">
                       <div className="text-[11px] font-medium uppercase tracking-wide text-google-blue mb-1">{typeLabel(task.type)}</div>
                       {task.notes && (
-                        <div className="text-sm mb-1" style={{ color: task.completed ? '#9aa0a6' : '#202124', textDecoration: task.completed ? 'line-through' : 'none' }}>
+                        <div className="text-sm mb-1" style={{ color: task.completed ? 'var(--google-text-tertiary)' : 'var(--google-text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>
                           {task.notes}
                         </div>
                       )}
-                      <div className="text-xs text-[#5f6368]">{format(new Date(task.scheduledDate), 'dd MMM yyyy')}</div>
-                      {isAdmin && task.owner && <div className="text-xs text-[#9aa0a6] mt-0.5">{task.owner.name}</div>}
+                      <div className="text-xs text-g-text-2">{format(new Date(task.scheduledDate), 'dd MMM yyyy')}</div>
+                      {isAdmin && task.owner && <div className="text-xs text-g-text-3 mt-0.5">{task.owner.name}</div>}
                     </div>
                     <button onClick={() => setDeleteId(task._id)} className="bg-transparent border-none cursor-pointer text-google-red p-1 flex-shrink-0">
                       <TrashIcon />
@@ -171,11 +171,11 @@ export default function TasksPage() {
           <div className="bg-g-surface border border-g-border rounded-xl overflow-hidden">
             <div className="flex py-2.5 px-5 bg-g-bg border-b border-g-border">
               <div className="w-7 flex-shrink-0" />
-              <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-[#5f6368]">{tp.table.type}</div>
-              <div className="flex-[2] text-[11px] font-medium uppercase tracking-wide text-[#5f6368]">{tp.table.notes}</div>
-              <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-[#5f6368]">{tp.table.scheduledDate}</div>
-              {isAdmin && <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-[#5f6368]">{tp.table.owner}</div>}
-              <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-[#5f6368]">{tp.table.status}</div>
+              <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-g-text-2">{tp.table.type}</div>
+              <div className="flex-[2] text-[11px] font-medium uppercase tracking-wide text-g-text-2">{tp.table.notes}</div>
+              <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-g-text-2">{tp.table.scheduledDate}</div>
+              {isAdmin && <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-g-text-2">{tp.table.owner}</div>}
+              <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-g-text-2">{tp.table.status}</div>
               <div className="w-10 flex-shrink-0" />
             </div>
             {pendingTasks.map((task, idx) => {
@@ -189,21 +189,21 @@ export default function TasksPage() {
                   <button
                     onClick={() => handleToggleComplete(task._id, task.completed)}
                     className="w-5 h-5 rounded flex-shrink-0 p-0 flex items-center justify-center cursor-pointer"
-                    style={{ border: `2px solid ${task.completed ? '#137333' : '#5f6368'}`, background: task.completed ? '#137333' : 'transparent' }}
+                    style={{ border: `2px solid ${task.completed ? '#137333' : 'var(--google-text-secondary)'}`, background: task.completed ? '#137333' : 'transparent' }}
                     title={task.completed ? tp.statusCompleted : tp.statusPending}
                   >
                     {task.completed && <CheckIcon />}
                   </button>
                   <div className="flex-1 text-[13px]">
-                    <span className="bg-[#e8f0fe] text-google-blue rounded-xl py-0.5 px-2.5 text-xs font-medium">{typeLabel(task.type)}</span>
+                    <span className="bg-google-blue-light text-google-blue rounded-xl py-0.5 px-2.5 text-xs font-medium">{typeLabel(task.type)}</span>
                   </div>
-                  <div className="flex-[2] text-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: task.completed ? '#9aa0a6' : '#202124', textDecoration: task.completed ? 'line-through' : 'none' }}>
+                  <div className="flex-[2] text-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: task.completed ? 'var(--google-text-tertiary)' : 'var(--google-text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>
                     {task.notes || '—'}
                   </div>
-                  <div className="flex-1 text-[13px] text-[#5f6368]">{format(new Date(task.scheduledDate), 'dd MMM yyyy')}</div>
-                  {isAdmin && <div className="flex-1 text-[13px] text-[#5f6368]">{task.owner?.name ?? '—'}</div>}
+                  <div className="flex-1 text-[13px] text-g-text-2">{format(new Date(task.scheduledDate), 'dd MMM yyyy')}</div>
+                  {isAdmin && <div className="flex-1 text-[13px] text-g-text-2">{task.owner?.name ?? '—'}</div>}
                   <div className="flex-1 text-xs font-medium">
-                    {task.completed ? <span className="text-[#137333]">{tp.statusCompleted}</span> : <span className="text-[#5f6368]">{tp.statusPending}</span>}
+                    {task.completed ? <span className="text-google-green">{tp.statusCompleted}</span> : <span className="text-g-text-2">{tp.statusPending}</span>}
                   </div>
                   <button onClick={() => setDeleteId(task._id)} className="w-8 bg-transparent border-none cursor-pointer text-google-red p-1 flex items-center justify-center flex-shrink-0" title={tp.deleteDialog.delete}>
                     <TrashIcon />
@@ -218,10 +218,10 @@ export default function TasksPage() {
       {deleteId && (
         <div className="fixed inset-0 bg-black/45 z-[200] flex items-center justify-center">
           <div className="bg-g-surface rounded-2xl p-7 max-w-[400px] w-[90%] shadow-google-2">
-            <h3 className="text-base font-medium text-[#202124] mb-2.5">{tp.deleteDialog.title}</h3>
-            <p className="text-sm text-[#5f6368] mb-6">{tp.deleteDialog.body}</p>
+            <h3 className="text-base font-medium text-g-text mb-2.5">{tp.deleteDialog.title}</h3>
+            <p className="text-sm text-g-text-2 mb-6">{tp.deleteDialog.body}</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteId(null)} className="bg-transparent text-[#5f6368] border border-[#dadce0] rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer">{tp.deleteDialog.cancel}</button>
+              <button onClick={() => setDeleteId(null)} className="bg-transparent text-g-text-2 border border-g-border rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer">{tp.deleteDialog.cancel}</button>
               <button onClick={() => handleDelete(deleteId)} className="bg-google-red text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer">{tp.deleteDialog.delete}</button>
             </div>
           </div>

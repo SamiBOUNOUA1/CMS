@@ -155,7 +155,7 @@ export default function StaffRolesSettingsPage() {
             disabled={adding || !newLabel.trim()}
             className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium whitespace-nowrap"
             style={{
-                            background: adding || !newLabel.trim() ? '#9aa0a6' : '#1a73e8',
+                            background: adding || !newLabel.trim() ? 'var(--google-text-tertiary)' : 'var(--google-blue)',
               cursor: adding || !newLabel.trim() ? 'default' : 'pointer'
             }}
           >
@@ -204,7 +204,7 @@ export default function StaffRolesSettingsPage() {
                     </td>
                     {/* Key */}
                     <td className="py-3 px-4">
-                      <span className="text-xs text-g-text-2 bg-[#f1f3f4] py-[2px] px-2 rounded" style={{ fontFamily: 'monospace' }}>
+                      <span className="text-xs text-g-text-2 bg-g-bg py-[2px] px-2 rounded" style={{ fontFamily: 'monospace' }}>
                         {role.key}
                       </span>
                     </td>
@@ -213,8 +213,8 @@ export default function StaffRolesSettingsPage() {
                       <button onClick={() => handleToggleActive(role)}
                         className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
                         style={{
-                                                    background: role.isActive ? '#e6f4ea' : '#f1f3f4',
-                          color: role.isActive ? '#137333' : '#5f6368'
+                                                    background: role.isActive ? 'var(--google-green-light)' : 'var(--google-bg)',
+                          color: role.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)'
                         }}>
                         {role.isActive ? tr.active : tr.inactive}
                       </button>
@@ -224,7 +224,7 @@ export default function StaffRolesSettingsPage() {
                       {editing ? (
                         <span className="inline-flex gap-2">
                           <button onClick={() => saveEdit(role)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333'}}>{tr.save}</button>
-                          <button onClick={() => cancelEdit(role._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368'}}>{tr.cancel}</button>
+                          <button onClick={() => cancelEdit(role._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-text-secondary)'}}>{tr.cancel}</button>
                         </span>
                       ) : (
                         <span className="inline-flex gap-2">

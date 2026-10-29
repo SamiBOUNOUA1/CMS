@@ -8,6 +8,19 @@ interface SubItem {
   name: string;
 }
 
+/** A packing-checklist entry on an order's line item. */
+interface PackingItem {
+  _id?: string;
+  name: string;
+  checked?: boolean;
+}
+
+/** A packing-checklist entry on a catalog Product (no checked state). */
+interface ProductPackingItem {
+  _id?: string;
+  name: string;
+}
+
 interface Category {
   _id: string;
   name: string;
@@ -34,6 +47,7 @@ interface Product {
   name: string;
   defaultPrice?: number;
   subItems?: SubItem[];
+  packingItems?: ProductPackingItem[];
   options?: ProductOption[];
   category?: Category;
 }
@@ -45,6 +59,7 @@ interface GroupItem {
   unitPrice: number;
   notes: string;
   subItems: SubItem[];
+  packingItems: PackingItem[];
   selectedOptions: SelectedOption[];
   _productId: string;
 }
@@ -74,7 +89,7 @@ interface StepLineItemsProps {
   defaultCount?: number;
 }
 
-export const defaultGroupItem = (): GroupItem => ({ name: '', category: '', unitPrice: 0, notes: '', subItems: [], selectedOptions: [], _productId: '' });
+export const defaultGroupItem = (): GroupItem => ({ name: '', category: '', unitPrice: 0, notes: '', subItems: [], packingItems: [], selectedOptions: [], _productId: '' });
 export const defaultLineGroup = (): LineGroup => ({ label: '', count: 1, items: [defaultGroupItem()] });
 
 export function StepLineItems({ form, setForm, errors, products, isMobile, tn, isTableMode, currency, defaultCount = 1 }: StepLineItemsProps) {
@@ -118,7 +133,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
       // Options are per-product, so switching or clearing the product always drops them —
       // a supplement chosen for one dish is meaningless on another.
       if (productId === '__custom__') {
-        items[ii] = { ...items[ii], _productId: '__custom__', name: '', unitPrice: 0, subItems: [], selectedOptions: [], category: '' };
+        items[ii] = { ...items[ii], _productId: '__custom__', name: '', unitPrice: 0, subItems: [], packingItems: [], selectedOptions: [], category: '' };
       } else if (found) {
         items[ii] = {
           ...items[ii],
@@ -126,11 +141,14 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
           name: found.name,
           unitPrice: found.defaultPrice ?? 0,
           subItems: found.subItems?.map(s => ({ name: s.name })) ?? [],
+          // Packing items snapshot the catalog default and start unchecked. _id is
+          // omitted so Mongoose generates a fresh one when the order is saved.
+          packingItems: found.packingItems?.map(p => ({ name: p.name, checked: false })) ?? [],
           selectedOptions: [],
           category: found.category?.name ?? '',
         };
       } else if (!productId) {
-        items[ii] = { ...items[ii], _productId: '', name: '', unitPrice: 0, subItems: [], selectedOptions: [], category: '' };
+        items[ii] = { ...items[ii], _productId: '', name: '', unitPrice: 0, subItems: [], packingItems: [], selectedOptions: [], category: '' };
       } else {
         return f;
       }
@@ -241,7 +259,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
             return (
             <div
               key={ii}
-              className="border border-google-gray-200 rounded-[10px] mb-2.5 bg-white"
+              className="border border-g-border rounded-[10px] mb-2.5 bg-g-surface"
               style={{ padding: isMobile ? 12 : 16 }}
             >
               <div className="flex justify-between items-center mb-2.5">
@@ -301,7 +319,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                 )}
 
                 {item.subItems?.length > 0 && item._productId !== '__custom__' && (
-                  <div className="bg-google-gray-100 rounded-lg py-2 px-3">
+                  <div className="bg-google-gray-100 dark:bg-google-gray-800 rounded-lg py-2 px-3">
                     <p className="m-0 mb-1 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em] font-sans">{String(tli.includes)}</p>
                     {item.subItems.map((s, si) => (
                       <span key={si} className="text-xs text-g-text-2 block leading-relaxed">· {s.name}</span>
@@ -345,7 +363,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                     <label className="block text-[11px] font-medium text-g-text-2 mb-1.5 font-sans uppercase tracking-[0.04em]">
                       {String(tli.quantity)}
                     </label>
-                    <div className="py-2.5 px-3.5 rounded-lg border border-google-gray-200 bg-google-gray-100 text-sm text-g-text-2 font-[Roboto,Arial]">
+                    <div className="py-2.5 px-3.5 rounded-lg border border-g-border bg-google-gray-100 dark:bg-google-gray-800 text-sm text-g-text-2 font-[Roboto,Arial]">
                       × {group.count}
                     </div>
                   </div>

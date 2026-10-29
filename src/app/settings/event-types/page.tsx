@@ -198,7 +198,7 @@ export default function EventTypesSettingsPage() {
             disabled={adding || !newLabel.trim()}
             className="text-white border-none rounded-lg py-2.5 px-5 text-sm font-medium w-full sm:w-auto"
             style={{
-                            background: adding || !newLabel.trim() ? '#9aa0a6' : '#1a73e8',
+                            background: adding || !newLabel.trim() ? 'var(--google-text-tertiary)' : 'var(--google-blue)',
               cursor: adding || !newLabel.trim() ? 'default' : 'pointer'
             }}
           >
@@ -254,10 +254,10 @@ export default function EventTypesSettingsPage() {
                           />
                         </div>
                         <div className="flex gap-3 pt-1">
-                          <button onClick={() => saveEdit(cfg)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-1 px-0" style={{ color: '#137333'}}>
+                          <button onClick={() => saveEdit(cfg)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-1 px-0" style={{ color: 'var(--google-green)'}}>
                             {te.save}
                           </button>
-                          <button onClick={() => cancelEdit(cfg._id)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-1 px-0" style={{ color: '#5f6368'}}>
+                          <button onClick={() => cancelEdit(cfg._id)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-1 px-0" style={{ color: 'var(--google-text-secondary)'}}>
                             {te.cancel}
                           </button>
                         </div>
@@ -273,8 +273,8 @@ export default function EventTypesSettingsPage() {
                             onClick={() => handleToggleActive(cfg)}
                             className="flex-shrink-0 inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
                             style={{
-                                                            background: cfg.isActive ? '#e6f4ea' : '#f1f3f4',
-                              color: cfg.isActive ? '#137333' : '#5f6368'
+                                                            background: cfg.isActive ? 'var(--google-green-light)' : 'var(--google-bg)',
+                              color: cfg.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)'
                             }}
                           >
                             {cfg.isActive ? te.active : te.inactive}
@@ -282,8 +282,8 @@ export default function EventTypesSettingsPage() {
                         </div>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium" style={{
-                                                        background: cfg.countMode === 'tables' ? '#e8f0fe' : '#fef7e0',
-                            color: cfg.countMode === 'tables' ? '#1a73e8' : '#b06000'
+                                                        background: cfg.countMode === 'tables' ? 'var(--google-blue-light)' : 'var(--google-yellow-light)',
+                            color: cfg.countMode === 'tables' ? 'var(--google-blue)' : 'var(--google-yellow)'
                           }}>
                             {te.countModes[cfg.countMode]}
                           </span>
@@ -292,10 +292,10 @@ export default function EventTypesSettingsPage() {
                           )}
                         </div>
                         <div className="flex gap-4">
-                          <button onClick={() => startEdit(cfg)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-0 px-0" style={{ color: '#1a73e8'}}>
+                          <button onClick={() => startEdit(cfg)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-0 px-0" style={{ color: 'var(--google-blue)'}}>
                             {te.edit}
                           </button>
-                          <button onClick={() => handleDelete(cfg)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-0 px-0" style={{ color: '#d93025'}}>
+                          <button onClick={() => handleDelete(cfg)} className="bg-transparent border-none text-sm font-medium cursor-pointer py-0 px-0" style={{ color: 'var(--google-red)'}}>
                             {te.delete}
                           </button>
                         </div>
@@ -370,7 +370,7 @@ export default function EventTypesSettingsPage() {
                               style={{ width: 80, opacity: editing.countMode !== 'tables' ? 0.4 : 1 }}
                             />
                           ) : (
-                            <span style={{ color: cfg.countMode === 'tables' ? '#202124' : '#9aa0a6' }}>
+                            <span style={{ color: cfg.countMode === 'tables' ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)' }}>
                               {cfg.countMode === 'tables' ? `${cfg.tableCapacity} ${te.personsPerTable}` : '—'}
                             </span>
                           )}
@@ -381,8 +381,8 @@ export default function EventTypesSettingsPage() {
                             onClick={() => handleToggleActive(cfg)}
                             className="inline-block py-[2px] px-2.5 rounded-xl text-xs font-medium cursor-pointer border-none"
                             style={{
-                                                            background: cfg.isActive ? '#e6f4ea' : '#f1f3f4',
-                              color: cfg.isActive ? '#137333' : '#5f6368'
+                                                            background: cfg.isActive ? 'var(--google-green-light)' : 'var(--google-bg)',
+                              color: cfg.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)'
                             }}
                           >
                             {cfg.isActive ? te.active : te.inactive}
@@ -392,19 +392,19 @@ export default function EventTypesSettingsPage() {
                         <td className="py-3 px-4 text-center whitespace-nowrap">
                           {editing ? (
                             <span className="inline-flex gap-2">
-                              <button onClick={() => saveEdit(cfg)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#137333'}}>
+                              <button onClick={() => saveEdit(cfg)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-green)'}}>
                                 {te.save}
                               </button>
-                              <button onClick={() => cancelEdit(cfg._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#5f6368'}}>
+                              <button onClick={() => cancelEdit(cfg._id)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-text-secondary)'}}>
                                 {te.cancel}
                               </button>
                             </span>
                           ) : (
                             <span className="inline-flex gap-2">
-                              <button onClick={() => startEdit(cfg)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#1a73e8'}}>
+                              <button onClick={() => startEdit(cfg)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-blue)'}}>
                                 {te.edit}
                               </button>
-                              <button onClick={() => handleDelete(cfg)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: '#d93025'}}>
+                              <button onClick={() => handleDelete(cfg)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer py-1 px-1.5" style={{ color: 'var(--google-red)'}}>
                                 {te.delete}
                               </button>
                             </span>
@@ -429,4 +429,4 @@ export default function EventTypesSettingsPage() {
 
 const labelCls = 'block text-[11px] font-medium text-g-text-2 mb-1.5 uppercase tracking-[0.04em]';
 const inputCls = 'py-[9px] px-3 rounded-lg border border-g-border text-sm text-g-text outline-none box-border';
-const selectCls = 'py-[9px] px-3 rounded-lg border border-g-border text-sm text-g-text outline-none bg-white cursor-pointer';
+const selectCls = 'py-[9px] px-3 rounded-lg border border-g-border text-sm text-g-text outline-none bg-g-surface cursor-pointer';

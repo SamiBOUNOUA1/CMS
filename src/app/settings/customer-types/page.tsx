@@ -192,7 +192,7 @@ export default function CustomerTypesSettingsPage() {
                 <div className="flex-1">
                   <button onClick={() => handleToggleActive(cfg)}
                     className="py-0.5 px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
-                    style={{ background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}>
+                    style={{ background: cfg.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: cfg.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)' }}>
                     {cfg.isActive ? tc.active : tc.inactive}
                   </button>
                 </div>
@@ -229,7 +229,7 @@ export default function CustomerTypesSettingsPage() {
                   </div>
                   <button onClick={() => handleToggleActive(cfg)}
                     className="shrink-0 py-0.5 px-3 rounded-xl border-none cursor-pointer text-xs font-medium"
-                    style={{ background: cfg.isActive ? '#e6f4ea' : '#f1f3f4', color: cfg.isActive ? '#137333' : '#5f6368' }}>
+                    style={{ background: cfg.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: cfg.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)' }}>
                     {cfg.isActive ? tc.active : tc.inactive}
                   </button>
                 </div>

@@ -31,11 +31,11 @@ interface UserForm {
 }
 
 const SYSTEM_COLORS: Record<string, { bg: string; color: string }> = {
-  admin:   { bg: '#fce8e6', color: '#d93025' },
-  manager: { bg: '#e8f0fe', color: '#1a73e8' },
-  viewer:  { bg: '#f1f3f4', color: '#5f6368' }
+  admin:   { bg: 'var(--google-red-light)', color: '#d93025' },
+  manager: { bg: 'var(--google-blue-light)', color: '#1a73e8' },
+  viewer:  { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' }
 };
-const FALLBACK_COLOR = { bg: '#f1f3f4', color: '#5f6368' };
+const FALLBACK_COLOR = { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' };
 
 function roleColor(name: string) {
   return SYSTEM_COLORS[name] ?? FALLBACK_COLOR;
@@ -152,7 +152,7 @@ export default function UsersPage() {
       {/* Delete confirm */}
       {deleteId && (
         <div className="fixed inset-0 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.4)', zIndex: 200 }}>
-          <div className="bg-white rounded-2xl w-full max-w-[360px]" style={{ padding: '24px 28px', boxShadow: '0 24px 38px rgba(0,0,0,.14)' }}>
+          <div className="bg-g-surface rounded-2xl w-full max-w-[360px]" style={{ padding: '24px 28px', boxShadow: '0 24px 38px rgba(0,0,0,.14)' }}>
             <h3 className="text-lg font-medium m-0 mb-2.5">{tu.deleteDialog.title}</h3>
             <p className="text-sm text-g-text-2 m-0 mb-6">{tu.deleteDialog.body}</p>
             <div className="flex justify-end gap-2">
@@ -252,7 +252,7 @@ export default function UsersPage() {
                 <button
                   onClick={() => updateUser(u._id, { isActive: !u.isActive })}
                   className="border-none rounded-xl py-[3px] px-2.5 text-xs font-medium cursor-pointer"
-                  style={{ background: u.isActive ? '#e6f4ea' : '#f1f3f4', color: u.isActive ? '#137333' : '#5f6368'}}
+                  style={{ background: u.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: u.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)'}}
                 >
                   {u.isActive ? tu.active : tu.inactive}
                 </button>
@@ -299,7 +299,7 @@ export default function UsersPage() {
                     <button
                       onClick={() => updateUser(u._id, { isActive: !u.isActive })}
                       className="border-none rounded-xl py-[3px] px-2.5 text-xs font-medium cursor-pointer"
-                      style={{ background: u.isActive ? '#e6f4ea' : '#f1f3f4', color: u.isActive ? '#137333' : '#5f6368'}}
+                      style={{ background: u.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: u.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)'}}
                     >
                       {u.isActive ? tu.active : tu.inactive}
                     </button>

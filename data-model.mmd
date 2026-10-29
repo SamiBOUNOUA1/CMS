@@ -1,0 +1,510 @@
+---
+title: CMS Data Model — Catering / Event Management (MongoDB + Mongoose)
+---
+erDiagram
+
+    %% ─────────────────────── AUTH & ACCESS ───────────────────────
+    User {
+      ObjectId _id PK
+      string   name
+      string   email  UK
+      string   passwordHash
+      string   role            "FK → Role.name (denormalized)"
+      bool     isActive
+      string   preferredLanguage  "en | fr"
+      date     createdAt
+      date     updatedAt
+    }
+    Role {
+      ObjectId _id PK
+      string   name  UK
+      string   label
+      bool     isDefault
+      bool     isSystem
+      int      sortOrder
+    }
+    RolePermissions {
+      ObjectId _id PK
+      string   role  UK  "FK → Role.name"
+      map      permissions  "Map<string, bool>"
+    }
+    User             }o--|| Role             : "role name"
+    Role             ||--|| RolePermissions  : "role name"
+
+    %% ─────────────────────── CRM ───────────────────────
+    Client {
+      ObjectId _id PK
+      string   name
+      string   email
+      string   phone
+      object   billingAddress
+      string   customerType  "FK → CustomerTypeConfig.key"
+      string   leadSource
+      string   notes
+    }
+    Venue {
+      ObjectId _id PK
+      string   name
+      object   address
+      int      capacity
+      string   notes
+    }
+
+    %% ─────────────────────── CATALOG ───────────────────────
+    Category {
+      ObjectId _id PK
+      string   name UK
+    }
+    Product {
+      ObjectId _id PK
+      string   name UK
+      string   shortDescription
+      string   productType     "simple | bundle"
+      number   defaultPrice
+      string   unit
+      ObjectId category        FK
+      ObjectId linkedRecipe    FK
+      bool     isActive
+    }
+    ProductOption {
+      string   name
+      number   price
+    }
+    ProductSubItem {
+      string   name
+    }
+    CatalogItem {
+      ObjectId _id PK
+      string   name
+      string   category        "food | beverage | equipment | service | other"
+      number   unitPrice
+      string   unit
+      array    dietaryFlags
+      bool     isActive
+    }
+    MenuPackage {
+      ObjectId _id PK
+      string   name
+      number   basePricePerPerson
+      int      minGuests
+      bool     isActive
+    }
+    Category    ||--o{ Product        : "category"
+    Product     ||--o{ ProductOption  : "embedded options[]"
+    Product     ||--o{ ProductSubItem : "embedded subItems[]"
+    Product     }o--o| KitchenRecipe  : "linkedRecipe"
+
+    %% ─────────────────────── FLOW TEMPLATES ───────────────────────
+    FlowTemplate {
+      ObjectId _id PK
+      string   eventTypeKey   "FK → EventTypeConfig.key"
+      string   name
+      array    steps          "embedded FlowTemplateStep[]"
+      bool     isActive
+      int      sortOrder
+    }
+    FlowTemplateStep {
+      string label
+      string description
+      int    sortOrder
+    }
+    FlowInstanceStep {
+      string label
+      string description
+      int    sortOrder
+      string status  "pending | in_progress | completed | skipped"
+    }
+    FlowTemplate ||--o{ FlowTemplateStep : "embedded steps[]"
+
+    %% ─────────────────────── EVENTS ───────────────────────
+    Event {
+      ObjectId _id PK
+      ObjectId client     FK
+      ObjectId venue      FK
+      string   eventLocation  "synced from Order"
+      date     eventDate
+      string   eventType   "FK → EventTypeConfig.key"
+      int      guestCount
+      int      tableCount
+      string   startTime
+      string   endTime
+      string   notes
+      string   status      "inquiry | confirmed | completed | cancelled"
+      object   flowInstance "templateId FK + steps[]"
+    }
+    Client ||--o{ Event : "client"
+    Venue  ||--o{ Event : "venue"
+    FlowTemplate ||--o{ Event : "flowInstance.templateId"
+    Event  ||--o{ FlowInstanceStep : "embedded flowInstance.steps[]"
+
+    %% ─────────────────────── ORDERS ───────────────────────
+    Order {
+      ObjectId _id PK
+      string   clientName
+      string   clientEmail
+      string   clientPhone
+      date     eventDate
+      string   eventType       "FK → EventTypeConfig.key"
+      int      guestCount
+      int      tableCount
+      string   startTime
+      string   eventLocation
+      string   notes
+      string   externalNotes
+      string   status          "FK → OrderStatusConfig.name"
+      string   paymentStatus   "unpaid | partially-paid | fully-paid"
+      ObjectId event           FK
+      ObjectId createdBy       FK
+      ObjectId assignedManager FK  "@deprecated"
+      string   travelRegion    "FK → TravelRegionConfig.label"
+      number   travelPrice
+      number   discountAmount
+      number   totalAmount
+      object   flowInstance    "templateId FK + steps[]"
+    }
+    Assignee {
+      ObjectId user FK
+      string   role  "manager | materials | kitchen | staff | logistics | other"
+    }
+    OrderLineGroup {
+      string label
+      int    count
+      array  items  "embedded OrderLineGroupItem[]"
+    }
+    OrderLineGroupItem {
+      ObjectId catalogItem FK
+      string   _productId
+      string   name
+      number   unitPrice
+      string   category
+      string   notes
+      array    subItems
+      array    selectedOptions  "snapshot of Product.options"
+    }
+    StaffAssignment {
+      string role          "FK → StaffRoleConfig.key"
+      int    count
+      number hours
+      number ratePerHour
+      number lineTotal
+      string notes
+    }
+    OrderMaterial {
+      ObjectId inventoryItem FK
+      number   quantity
+      bool     checked
+      ObjectId checkedBy  FK
+      date     checkedAt
+      bool     missing
+      ObjectId missingBy  FK
+      date     missingAt
+    }
+    Event        ||--|| Order              : "linked order"
+    Client       ||--o{ Order              : "by clientPhone (denormalized)"
+    User         ||--o{ Order              : "createdBy"
+    User         ||--o{ Assignee           : "assignees.user"
+    Order        ||--o{ Assignee           : "embedded assignees[]"
+    Order        ||--o{ OrderLineGroup     : "embedded lineGroups[]"
+    OrderLineGroup ||--o{ OrderLineGroupItem : "embedded items[]"
+    Order        ||--o{ StaffAssignment    : "embedded staffAssignments[]"
+    Order        ||--o{ OrderMaterial      : "embedded materials[]"
+    Order        ||--o{ FlowInstanceStep   : "embedded flowInstance.steps[]"
+    FlowTemplate ||--o{ Order              : "flowInstance.templateId"
+    CatalogItem  ||--o{ OrderLineGroupItem : "snapshot ref"
+
+    %% ─────────────────────── QUOTE / INVOICE / PAYMENT ───────────────────────
+    Quote {
+      ObjectId _id PK
+      ObjectId order FK
+      int      versionNumber
+      bool     isActive
+      date     validUntil
+      array    lineItems         "embedded QuoteLineItem[]"
+      array    staffAssignments  "embedded StaffAssignment[]"
+      number   travelFee
+      string   travelRegion
+      number   subtotal
+      number   discountAmount
+      number   taxRate
+      number   taxAmount
+      number   total
+      string   internalNotes
+      string   clientNotes
+    }
+    QuoteLineItem {
+      ObjectId catalogItem FK
+      string   name
+      string   groupLabel
+      string   category
+      number   quantity
+      number   basePrice
+      number   unitPrice   "base + options (effective)"
+      number   lineTotal
+      string   notes
+      array    subItems
+      array    selectedOptions
+    }
+    Invoice {
+      ObjectId _id PK
+      ObjectId quote FK
+      string   invoiceNumber UK
+      date     issuedDate
+      date     dueDate
+      string   status      "pending | partially-paid | paid | overdue | cancelled"
+      number   subtotal
+      number   taxAmount
+      number   total
+      number   amountPaid
+      number   amountDue
+      string   notes
+    }
+    Payment {
+      ObjectId _id PK
+      ObjectId order FK
+      number   amount
+      date     paymentDate
+      string   paymentMethod  "cash | card | transfer | check | other"
+      string   reference
+      string   notes
+    }
+    Order ||--o{ Quote           : "versions"
+    Order ||--o{ Payment         : "payments"
+    Quote ||--o{ QuoteLineItem   : "embedded lineItems[]"
+    Quote ||--o{ StaffAssignment : "embedded staffAssignments[]"
+    Quote ||--|| Invoice         : "invoice (1-1)"
+    CatalogItem ||--o{ QuoteLineItem : "snapshot ref"
+
+    %% ─────────────────────── INVENTORY ───────────────────────
+    InventoryCategory {
+      ObjectId _id PK
+      string   name UK
+      string   color
+    }
+    Supplier {
+      ObjectId _id PK
+      string   name
+      string   email
+      string   phone
+      string   supplierType  "goods | materials | services"
+      string   contactPerson
+      object   address
+      bool     isActive
+    }
+    Warehouse {
+      ObjectId _id PK
+      string   name
+      string   description
+      object   address
+      object   coordinates
+      bool     isActive
+    }
+    InventoryItem {
+      ObjectId _id PK
+      string   name
+      ObjectId category   FK
+      string   unit
+      number   currentStock
+      number   minStock
+      number   unitCost
+      ObjectId supplier   FK
+      ObjectId warehouse  FK
+      string   imageUrl
+      bool     isActive
+      bool     laundryEligible
+    }
+    InventoryAdjustment {
+      ObjectId _id PK
+      ObjectId item FK
+      string   adjustmentType  "purchase | usage | return | write-off | correction"
+      number   quantity
+      date     date
+      ObjectId performedBy FK
+      string   notes
+    }
+    InventoryCategory ||--o{ InventoryItem       : "category"
+    Supplier          ||--o{ InventoryItem       : "supplier"
+    Warehouse         ||--o{ InventoryItem       : "warehouse"
+    InventoryItem     ||--o{ InventoryAdjustment : "item"
+    User              ||--o{ InventoryAdjustment : "performedBy"
+    InventoryItem     ||--o{ OrderMaterial       : "inventoryItem (used-at-event)"
+
+    %% ─────────────────────── LAUNDRY ───────────────────────
+    LaundryBatch {
+      ObjectId _id PK
+      string   batchNumber UK
+      date     date
+      ObjectId order FK
+      ObjectId cleaningSupplier FK
+      string   status  "draft | sent | returned | completed"
+      bool     inventoryProcessed
+      ObjectId createdBy FK
+    }
+    LaundryBatchItem {
+      ObjectId inventoryItem FK
+      number   quantitySent
+      number   quantityReturned
+      number   quantityLost
+      number   quantityDamaged
+      string   notes
+    }
+    Order         ||--o{ LaundryBatch     : "order"
+    Supplier      ||--o{ LaundryBatch     : "cleaningSupplier"
+    User          ||--o{ LaundryBatch     : "createdBy"
+    LaundryBatch  ||--o{ LaundryBatchItem : "embedded items[]"
+    InventoryItem ||--o{ LaundryBatchItem : "inventoryItem"
+
+    %% ─────────────────────── KITCHEN ───────────────────────
+    KitchenStockItem {
+      ObjectId _id PK
+      string   name
+      string   category  "vegetables | dairy | meat | dry | spices | beverages | other"
+      string   unit
+      number   currentStock
+      number   minStock
+      number   unitCost
+      bool     isActive
+    }
+    KitchenStockAdjustment {
+      ObjectId _id PK
+      ObjectId item FK
+      string   adjustmentType "purchase | usage | write-off | return"
+      number   quantity
+      date     date
+      ObjectId performedBy FK
+    }
+    KitchenRecipe {
+      ObjectId _id PK
+      string   name
+      string   nameFr
+      string   category  "starter | main | dessert | side | other"
+      int      servings
+      string   description
+      string   instructions
+      int      prepTime
+      int      cookTime
+      bool     isActive
+    }
+    RecipeIngredient {
+      ObjectId stockItem FK
+      number   quantity
+      string   unit
+    }
+    KitchenStockItem ||--o{ KitchenStockAdjustment : "item"
+    KitchenStockItem ||--o{ RecipeIngredient       : "stockItem"
+    KitchenRecipe    ||--o{ RecipeIngredient       : "embedded ingredients[]"
+    User             ||--o{ KitchenStockAdjustment : "performedBy"
+
+    %% ─────────────────────── OPERATIONS ───────────────────────
+    Task {
+      ObjectId _id PK
+      string   type        "call | message | other"
+      date     scheduledDate
+      bool     completed
+      ObjectId owner     FK
+      ObjectId createdBy FK
+      string   notes
+    }
+    Activity {
+      ObjectId _id PK
+      string   action      "14 enum values (order/customer/event/payment/quote/inventory/laundry/kitchen)"
+      string   entityType
+      ObjectId entityId    "polymorphic — no FK constraint"
+      string   entityLabel
+      ObjectId performedBy FK
+      mixed    metadata
+    }
+    User ||--o{ Task     : "owner / createdBy"
+    User ||--o{ Activity : "performedBy"
+
+    %% ─────────────────────── CONFIG / LOOKUPS ───────────────────────
+    EventTypeConfig {
+      ObjectId _id PK
+      string   key UK
+      string   label
+      string   countMode  "persons | tables"
+      int      tableCapacity
+      bool     isActive
+      int      sortOrder
+    }
+    OrderStatusConfig {
+      ObjectId _id PK
+      string   name UK
+      string   label
+      string   color
+      bool     triggerEvent
+      bool     isSystem
+      int      sortOrder
+    }
+    TravelRegionConfig {
+      ObjectId _id PK
+      string   label
+      number   travelPrice
+      bool     isDefault
+      bool     isActive
+      int      sortOrder
+    }
+    CustomerTypeConfig {
+      ObjectId _id PK
+      string   key UK
+      string   label
+      bool     isActive
+      int      sortOrder
+    }
+    StaffRoleConfig {
+      ObjectId _id PK
+      string   key UK
+      string   label
+      bool     isActive
+      int      sortOrder
+    }
+    ModuleConfig {
+      ObjectId _id PK
+      string   moduleId UK
+      bool     isEnabled
+    }
+    CompanySettings {
+      ObjectId _id PK  "singleton"
+      string   companyName
+      string   logoUrl
+      string   phone
+      string   email
+      object   address
+      string   currency
+      string   vatNumber
+    }
+    WhatsAppSettings {
+      ObjectId _id PK  "singleton"
+      bool     enabled
+      string   phoneNumberId
+      string   accessToken
+      string   businessAccountId
+      string   defaultCountryCode
+      string   quoteTemplateName
+      string   quoteTemplateLang
+      string   receiptTemplateName
+      string   receiptTemplateLang
+    }
+    DocumentLayoutSettings {
+      ObjectId _id PK  "singleton"
+      string   accentColor
+      string   fontStyle  "serif | sans"
+      bool     showLogo
+      bool     showAddress
+      bool     showPhone
+      bool     showEmail
+      bool     showVatNumber
+      bool     showStaffSection
+      bool     showOrderItems
+      bool     showOptionPrices
+      bool     showClientNotes
+      bool     showInternalNotes
+      bool     showExternalNotes
+      bool     showFooter
+    }
+    EventTypeConfig    ||--o{ Event        : "eventType key"
+    EventTypeConfig    ||--o{ Order        : "eventType key"
+    EventTypeConfig    ||--o{ FlowTemplate : "eventTypeKey"
+    OrderStatusConfig  ||--o{ Order        : "status name"
+    TravelRegionConfig ||--o{ Order        : "travelRegion label"
+    CustomerTypeConfig ||--o{ Client       : "customerType key"
+    StaffRoleConfig    ||--o{ StaffAssignment : "role key"

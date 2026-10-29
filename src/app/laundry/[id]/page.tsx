@@ -9,10 +9,10 @@ const STATUS_ORDER = ['draft', 'sent', 'returned', 'completed'] as const;
 type BatchStatus = typeof STATUS_ORDER[number];
 
 const STATUS_CONFIG: Record<string, { bg: string; color: string; fill: string }> = {
-  draft:     { bg: '#f1f3f4', color: '#5f6368', fill: '#5f6368' },
-  sent:      { bg: '#e8f0fe', color: '#1a73e8', fill: '#1a73e8' },
-  returned:  { bg: '#fef7e0', color: '#b06000', fill: '#e37400' },
-  completed: { bg: '#e6f4ea', color: '#137333', fill: '#137333' },
+  draft:     { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)', fill: '#5f6368' },
+  sent:      { bg: 'var(--google-blue-light)', color: '#1a73e8', fill: '#1a73e8' },
+  returned:  { bg: 'var(--google-yellow-light)', color: '#b06000', fill: '#e37400' },
+  completed: { bg: 'var(--google-green-light)', color: '#137333', fill: '#137333' },
 };
 
 const ChevronLeftIcon = () => (
@@ -339,42 +339,43 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
   // ── Shared styles ───────────────────────────────────────────────────────────
 
   const cardStyle: React.CSSProperties = {
-    background: '#fff', borderRadius: 12,
+    background: 'var(--google-surface)', borderRadius: 12,
+    border: '1px solid var(--google-border)',
     boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
     marginBottom: 16, overflow: 'hidden',
   };
 
   const cardHeaderStyle: React.CSSProperties = {
-    padding: '14px 20px', borderBottom: '1px solid #f1f3f4',
+    padding: '14px 20px', borderBottom: '1px solid var(--google-border)',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   };
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px',
-    border: '1px solid #dadce0', borderRadius: 8,
-    fontSize: 14, color: '#202124', fontFamily: 'Roboto, sans-serif',
-    outline: 'none', background: '#fff', boxSizing: 'border-box',
+    border: '1px solid var(--google-border)', borderRadius: 8,
+    fontSize: 14, color: 'var(--google-text-primary)', fontFamily: 'Roboto, sans-serif',
+    outline: 'none', background: 'var(--google-surface)', boxSizing: 'border-box',
   };
 
   const disabledInputStyle: React.CSSProperties = {
-    ...inputStyle, background: '#f8f9fa', color: '#5f6368',
+    ...inputStyle, background: 'var(--google-bg)', color: 'var(--google-text-secondary)',
   };
 
   const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 500, color: '#5f6368',
+    display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--google-text-secondary)',
     marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em',
   };
 
   const thStyle: React.CSSProperties = {
     padding: '10px 14px', textAlign: 'left', fontSize: 11,
-    fontWeight: 600, color: '#5f6368', textTransform: 'uppercase',
-    letterSpacing: '0.05em', background: '#f8f9fa',
-    borderBottom: '1px solid #e8eaed',
+    fontWeight: 600, color: 'var(--google-text-secondary)', textTransform: 'uppercase',
+    letterSpacing: '0.05em', background: 'var(--google-bg)',
+    borderBottom: '1px solid var(--google-border)',
   };
 
   const tdStyle: React.CSSProperties = {
-    padding: '12px 14px', fontSize: 14, color: '#202124',
-    borderBottom: '1px solid #f1f3f4', verticalAlign: 'middle',
+    padding: '12px 14px', fontSize: 14, color: 'var(--google-text-primary)',
+    borderBottom: '1px solid var(--google-border)', verticalAlign: 'middle',
   };
 
   const btnPrimaryStyle: React.CSSProperties = {
@@ -384,8 +385,8 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
   };
 
   const btnSecondaryStyle: React.CSSProperties = {
-    padding: '9px 18px', borderRadius: 24, border: '1px solid #dadce0',
-    background: '#fff', color: '#3c4043', fontSize: 14,
+    padding: '9px 18px', borderRadius: 24, border: '1px solid var(--google-border)',
+    background: 'var(--google-surface)', color: 'var(--google-text-primary)', fontSize: 14,
     fontWeight: 500, cursor: 'pointer', fontFamily: 'Roboto, sans-serif',
   };
 
@@ -394,11 +395,11 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
   if (loading) {
     return (
       <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
-        <div style={{ height: 13, width: 100, borderRadius: 4, background: '#f1f3f4', marginBottom: 24 }} />
-        <div style={{ height: 26, width: 200, borderRadius: 4, background: '#f1f3f4', marginBottom: 32 }} />
+        <div style={{ height: 13, width: 100, borderRadius: 4, background: 'var(--google-bg)', marginBottom: 24 }} />
+        <div style={{ height: 26, width: 200, borderRadius: 4, background: 'var(--google-bg)', marginBottom: 32 }} />
         {[1, 2].map(i => (
           <div key={i} style={{ ...cardStyle, padding: 24, marginBottom: 16 }}>
-            <div style={{ height: 13, width: 140, borderRadius: 4, background: '#f1f3f4' }} />
+            <div style={{ height: 13, width: 140, borderRadius: 4, background: 'var(--google-bg)' }} />
           </div>
         ))}
       </main>
@@ -417,7 +418,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
         href="/laundry"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 2,
-          fontSize: 13, color: '#5f6368', textDecoration: 'none',
+          fontSize: 13, color: 'var(--google-text-secondary)', textDecoration: 'none',
           marginBottom: 18, padding: '4px 8px 4px 2px', borderRadius: 6,
         }}
       >
@@ -428,7 +429,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif' }}>
+          <h1 className="page-title" style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, fontFamily: 'Google Sans, sans-serif' }}>
             {isNew ? td.newTitle : (batch?.batchNumber ?? '')}
           </h1>
           {!isNew && (
@@ -481,7 +482,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 56 }}>
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
-                    background: done ? cfg.fill : '#dadce0',
+                    background: done ? cfg.fill : 'var(--google-border)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#fff', fontSize: 13, fontWeight: 700,
                     boxShadow: active ? `0 0 0 4px ${cfg.bg}` : 'none',
@@ -491,7 +492,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                   </div>
                   <span style={{
                     fontSize: 11, whiteSpace: 'nowrap',
-                    color: active ? cfg.fill : done ? '#3c4043' : '#9aa0a6',
+                    color: active ? cfg.fill : done ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)',
                     fontWeight: active ? 600 : 400,
                   }}>
                     {td.stepper[s as keyof typeof td.stepper]}
@@ -500,7 +501,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                 {i < STATUS_ORDER.length - 1 && (
                   <div style={{
                     flex: 1, height: 2, marginBottom: 18,
-                    background: i < currentStep ? '#137333' : '#e8eaed',
+                    background: i < currentStep ? '#137333' : 'var(--google-border)',
                     transition: 'background 0.3s',
                   }} />
                 )}
@@ -513,7 +514,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
       {/* Batch Info */}
       <div style={cardStyle}>
         <div style={cardHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'Google Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {td.infoSection}
           </h2>
         </div>
@@ -574,7 +575,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
       {/* Items */}
       <div style={cardStyle}>
         <div style={cardHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'Google Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {td.itemsSection}
           </h2>
           {(editing || isNew) && (
@@ -583,7 +584,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', borderRadius: 24,
-                border: '1px solid #1a73e8', background: '#fff',
+                border: '1px solid #1a73e8', background: 'var(--google-surface)',
                 color: '#1a73e8', fontSize: 13, fontWeight: 500, cursor: 'pointer',
               }}
             >
@@ -608,7 +609,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
               <tbody>
                 {form.items.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: '#9aa0a6', padding: '28px 14px', borderBottom: 'none' }}>
+                    <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: 'var(--google-text-tertiary)', padding: '28px 14px', borderBottom: 'none' }}>
                       {td.items.noItems}
                     </td>
                   </tr>
@@ -648,12 +649,12 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                         onClick={() => removeItem(item._tempId)}
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
-                          padding: 6, borderRadius: 6, color: '#bdc1c6',
+                          padding: 6, borderRadius: 6, color: 'var(--google-text-tertiary)',
                           display: 'flex', alignItems: 'center',
                           transition: 'color 0.15s',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.color = '#d93025')}
-                        onMouseLeave={e => (e.currentTarget.style.color = '#bdc1c6')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--google-text-tertiary)')}
                       >
                         <TrashIcon />
                       </button>
@@ -681,7 +682,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                   <tr key={it._id} style={{ borderBottom: idx < (batch?.items?.length ?? 0) - 1 ? '1px solid #f1f3f4' : 'none' }}>
                     <td style={{ ...tdStyle, borderBottom: 'none' }}>{it.inventoryItem?.name ?? '—'}</td>
                     <td style={{ ...tdStyle, borderBottom: 'none', fontWeight: 600 }}>{it.quantitySent}</td>
-                    <td style={{ ...tdStyle, borderBottom: 'none', color: '#9aa0a6' }}>{it.notes || '—'}</td>
+                    <td style={{ ...tdStyle, borderBottom: 'none', color: 'var(--google-text-tertiary)' }}>{it.notes || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -715,7 +716,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                     <td style={{ ...tdStyle, borderBottom: 'none', color: it.quantityDamaged > 0 ? '#e37400' : undefined, fontWeight: it.quantityDamaged > 0 ? 600 : 400 }}>
                       {it.quantityDamaged}
                     </td>
-                    <td style={{ ...tdStyle, borderBottom: 'none', color: '#9aa0a6' }}>{it.notes || '—'}</td>
+                    <td style={{ ...tdStyle, borderBottom: 'none', color: 'var(--google-text-tertiary)' }}>{it.notes || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -726,10 +727,10 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
         {/* Record returns mode */}
         {recordingReturns && (
           <div>
-            <div style={{
-              background: '#fef7e0', borderBottom: '1px solid #fdd663',
+            <div className="status-expired" style={{
+              borderBottom: '1px solid #fdd663',
               padding: '10px 20px', display: 'flex', alignItems: 'center',
-              gap: 8, color: '#b06000', fontSize: 13,
+              gap: 8, fontSize: 13,
             }}>
               <WarningIcon />
               <span>Total returned + lost + damaged must not exceed sent quantity per item.</span>
@@ -753,8 +754,8 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                       <tr
                         key={it._id}
                         style={{
-                          background: invalid ? '#fce8e6' : undefined,
-                          borderBottom: idx < returnItems.length - 1 ? '1px solid #f1f3f4' : 'none',
+                          background: invalid ? 'var(--google-red-light)' : undefined,
+                          borderBottom: idx < returnItems.length - 1 ? '1px solid var(--google-border)' : 'none',
                         }}
                       >
                         <td style={{ ...tdStyle, borderBottom: 'none' }}>
@@ -766,7 +767,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                             type="number" min={0} max={it.quantitySent}
                             value={it.quantityReturned}
                             onChange={e => updateReturnItem(it._id, 'quantityReturned', Number(e.target.value))}
-                            style={{ ...inputStyle, width: 76, padding: '6px 10px', borderColor: invalid ? '#d93025' : '#dadce0' }}
+                            style={{ ...inputStyle, width: 76, padding: '6px 10px', borderColor: invalid ? '#d93025' : 'var(--google-border)' }}
                           />
                         </td>
                         <td style={{ ...tdStyle, borderBottom: 'none' }}>
@@ -774,7 +775,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                             type="number" min={0} max={it.quantitySent}
                             value={it.quantityLost}
                             onChange={e => updateReturnItem(it._id, 'quantityLost', Number(e.target.value))}
-                            style={{ ...inputStyle, width: 76, padding: '6px 10px', borderColor: invalid ? '#d93025' : '#dadce0' }}
+                            style={{ ...inputStyle, width: 76, padding: '6px 10px', borderColor: invalid ? '#d93025' : 'var(--google-border)' }}
                           />
                         </td>
                         <td style={{ ...tdStyle, borderBottom: 'none' }}>
@@ -782,7 +783,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                             type="number" min={0} max={it.quantitySent}
                             value={it.quantityDamaged}
                             onChange={e => updateReturnItem(it._id, 'quantityDamaged', Number(e.target.value))}
-                            style={{ ...inputStyle, width: 76, padding: '6px 10px', borderColor: invalid ? '#d93025' : '#dadce0' }}
+                            style={{ ...inputStyle, width: 76, padding: '6px 10px', borderColor: invalid ? '#d93025' : 'var(--google-border)' }}
                           />
                         </td>
                       </tr>
@@ -791,12 +792,12 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                 </tbody>
               </table>
             </div>
-            <div style={{ padding: '14px 20px', display: 'flex', gap: 8, borderTop: '1px solid #f1f3f4' }}>
+            <div style={{ padding: '14px 20px', display: 'flex', gap: 8, borderTop: '1px solid var(--google-border)' }}>
               <button onClick={() => setRecordingReturns(false)} style={btnSecondaryStyle}>{td.cancel}</button>
               <button
                 onClick={saveReturns}
                 disabled={saving}
-                style={{ ...btnPrimaryStyle, background: saving ? '#9aa0a6' : '#1a73e8', cursor: saving ? 'default' : 'pointer' }}
+                style={{ ...btnPrimaryStyle, background: saving ? 'var(--google-text-tertiary)' : 'var(--google-blue)', cursor: saving ? 'default' : 'pointer' }}
               >
                 {saving ? td.saving : td.actions.saveReturns}
               </button>
@@ -811,7 +812,8 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
           position: 'sticky', bottom: 0, zIndex: 10,
           display: 'flex', justifyContent: 'flex-end', gap: 8,
           padding: '14px 16px', marginTop: 4,
-          background: '#fff', borderRadius: 12,
+          background: 'var(--google-surface)', borderRadius: 12,
+          border: '1px solid var(--google-border)',
           boxShadow: '0 -1px 2px rgba(60,64,67,.15), 0 1px 3px 1px rgba(60,64,67,.15)',
         }}>
           {!isNew && (
@@ -820,7 +822,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ ...btnPrimaryStyle, background: saving ? '#9aa0a6' : '#1a73e8', cursor: saving ? 'default' : 'pointer' }}
+            style={{ ...btnPrimaryStyle, background: saving ? 'var(--google-text-tertiary)' : 'var(--google-blue)', cursor: saving ? 'default' : 'pointer' }}
           >
             {saving ? td.saving : td.save}
           </button>
@@ -834,20 +836,20 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
             <div>
               {status === 'draft' && (
                 <>
-                  <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 14, color: '#202124' }}>{td.actions.markSent}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#5f6368' }}>Send this batch to the laundry service</p>
+                  <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 14, color: 'var(--google-text-primary)' }}>{td.actions.markSent}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--google-text-secondary)' }}>Send this batch to the laundry service</p>
                 </>
               )}
               {status === 'sent' && (
                 <>
-                  <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 14, color: '#202124' }}>{td.actions.recordReturns}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#5f6368' }}>Record quantities returned, lost, or damaged</p>
+                  <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 14, color: 'var(--google-text-primary)' }}>{td.actions.recordReturns}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--google-text-secondary)' }}>Record quantities returned, lost, or damaged</p>
                 </>
               )}
               {status === 'returned' && (
                 <>
-                  <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 14, color: '#202124' }}>{td.actions.complete}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#5f6368' }}>Finalize batch and process inventory adjustments</p>
+                  <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 14, color: 'var(--google-text-primary)' }}>{td.actions.complete}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--google-text-secondary)' }}>Finalize batch and process inventory adjustments</p>
                 </>
               )}
             </div>
@@ -856,7 +858,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                 <button
                   onClick={markSent}
                   disabled={saving}
-                  style={{ ...btnPrimaryStyle, cursor: saving ? 'default' : 'pointer', background: saving ? '#9aa0a6' : '#1a73e8' }}
+                  style={{ ...btnPrimaryStyle, cursor: saving ? 'default' : 'pointer', background: saving ? 'var(--google-text-tertiary)' : 'var(--google-blue)' }}
                 >
                   {saving ? td.saving : td.actions.markSent}
                 </button>
@@ -880,13 +882,13 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
       {!isNew && (status === 'returned' || status === 'completed') && (
         <div style={cardStyle}>
           <div style={cardHeaderStyle}>
-            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'Google Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {td.impactSection}
             </h2>
           </div>
           <div style={{ padding: 20 }}>
             {writeOffCount === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: '#5f6368' }}>{td.impact.noImpact}</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--google-text-secondary)' }}>{td.impact.noImpact}</p>
             ) : (
               <>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginBottom: 12 }}>
@@ -908,7 +910,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
                   </tbody>
                 </table>
                 {status === 'completed' && (
-                  <p style={{ margin: 0, fontSize: 12, color: '#5f6368' }}>{td.impact.processedNote}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--google-text-secondary)' }}>{td.impact.processedNote}</p>
                 )}
               </>
             )}
@@ -919,11 +921,11 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
       {/* Complete confirmation */}
       {completeDialog && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 8px 32px rgba(60,64,67,.25)' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif' }}>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 8px 32px rgba(60,64,67,.25)' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'Google Sans, sans-serif' }}>
               {td.actions.completeDialogTitle}
             </h3>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#5f6368', lineHeight: 1.6 }}>
+            <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--google-text-secondary)', lineHeight: 1.6 }}>
               {td.actions.completeDialogBody(writeOffCount)}
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -933,7 +935,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
               <button
                 onClick={completeBatch}
                 disabled={saving}
-                style={{ ...btnPrimaryStyle, background: saving ? '#9aa0a6' : '#137333', cursor: saving ? 'default' : 'pointer' }}
+                style={{ ...btnPrimaryStyle, background: saving ? 'var(--google-text-tertiary)' : 'var(--google-green)', cursor: saving ? 'default' : 'pointer' }}
               >
                 {saving ? td.actions.completing : td.actions.completeDialogConfirm}
               </button>
@@ -945,11 +947,11 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
       {/* Delete confirmation */}
       {deleteDialog && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(60,64,67,.25)' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif' }}>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(60,64,67,.25)' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'Google Sans, sans-serif' }}>
               {td.deleteDialog.title}
             </h3>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#5f6368', lineHeight: 1.6 }}>
+            <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--google-text-secondary)', lineHeight: 1.6 }}>
               {td.deleteDialog.body}
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

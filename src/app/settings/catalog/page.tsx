@@ -35,6 +35,7 @@ interface Product {
   unit?: string;
   category?: { _id: string; name: string };
   subItems?: SubItem[];
+  packingItems?: SubItem[];
   options?: ProductOption[];
   linkedRecipe?: { _id: string; name: string; nameFr?: string } | null;
 }
@@ -46,6 +47,8 @@ interface EditFields {
   linkedRecipe: string;
   subItems: SubItem[];
   newSubItemInput: string;
+  packingItems: SubItem[];
+  newPackingItemInput: string;
   options: ProductOption[];
   newOptionName: string;
   newOptionPrice: string;
@@ -68,7 +71,7 @@ export default function CatalogPage() {
   return (
     <div>
       {/* Inner tab bar */}
-      <div className="flex border-b border-google-gray-200 mb-6">
+      <div className="flex border-b border-g-border mb-6">
         {[
           { key: 'products',   label: tc.tabProducts },
           { key: 'categories', label: tc.tabCategories },
@@ -79,7 +82,7 @@ export default function CatalogPage() {
             className="border-none bg-transparent cursor-pointer text-[13px] font-medium -mb-px"
             style={{
               padding: '8px 18px',
-              color: innerTab === tab.key ? '#1a73e8' : '#5f6368',
+              color: innerTab === tab.key ? '#1a73e8' : 'var(--google-text-secondary)',
               borderBottom: innerTab === tab.key ? '2px solid #1a73e8' : '2px solid transparent'
             }}
           >
@@ -199,6 +202,8 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
         linkedRecipe: updated.linkedRecipe?._id ?? updated.linkedRecipe ?? '',
         subItems: updated.subItems ?? [],
         newSubItemInput: '',
+        packingItems: updated.packingItems ?? [],
+        newPackingItemInput: '',
         options: updated.options ?? [],
         newOptionName: '',
         newOptionPrice: ''
@@ -218,6 +223,8 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
         linkedRecipe: product.linkedRecipe?._id ?? '',
         subItems: product.subItems ?? [],
         newSubItemInput: '',
+        packingItems: product.packingItems ?? [],
+        newPackingItemInput: '',
         options: product.options ?? [],
         newOptionName: '',
         newOptionPrice: ''
@@ -243,6 +250,23 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
     const ef = editFields[id];
     if (!ef) return;
     setEdit(id, { subItems: ef.subItems.filter(s => s._id !== subId) });
+  };
+
+  const stageAddPackingItem = (id: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    const name = ef.newPackingItemInput.trim();
+    if (!name) return;
+    setEdit(id, {
+      packingItems: [...ef.packingItems, { _id: `new-${Date.now()}`, name }],
+      newPackingItemInput: ''
+    });
+  };
+
+  const stageRemovePackingItem = (id: string, pkgId: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    setEdit(id, { packingItems: ef.packingItems.filter(p => p._id !== pkgId) });
   };
 
   const stageAddOption = (id: string) => {
@@ -277,6 +301,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
       category: ef.category || null,
       linkedRecipe: ef.linkedRecipe || null,
       subItems: ef.subItems.map(s => ({ ...(s._id?.startsWith('new-') ? {} : { _id: s._id }), name: s.name })),
+      packingItems: ef.packingItems.map(p => ({ ...(p._id?.startsWith('new-') ? {} : { _id: p._id }), name: p.name })),
       options: ef.options.map(o => ({
         ...(o._id?.startsWith('new-') ? {} : { _id: o._id }),
         name: o.name,
@@ -359,7 +384,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
               {tp.addProduct}
             </button>
             <button onClick={() => setShowAddForm(false)}
-              className="bg-transparent text-google-blue border border-google-gray-200 rounded-lg py-2.5 px-4 text-sm font-medium cursor-pointer"
+              className="bg-transparent text-google-blue border border-g-border rounded-lg py-2.5 px-4 text-sm font-medium cursor-pointer"
              >
               Cancel
             </button>
@@ -381,9 +406,9 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                 onClick={() => setTypeFilter(type)}
                 className="py-1 px-3.5 rounded-full border text-xs font-medium cursor-pointer whitespace-nowrap flex-shrink-0"
                 style={{
-                  borderColor: typeFilter === type ? '#1a73e8' : '#dadce0',
-                  background: typeFilter === type ? '#e8f0fe' : '#fff',
-                  color: typeFilter === type ? '#1a73e8' : '#5f6368'
+                  borderColor: typeFilter === type ? '#1a73e8' : 'var(--google-border)',
+                  background: typeFilter === type ? 'var(--google-blue-light)' : 'var(--google-surface)',
+                  color: typeFilter === type ? '#1a73e8' : 'var(--google-text-secondary)'
 
                 }}
               >
@@ -408,9 +433,9 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                   onClick={() => setCategoryFilter(val)}
                   className="py-1 px-3.5 rounded-full border text-xs font-medium cursor-pointer whitespace-nowrap flex-shrink-0"
                   style={{
-                    borderColor: categoryFilter === val ? '#1a73e8' : '#dadce0',
-                    background: categoryFilter === val ? '#e8f0fe' : '#fff',
-                    color: categoryFilter === val ? '#1a73e8' : '#5f6368'
+                    borderColor: categoryFilter === val ? '#1a73e8' : 'var(--google-border)',
+                    background: categoryFilter === val ? 'var(--google-blue-light)' : 'var(--google-surface)',
+                    color: categoryFilter === val ? '#1a73e8' : 'var(--google-text-secondary)'
 
                   }}
                 >
@@ -432,7 +457,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
       ) : (
         <div className="flex flex-col gap-2">
           {filteredProducts.map(product => (
-            <div key={product._id} className="bg-white rounded-xl border border-google-gray-200 shadow-google-1 overflow-hidden">
+            <div key={product._id} className="bg-g-surface rounded-xl border border-g-border shadow-google-1 overflow-hidden">
 
               {/* Product row */}
               <div
@@ -442,23 +467,27 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                   if (next) initEditFields(product);
                 }}
                 className="flex items-center justify-between cursor-pointer"
-                style={{ padding: '12px 16px', background: expandedId === product._id ? '#f8f9fa' : '#fff' }}
+                style={{ padding: '12px 16px', background: expandedId === product._id ? 'var(--google-row-hover)' : 'var(--google-surface)' }}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-g-text">{product.name}</span>
                     <span className="rounded-[10px] px-2 py-px text-[11px] font-medium" style={{
-                      background: product.productType === 'bundle' ? '#fce8e6' : '#e8f0fe',
-                      color: product.productType === 'bundle' ? '#c5221f' : '#1a73e8' }}>
+                      background: product.productType === 'bundle' ? 'var(--google-red-light)' : 'var(--google-blue-light)',
+                      color: product.productType === 'bundle' ? 'var(--google-red-accent)' : 'var(--google-blue-accent)' }}>
                       {product.productType}
                     </span>
                     {product.category?.name && (
-                      <span className="bg-[#e6f4ea] text-[#137333] rounded-[10px] px-2 py-px text-[11px] font-medium">
+                      <span className="rounded-[10px] px-2 py-px text-[11px] font-medium" style={{
+                        background: 'var(--google-green-light)',
+                        color: 'var(--google-green-accent)' }}>
                         {product.category.name}
                       </span>
                     )}
                     {product.linkedRecipe?.name && (
-                      <span className="bg-[#fce8e6] text-[#c5221f] rounded-[10px] px-2 py-px text-[11px] font-medium">
+                      <span className="rounded-[10px] px-2 py-px text-[11px] font-medium" style={{
+                        background: 'var(--google-red-light)',
+                        color: 'var(--google-red-accent)' }}>
                         🍽 {product.linkedRecipe.name}
                       </span>
                     )}
@@ -571,10 +600,49 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                         <button
                           onClick={() => stageAddSubItem(product._id)}
                           disabled={!ef.newSubItemInput.trim()}
-                          className="bg-transparent text-google-blue border border-google-gray-200 rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
+                          className="bg-transparent text-google-blue border border-g-border rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
 
                         >
                           {tp.addSubItem}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Packing checklist */}
+                    <div className="mb-5">
+                      <p className="m-0 mb-1 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em]">
+                        {tp.packingItems}
+                      </p>
+                      <p className="m-0 mb-2.5 text-[12px] text-g-text-3">{tp.packingItemsHint}</p>
+                      {ef.packingItems.length === 0 ? (
+                        <p className="text-[13px] text-g-text-3 mb-2.5">{tp.noPackingItems}</p>
+                      ) : (
+                        <div className="mb-2.5">
+                          {ef.packingItems.map(pkg => (
+                            <div key={pkg._id} className="flex items-center gap-2 py-1 border-b border-g-border">
+                              <span className="text-[13px] text-g-text-2 flex-1">📦 {pkg.name}</span>
+                              <button onClick={() => stageRemovePackingItem(product._id, pkg._id)}
+                                className="inline-flex items-center justify-center w-6 h-6 rounded-full border-none bg-transparent cursor-pointer text-google-red">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          value={ef.newPackingItemInput}
+                          onChange={e => setEdit(product._id, { newPackingItemInput: e.target.value })}
+                          onKeyDown={e => e.key === 'Enter' && stageAddPackingItem(product._id)}
+                          placeholder={tp.packingItemPlaceholder}
+                          className={`${inputCls} flex-1`}
+                        />
+                        <button
+                          onClick={() => stageAddPackingItem(product._id)}
+                          disabled={!ef.newPackingItemInput.trim()}
+                          className="bg-transparent text-google-blue border border-g-border rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
+                        >
+                          {tp.addPackingItem}
                         </button>
                       </div>
                     </div>
@@ -623,7 +691,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                         <button
                           onClick={() => stageAddOption(product._id)}
                           disabled={!ef.newOptionName.trim()}
-                          className="bg-transparent text-google-blue border border-google-gray-200 rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
+                          className="bg-transparent text-google-blue border border-g-border rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
                         >
                           {tp.addOption}
                         </button>
@@ -631,7 +699,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                     </div>
 
                     {/* Save button */}
-                    <div className="flex justify-end border-t border-[#f1f3f4] pt-3.5">
+                    <div className="flex justify-end border-t border-g-border pt-3.5">
                       <button onClick={() => saveAll(product)}
                         className="bg-google-blue text-white border-none rounded-lg text-[13px] py-2 px-5 cursor-pointer font-medium"
                        >
@@ -738,7 +806,7 @@ function CategoriesTab({ tc }: { tc: ReturnType<typeof useT>['catalog'] }) {
       ) : (
         <div className="flex flex-col gap-2">
           {categories.map(cat => (
-            <div key={cat._id} className="bg-white rounded-xl border border-google-gray-200 shadow-google-1 overflow-hidden">
+            <div key={cat._id} className="bg-g-surface rounded-xl border border-g-border shadow-google-1 overflow-hidden">
               <div className="flex items-center justify-between" style={{ padding: '14px 16px' }}>
                 <span className="text-sm font-medium text-g-text">{cat.name}</span>
                 <button onClick={() => deleteCategory(cat._id)}
@@ -754,5 +822,5 @@ function CategoriesTab({ tc }: { tc: ReturnType<typeof useT>['catalog'] }) {
   );
 }
 
-const inputCls = 'w-full py-2.5 px-3 rounded-lg border border-g-border text-sm text-g-text outline-none bg-white box-border';
+const inputCls = 'w-full py-2.5 px-3 rounded-lg border border-g-border text-sm text-g-text outline-none bg-g-surface box-border';
 const labelCls = 'block text-[11px] font-medium text-g-text-2 mb-[5px] uppercase tracking-[0.04em]';

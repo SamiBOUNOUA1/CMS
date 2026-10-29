@@ -15,11 +15,11 @@ interface Notification {
 }
 
 const SYSTEM_COLORS: Record<string, { bg: string; color: string }> = {
-  admin:   { bg: '#fce8e6', color: '#d93025' },
-  manager: { bg: '#e8f0fe', color: '#1a73e8' },
-  viewer:  { bg: '#f1f3f4', color: '#5f6368' }
+  admin:   { bg: 'var(--google-red-light)', color: 'var(--google-red)' },
+  manager: { bg: 'var(--google-blue-light)', color: 'var(--google-blue)' },
+  viewer:  { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' }
 };
-const FALLBACK_COLOR = { bg: '#f1f3f4', color: '#5f6368' };
+const FALLBACK_COLOR = { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' };
 
 function roleColor(name: string) {
   return SYSTEM_COLORS[name] ?? FALLBACK_COLOR;

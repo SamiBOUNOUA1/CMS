@@ -9,7 +9,7 @@ const ACCENT = '#e37400';
 const CATEGORIES = ['starter', 'main', 'dessert', 'side', 'other'] as const;
 
 function StockDot({ item, qty }: { item: any; qty: number }) {
-  if (!item) return <span style={{ color: '#9aa0a6', fontSize: 12 }}>—</span>;
+  if (!item) return <span style={{ color: 'var(--google-text-tertiary)', fontSize: 12 }}>—</span>;
   const color = item.currentStock === 0
     ? '#d93025'
     : item.currentStock < qty
@@ -146,7 +146,7 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
     .map((si: any) => si.name);
 
   if (loading) {
-    return <div style={{ padding: 48, textAlign: 'center', color: '#5f6368' }}>{(t as any).kitchenPage.recipes.loading}</div>;
+    return <div style={{ padding: 48, textAlign: 'center', color: 'var(--google-text-secondary)' }}>{(t as any).kitchenPage.recipes.loading}</div>;
   }
 
   return (
@@ -158,19 +158,19 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#202124', margin: 0 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--google-text-primary)', margin: 0 }}>
           {isNew ? tk.newTitle : recipe.name}
         </h1>
         {canManage && !isNew && (
           <div style={{ display: 'flex', gap: 10 }}>
             {editing ? (
               <>
-                <button onClick={() => setEditing(false)} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.cancel}</button>
+                <button onClick={() => setEditing(false)} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.cancel}</button>
                 <button onClick={handleSave} disabled={saving} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: ACCENT, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{saving ? tk.saving : tk.save}</button>
               </>
             ) : (
               <>
-                <button onClick={() => setEditing(true)} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.edit}</button>
+                <button onClick={() => setEditing(true)} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.edit}</button>
                 <button onClick={() => setDeleteDialog(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#d93025', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>{tk.delete}</button>
               </>
             )}
@@ -183,13 +183,13 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
 
       {/* Low stock warning (view mode) */}
       {!editing && lowStockIngredients.length > 0 && (
-        <div style={{ background: '#fce8e6', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#d93025', fontWeight: 600, fontSize: 14 }}>
+        <div style={{ background: 'var(--google-red-light)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#d93025', fontWeight: 600, fontSize: 14 }}>
           ⚠ {tk.lowStockWarning} {lowStockIngredients.join(', ')}
         </div>
       )}
 
       {/* Info Card */}
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
+      <div style={{ background: 'var(--google-surface)', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px 24px' }}>
           <Field label={tk.fields.name}>
             <FormInput value={recipe.name} onChange={e => setRecipe((p: any) => ({ ...p, name: e.target.value }))} disabled={!editing} />
@@ -220,7 +220,7 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
         </div>
         {editing && (
           <div style={{ marginTop: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: '#202124' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--google-text-primary)' }}>
               <input type="checkbox" checked={recipe.isActive} onChange={e => setRecipe((p: any) => ({ ...p, isActive: e.target.checked }))} />
               {tk.fields.isActive}
             </label>
@@ -229,25 +229,25 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
       </div>
 
       {/* Ingredients */}
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
+      <div style={{ background: 'var(--google-surface)', borderRadius: 12, boxShadow: '0 1px 2px rgba(60,64,67,.3)', padding: '24px', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#202124' }}>{tk.ingredients.title}</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--google-text-primary)' }}>{tk.ingredients.title}</h3>
           {editing && (
-            <button onClick={addIngredient} style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, background: '#fff', color: ACCENT, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+            <button onClick={addIngredient} style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, background: 'var(--google-surface)', color: ACCENT, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
               {tk.ingredients.addRow}
             </button>
           )}
         </div>
 
         {(recipe.ingredients ?? []).length === 0 ? (
-          <p style={{ color: '#5f6368', fontSize: 14, margin: 0 }}>{tk.ingredients.noIngredients}</p>
+          <p style={{ color: 'var(--google-text-secondary)', fontSize: 14, margin: 0 }}>{tk.ingredients.noIngredients}</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #e8eaed' }}>
+                <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
                   {[tk.ingredients.stockItem, tk.ingredients.quantity, tk.ingredients.unit, tk.ingredients.availability, editing ? '' : null].filter(Boolean).map((h, i) => (
-                    <th key={i} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#5f6368', textTransform: 'uppercase' }}>{h}</th>
+                    <th key={i} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--google-text-secondary)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -256,19 +256,19 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
                   const siId = getStockItemId(ing);
                   const siObj = getStockItemObj(ing);
                   return (
-                    <tr key={idx} style={{ borderBottom: '1px solid #f1f3f4' }}>
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--google-border)' }}>
                       <td style={{ padding: '8px 12px', minWidth: 180 }}>
                         {editing ? (
                           <select
                             value={siId}
                             onChange={e => updateIngredient(idx, 'stockItem', e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', border: '1px solid #dadce0', borderRadius: 6, fontSize: 13, background: '#fff' }}
+                            style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--google-border)', borderRadius: 6, fontSize: 13, background: 'var(--google-surface)' }}
                           >
                             <option value="">{tk.ingredients.noItem}</option>
                             {allStockItems.map(i => <option key={i._id} value={i._id}>{i.name} ({i.unit})</option>)}
                           </select>
                         ) : (
-                          <span style={{ color: '#202124', fontSize: 14 }}>{siObj?.name || '—'}</span>
+                          <span style={{ color: 'var(--google-text-primary)', fontSize: 14 }}>{siObj?.name || '—'}</span>
                         )}
                       </td>
                       <td style={{ padding: '8px 12px', minWidth: 80 }}>
@@ -277,13 +277,13 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
                             type="number" min="0" step="0.01"
                             value={ing.quantity}
                             onChange={e => updateIngredient(idx, 'quantity', e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', border: '1px solid #dadce0', borderRadius: 6, fontSize: 13 }}
+                            style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--google-border)', borderRadius: 6, fontSize: 13 }}
                           />
                         ) : (
-                          <span style={{ color: '#202124', fontSize: 14 }}>{ing.quantity}</span>
+                          <span style={{ color: 'var(--google-text-primary)', fontSize: 14 }}>{ing.quantity}</span>
                         )}
                       </td>
-                      <td style={{ padding: '8px 12px', color: '#5f6368', fontSize: 13 }}>
+                      <td style={{ padding: '8px 12px', color: 'var(--google-text-secondary)', fontSize: 13 }}>
                         {ing.unit || siObj?.unit || '—'}
                       </td>
                       <td style={{ padding: '8px 12px' }}>
@@ -309,17 +309,17 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
       <div style={{ background: `linear-gradient(135deg, ${ACCENT}18, ${ACCENT}08)`, border: `1px solid ${ACCENT}40`, borderRadius: 12, padding: '20px 24px', marginBottom: 24 }}>
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: ACCENT }}>{tk.cost.title}</h3>
         {(recipe.ingredients ?? []).length === 0 ? (
-          <p style={{ color: '#5f6368', fontSize: 14, margin: 0 }}>{tk.cost.noIngredients}</p>
+          <p style={{ color: 'var(--google-text-secondary)', fontSize: 14, margin: 0 }}>{tk.cost.noIngredients}</p>
         ) : (
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 12, color: '#5f6368', marginBottom: 4 }}>{tk.cost.totalCost}</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#202124' }}>{fmt(totalCost)}</div>
+              <div style={{ fontSize: 12, color: 'var(--google-text-secondary)', marginBottom: 4 }}>{tk.cost.totalCost}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--google-text-primary)' }}>{fmt(totalCost)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: '#5f6368', marginBottom: 4 }}>{tk.cost.costPerServing}</div>
+              <div style={{ fontSize: 12, color: 'var(--google-text-secondary)', marginBottom: 4 }}>{tk.cost.costPerServing}</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: ACCENT }}>{fmt(costPerServing)}</div>
-              <div style={{ fontSize: 11, color: '#9aa0a6', marginTop: 2 }}>÷ {recipe.servings} servings</div>
+              <div style={{ fontSize: 11, color: 'var(--google-text-tertiary)', marginTop: 2 }}>÷ {recipe.servings} servings</div>
             </div>
           </div>
         )}
@@ -328,11 +328,11 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
       {/* Delete Dialog */}
       {deleteDialog && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: '#202124' }}>{tk.deleteDialog.title}</div>
-            <div style={{ color: '#5f6368', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '28px 32px', maxWidth: 380, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 12, color: 'var(--google-text-primary)' }}>{tk.deleteDialog.title}</div>
+            <div style={{ color: 'var(--google-text-secondary)', marginBottom: 24, fontSize: 14 }}>{tk.deleteDialog.body}</div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteDialog(false)} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #dadce0', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.cancel}</button>
+              <button onClick={() => setDeleteDialog(false)} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid var(--google-border)', background: 'var(--google-surface)', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.cancel}</button>
               <button onClick={handleDelete} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#d93025', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>{tk.deleteDialog.delete}</button>
             </div>
           </div>

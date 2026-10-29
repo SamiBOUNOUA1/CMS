@@ -234,7 +234,7 @@ export default function WarehousesPage() {
               <div className="flex-1">
                 <span
                   className="inline-block py-0.5 px-2.5 rounded-full text-[12px] font-medium"
-                  style={{ background: w.isActive ? '#e6f4ea' : '#f1f3f4', color: w.isActive ? '#137333' : '#5f6368' }}
+                  style={{ background: w.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: w.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)' }}
                 >
                   {w.isActive ? 'Active' : 'Inactive'}
                 </span>
@@ -291,7 +291,7 @@ export default function WarehousesPage() {
                 <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   <span
                     className="py-0.5 px-2.5 rounded-full text-[12px] font-medium"
-                    style={{ background: w.isActive ? '#e6f4ea' : '#f1f3f4', color: w.isActive ? '#137333' : '#5f6368' }}
+                    style={{ background: w.isActive ? 'var(--google-green-light)' : 'var(--google-bg)', color: w.isActive ? 'var(--google-green)' : 'var(--google-text-secondary)' }}
                   >
                     {w.isActive ? 'Active' : 'Inactive'}
                   </span>

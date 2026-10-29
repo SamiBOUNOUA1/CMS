@@ -50,7 +50,7 @@ export function StepStaff({ form, setForm, isMobile, tn, currency, staffRoles = 
       {form.staffAssignments.map((sa, i) => (
         <div
           key={i}
-          className="border border-google-gray-200 rounded-xl mb-3.5 bg-[#fafafa]"
+          className="border border-g-border rounded-xl mb-3.5 bg-g-bg"
           style={{ padding: isMobile ? 14 : 20 }}
         >
           <div className="flex justify-between mb-3.5">

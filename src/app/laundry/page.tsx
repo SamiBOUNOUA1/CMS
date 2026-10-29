@@ -29,10 +29,10 @@ const LaundryIcon = () => (
 );
 
 const STATUS_CONFIG: Record<string, { bg: string; color: string }> = {
-  draft:     { bg: '#f1f3f4', color: '#5f6368' },
-  sent:      { bg: '#e8f0fe', color: '#1a73e8' },
-  returned:  { bg: '#fef7e0', color: '#b06000' },
-  completed: { bg: '#e6f4ea', color: '#137333' },
+  draft:     { bg: 'var(--google-bg)', color: 'var(--google-text-secondary)' },
+  sent:      { bg: 'var(--google-blue-light)', color: '#1a73e8' },
+  returned:  { bg: 'var(--google-yellow-light)', color: '#b06000' },
+  completed: { bg: 'var(--google-green-light)', color: '#137333' },
 };
 
 const STATS_ACCENT: Record<string, string> = {
@@ -121,12 +121,12 @@ export default function LaundryPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 42, height: 42, borderRadius: 10,
-            background: '#e8f0fe', display: 'flex', alignItems: 'center',
+            background: 'var(--google-blue-light)', display: 'flex', alignItems: 'center',
             justifyContent: 'center', color: '#1a73e8', flexShrink: 0,
           }}>
             <LaundryIcon />
           </div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, Roboto, sans-serif' }}>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 22, fontWeight: 600, fontFamily: 'Google Sans, Roboto, sans-serif' }}>
             {tl.title}
           </h1>
         </div>
@@ -152,14 +152,15 @@ export default function LaundryPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: 12, marginBottom: 28 }}>
         {(['total', 'sent', 'returned', 'completed'] as const).map(key => (
           <div key={key} style={{
-            background: '#fff', borderRadius: 12, padding: '16px 20px',
+            background: 'var(--google-surface)', borderRadius: 12, padding: '16px 20px',
+            border: '1px solid var(--google-border)',
             boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
             borderLeft: `4px solid ${STATS_ACCENT[key]}`,
           }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: STATS_ACCENT[key], fontFamily: 'Google Sans, sans-serif', lineHeight: 1 }}>
               {stats[key]}
             </div>
-            <div style={{ fontSize: 11, color: '#5f6368', marginTop: 6, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, color: 'var(--google-text-secondary)', marginTop: 6, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {tl.stats[key]}
             </div>
           </div>
@@ -169,7 +170,7 @@ export default function LaundryPage() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9aa0a6', pointerEvents: 'none', display: 'flex' }}>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--google-text-tertiary)', pointerEvents: 'none', display: 'flex' }}>
             <SearchIcon />
           </span>
           <input
@@ -179,8 +180,8 @@ export default function LaundryPage() {
             onChange={e => setSearch(e.target.value)}
             style={{
               width: '100%', padding: '9px 14px 9px 40px',
-              border: '1px solid #dadce0', borderRadius: 24,
-              fontSize: 14, color: '#202124', background: '#fff',
+              border: '1px solid var(--google-border)', borderRadius: 24,
+              fontSize: 14, color: 'var(--google-text-primary)', background: 'var(--google-surface)',
               outline: 'none', fontFamily: 'Roboto, sans-serif',
               boxSizing: 'border-box',
             }}
@@ -197,9 +198,9 @@ export default function LaundryPage() {
                 onClick={() => setFilterStatus(s)}
                 style={{
                   padding: '7px 14px', borderRadius: 24, fontSize: 13,
-                  border: active ? '1.5px solid transparent' : '1px solid #dadce0',
-                  background: active ? (cfg?.bg ?? '#e8f0fe') : '#fff',
-                  color: active ? (cfg?.color ?? '#1a73e8') : '#5f6368',
+                  border: active ? '1.5px solid transparent' : '1px solid var(--google-border)',
+                  background: active ? (cfg?.bg ?? 'var(--google-blue-light)') : 'var(--google-surface)',
+                  color: active ? (cfg?.color ?? '#1a73e8') : 'var(--google-text-secondary)',
                   cursor: 'pointer', fontWeight: active ? 600 : 400,
                   fontFamily: 'Roboto, sans-serif',
                   transition: 'all 0.15s',
@@ -215,37 +216,39 @@ export default function LaundryPage() {
       {/* Content */}
       {loading ? (
         <div style={{
-          background: '#fff', borderRadius: 12,
+          background: 'var(--google-surface)', borderRadius: 12,
+          border: '1px solid var(--google-border)',
           boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
           overflow: 'hidden',
         }}>
           {[1, 2, 3, 4].map(i => (
             <div key={i} style={{
-              padding: '16px 20px', borderBottom: '1px solid #f1f3f4',
+              padding: '16px 20px', borderBottom: '1px solid var(--google-border)',
               display: 'flex', gap: 20, alignItems: 'center',
             }}>
-              <div style={{ height: 13, width: 90, borderRadius: 4, background: '#f1f3f4' }} />
-              <div style={{ height: 13, flex: 1, borderRadius: 4, background: '#f1f3f4' }} />
-              <div style={{ height: 13, flex: 2, borderRadius: 4, background: '#f1f3f4' }} />
-              <div style={{ height: 22, width: 64, borderRadius: 10, background: '#f1f3f4' }} />
+              <div style={{ height: 13, width: 90, borderRadius: 4, background: 'var(--google-bg)' }} />
+              <div style={{ height: 13, flex: 1, borderRadius: 4, background: 'var(--google-bg)' }} />
+              <div style={{ height: 13, flex: 2, borderRadius: 4, background: 'var(--google-bg)' }} />
+              <div style={{ height: 22, width: 64, borderRadius: 10, background: 'var(--google-bg)' }} />
             </div>
           ))}
         </div>
       ) : batches.length === 0 ? (
         <div style={{
-          background: '#fff', borderRadius: 12, padding: '60px 24px',
+          background: 'var(--google-surface)', borderRadius: 12, padding: '60px 24px',
+          border: '1px solid var(--google-border)',
           boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
           textAlign: 'center',
         }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%', background: '#f1f3f4',
+            width: 64, height: 64, borderRadius: '50%', background: 'var(--google-bg)',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: 16, color: '#9aa0a6',
+            marginBottom: 16, color: 'var(--google-text-tertiary)',
           }}>
             <LaundryIcon />
           </div>
-          <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 15, color: '#202124' }}>{tl.empty.title}</p>
-          <p style={{ margin: 0, fontSize: 13, color: '#5f6368' }}>{tl.empty.body}</p>
+          <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 15, color: 'var(--google-text-primary)' }}>{tl.empty.title}</p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--google-text-secondary)' }}>{tl.empty.body}</p>
         </div>
       ) : isMobile ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -256,14 +259,15 @@ export default function LaundryPage() {
                 key={batch._id}
                 onClick={() => router.push(`/laundry/${batch._id}`)}
                 style={{
-                  background: '#fff', borderRadius: 12, padding: '14px 16px',
+                  background: 'var(--google-surface)', borderRadius: 12, padding: '14px 16px',
+                  border: '1px solid var(--google-border)',
                   boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
                   cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', gap: 10,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <span style={{ fontWeight: 600, color: '#202124', fontFamily: 'monospace', fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'monospace', fontSize: 14 }}>
                     {batch.batchNumber}
                   </span>
                   <span style={{
@@ -273,18 +277,18 @@ export default function LaundryPage() {
                     {tl.status[batch.status as keyof typeof tl.status] ?? batch.status}
                   </span>
                 </div>
-                <div style={{ fontSize: 13, color: batch.order?.clientName ? '#202124' : '#9aa0a6' }}>
+                <div style={{ fontSize: 13, color: batch.order?.clientName ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)' }}>
                   {batch.order?.clientName ?? tl.table.noOrder}
                 </div>
                 {batch.cleaningSupplier?.name && (
-                  <div style={{ fontSize: 12, color: '#5f6368' }}>
+                  <div style={{ fontSize: 12, color: 'var(--google-text-secondary)' }}>
                     {tl.table.supplier}: {batch.cleaningSupplier.name}
                   </div>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <span style={{ fontSize: 13, color: '#5f6368' }}>{formatDate(batch.date)}</span>
+                  <span style={{ fontSize: 13, color: 'var(--google-text-secondary)' }}>{formatDate(batch.date)}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 12, color: '#5f6368' }}>
+                    <span style={{ fontSize: 12, color: 'var(--google-text-secondary)' }}>
                       {batch.items?.length ?? 0} {tl.table.items.toLowerCase()}
                     </span>
                     {canManage && batch.status === 'draft' && (
@@ -308,28 +312,29 @@ export default function LaundryPage() {
         </div>
       ) : (
         <div style={{
-          background: '#fff', borderRadius: 12,
+          background: 'var(--google-surface)', borderRadius: 12,
+          border: '1px solid var(--google-border)',
           boxShadow: '0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15)',
           overflow: 'hidden',
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ background: '#f8f9fa' }}>
+              <tr style={{ background: 'var(--google-bg)' }}>
                 {[tl.table.batchNumber, tl.table.date, tl.table.order, tl.table.supplier, tl.table.items, tl.table.status].map((h, i) => (
                   <th
                     key={i}
                     className={i === 2 || i === 3 ? 'hidden sm:table-cell' : undefined}
                     style={{
                       padding: '11px 16px', textAlign: 'left', fontSize: 11,
-                      fontWeight: 600, color: '#5f6368', textTransform: 'uppercase',
-                      letterSpacing: '0.05em', borderBottom: '1px solid #e8eaed',
+                      fontWeight: 600, color: 'var(--google-text-secondary)', textTransform: 'uppercase',
+                      letterSpacing: '0.05em', borderBottom: '1px solid var(--google-border)',
                       ...(i === 0 ? { paddingLeft: 20 } : {}),
                     }}
                   >
                     {h}
                   </th>
                 ))}
-                {canManage && <th style={{ padding: '11px 12px', borderBottom: '1px solid #e8eaed', width: 48 }} />}
+                {canManage && <th style={{ padding: '11px 12px', borderBottom: '1px solid var(--google-border)', width: 48 }} />}
               </tr>
             </thead>
             <tbody>
@@ -341,27 +346,27 @@ export default function LaundryPage() {
                     onClick={() => router.push(`/laundry/${batch._id}`)}
                     style={{
                       cursor: 'pointer',
-                      borderBottom: idx < batches.length - 1 ? '1px solid #f1f3f4' : 'none',
+                      borderBottom: idx < batches.length - 1 ? '1px solid var(--google-border)' : 'none',
                       transition: 'background 0.12s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8f9fa')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
-                    <td style={{ padding: '14px 16px 14px 20px', fontWeight: 600, color: '#202124', fontFamily: 'monospace', fontSize: 13 }}>
+                    <td style={{ padding: '14px 16px 14px 20px', fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'monospace', fontSize: 13 }}>
                       {batch.batchNumber}
                     </td>
-                    <td style={{ padding: '14px 16px', color: '#5f6368' }}>{formatDate(batch.date)}</td>
-                    <td className="hidden sm:table-cell" style={{ padding: '14px 16px', color: batch.order?.clientName ? '#202124' : '#9aa0a6' }}>
+                    <td style={{ padding: '14px 16px', color: 'var(--google-text-secondary)' }}>{formatDate(batch.date)}</td>
+                    <td className="hidden sm:table-cell" style={{ padding: '14px 16px', color: batch.order?.clientName ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)' }}>
                       {batch.order?.clientName ?? tl.table.noOrder}
                     </td>
-                    <td className="hidden sm:table-cell" style={{ padding: '14px 16px', color: batch.cleaningSupplier?.name ? '#202124' : '#9aa0a6' }}>
+                    <td className="hidden sm:table-cell" style={{ padding: '14px 16px', color: batch.cleaningSupplier?.name ? 'var(--google-text-primary)' : 'var(--google-text-tertiary)' }}>
                       {batch.cleaningSupplier?.name ?? tl.table.noSupplier}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         minWidth: 26, height: 26, borderRadius: 13,
-                        background: '#f1f3f4', fontSize: 12, fontWeight: 600, color: '#5f6368',
+                        background: 'var(--google-bg)', fontSize: 12, fontWeight: 600, color: 'var(--google-text-secondary)',
                       }}>
                         {batch.items?.length ?? 0}
                       </span>
@@ -383,12 +388,12 @@ export default function LaundryPage() {
                             onClick={() => setDeleteId(batch._id)}
                             style={{
                               background: 'none', border: 'none', cursor: 'pointer',
-                              padding: 6, borderRadius: 6, color: '#bdc1c6',
+                              padding: 6, borderRadius: 6, color: 'var(--google-text-tertiary)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               transition: 'color 0.15s',
                             }}
                             onMouseEnter={e => (e.currentTarget.style.color = '#d93025')}
-                            onMouseLeave={e => (e.currentTarget.style.color = '#bdc1c6')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--google-text-tertiary)')}
                           >
                             <TrashIcon />
                           </button>
@@ -406,17 +411,17 @@ export default function LaundryPage() {
       {/* Delete confirmation */}
       {deleteId && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(60,64,67,.25)' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 600, color: '#202124', fontFamily: 'Google Sans, sans-serif' }}>
+          <div style={{ background: 'var(--google-surface)', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(60,64,67,.25)' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'Google Sans, sans-serif' }}>
               {tl.deleteDialog.title}
             </h3>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#5f6368', lineHeight: 1.6 }}>
+            <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--google-text-secondary)', lineHeight: 1.6 }}>
               {tl.deleteDialog.body}
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button
                 onClick={() => setDeleteId(null)}
-                style={{ padding: '9px 18px', borderRadius: 24, border: '1px solid #dadce0', background: '#fff', color: '#5f6368', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+                style={{ padding: '9px 18px', borderRadius: 24, border: '1px solid var(--google-border)', background: 'var(--google-surface)', color: 'var(--google-text-secondary)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
               >
                 {tl.deleteDialog.cancel}
               </button>
