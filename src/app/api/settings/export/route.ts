@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import {
@@ -47,7 +48,7 @@ const GROUP_COLLECTIONS: Record<string, { key: string; model: unknown }[]> = {
   ],
 };
 
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'manage_data');
     if (error) return error;
@@ -84,3 +85,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

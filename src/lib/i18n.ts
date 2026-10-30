@@ -52,6 +52,18 @@ export const translations: Record<string, any> = {
       loginFailed: 'Login failed',
     },
 
+    // License blocked page
+    license: {
+      title: 'Access unavailable',
+      expired: 'Your subscription has expired.',
+      suspended: 'Your account access has been suspended.',
+      generic: 'Your subscription is not active.',
+      contact: 'Your data is kept safe. Please contact your provider to renew your license.',
+      backToLogin: 'Back to sign in',
+      userLimitReached: 'User limit reached for your plan.',
+      notInPlan: 'Not included in your plan',
+    },
+
     // Orders list
     ordersPage: {
       title: 'Orders',
@@ -797,6 +809,7 @@ export const translations: Record<string, any> = {
     users: {
       title: 'User management',
       userCount: (n) => `${n} user${n !== 1 ? 's' : ''}`,
+      activeOfMax: 'active (plan limit)',
       addUser: '+ Add user',
       newUser: 'New user',
       fullName: 'Full name',
@@ -2121,6 +2134,18 @@ export const translations: Record<string, any> = {
       loginFailed: 'Échec de la connexion',
     },
 
+    // License blocked page
+    license: {
+      title: 'Accès indisponible',
+      expired: 'Votre abonnement a expiré.',
+      suspended: "L'accès à votre compte a été suspendu.",
+      generic: "Votre abonnement n'est pas actif.",
+      contact: 'Vos données sont conservées. Veuillez contacter votre fournisseur pour renouveler votre licence.',
+      backToLogin: 'Retour à la connexion',
+      userLimitReached: "Limite d'utilisateurs atteinte pour votre offre.",
+      notInPlan: 'Non inclus dans votre offre',
+    },
+
     // Orders list
     ordersPage: {
       title: 'Commandes',
@@ -2866,6 +2891,7 @@ export const translations: Record<string, any> = {
     users: {
       title: 'Gestion des utilisateurs',
       userCount: (n) => `${n} utilisateur${n > 1 ? 's' : ''}`,
+      activeOfMax: "actifs (limite de l'offre)",
       addUser: '+ Ajouter',
       newUser: 'Nouvel utilisateur',
       fullName: 'Nom complet',

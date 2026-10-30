@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment, InventoryItem, OrderStatusConfig, EventTypeConfig } from '@/lib/models';
@@ -19,7 +20,7 @@ function monthKey(date: Date): string {
 }
 
 // GET /api/reports?range=30d|90d|12m — business analytics rollup
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'view_reports');
     if (error) return error;
@@ -148,3 +149,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

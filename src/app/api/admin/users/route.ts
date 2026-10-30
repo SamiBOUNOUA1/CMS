@@ -1,23 +1,27 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { userLimitError, getTenantLicense } from '@/lib/license';
+import { getTenantId } from '@/lib/tenantContext';
 
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'manage_users');
     if (error) return error;
     await connectDB();
     const users = await User.find().select('-passwordHash').sort({ createdAt: -1 }).lean();
-    return NextResponse.json({ users });
+    const { maxUsers } = await getTenantLicense(getTenantId());
+    return NextResponse.json({ users, maxUsers });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'manage_users');
     if (error) return error;
@@ -25,6 +29,9 @@ export async function POST(request: NextRequest) {
     const { name, email, password, role } = await request.json();
     if (!name || !email || !password)
       return NextResponse.json({ error: 'Name, email and password required' }, { status: 400 });
+
+    const limitErr = await userLimitError();
+    if (limitErr) return limitErr;
 
     const passwordHash = await hash(password, 12);
     const user = await User.create({ name, email, passwordHash, role: role || 'viewer' });
@@ -37,3 +44,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const POST = withTenant(POST_);

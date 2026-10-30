@@ -1,11 +1,12 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 
 // GET /api/admin/managers — list all active users (assignable to an event team)
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   const auth = await getAuth(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -26,3 +27,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

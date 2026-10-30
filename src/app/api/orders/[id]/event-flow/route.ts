@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
@@ -6,7 +7,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { getAuth } from '@/lib/requireAuth';
 
 // GET /api/orders/[id]/event-flow
-export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     const order = await Order.findById(params.id)
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 }
 
 // PATCH /api/orders/[id]/event-flow
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -89,3 +90,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);

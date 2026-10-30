@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
@@ -17,7 +18,7 @@ async function loadMaterials(id: string) {
 
 // GET /api/orders/[id]/materials — view the event materials checklist
 // Readable by any authenticated user who can reach the event (prep + managers).
-export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
 // PUT /api/orders/[id]/materials — replace the whole list (admin CRUD)
 // Guarded by manage_event_materials in middleware; re-checked here as defense.
-export async function PUT(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PUT_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { error } = await requirePermission(request, 'manage_event_materials');
     if (error) return error;
@@ -87,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: Record<str
 // PATCH /api/orders/[id]/materials — set a material's received/checked or missing status.
 // `checked` and `missing` are mutually exclusive: turning one on clears the other.
 // Guarded by check_event_materials in middleware; re-checked here as defense.
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { auth, error } = await requirePermission(request, 'check_event_materials');
     if (error) return error;
@@ -124,3 +125,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const PUT = withTenant(PUT_);
+export const PATCH = withTenant(PATCH_);

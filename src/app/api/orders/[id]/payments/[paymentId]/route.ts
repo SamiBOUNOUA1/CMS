@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 
-export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { error } = await requirePermission(request, 'delete_orders');
     if (error) return error;
@@ -37,3 +38,5 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const DELETE = withTenant(DELETE_);

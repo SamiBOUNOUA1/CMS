@@ -1,6 +1,7 @@
 import puppeteer, { type Browser } from 'puppeteer-core';
 import { signToken } from '@/lib/auth';
 import { buildPermissions } from '@/lib/permissions';
+import { getTenantId } from '@/lib/tenantContext';
 
 // Common local Chrome/Edge install locations, used as a dev fallback when no
 // PUPPETEER_EXECUTABLE_PATH is set and we are not in a serverless environment.
@@ -36,12 +37,18 @@ async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
 }
 
-/** Mints a short-lived admin token so Puppeteer can load auth-gated pages. */
+/**
+ * Mints a short-lived admin token so Puppeteer can load auth-gated pages. It is
+ * bound to the calling request's tenant, so the bot only sees that tenant's data.
+ */
 async function mintInternalToken(): Promise<string> {
+  const tenantId = getTenantId();
+  if (!tenantId) throw new Error('PDF rendering requires a tenant context');
   return signToken({
     id: 'whatsapp-pdf-bot',
     role: 'admin',
     permissions: buildPermissions('admin'),
+    tenantId,
   });
 }
 

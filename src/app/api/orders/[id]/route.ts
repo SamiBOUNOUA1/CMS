@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, Payment } from '@/lib/models';
@@ -7,7 +8,7 @@ import { getAuth, requirePermission } from '@/lib/requireAuth';
 import { lineGroupsTotal } from '@/lib/pricing';
 import { applyStatusEventTrigger } from '@/lib/orderStatus';
 
-export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { auth, error } = await requirePermission(request, 'edit_orders');
     if (error) return error;
@@ -127,7 +128,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { error } = await requirePermission(request, 'delete_orders');
     if (error) return error;
@@ -139,3 +140,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

@@ -1,11 +1,12 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 
 // GET /api/manager/events/[id] — get a single order, only if assigned to the current manager
-export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   const auth = await getAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,3 +30,5 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

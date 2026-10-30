@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Activity } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'view_activities');
     if (error) return error;
@@ -38,3 +39,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withTenant(GET_);

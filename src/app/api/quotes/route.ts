@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Quote, Order } from '@/lib/models';
@@ -7,7 +8,7 @@ import { requirePermission } from '@/lib/requireAuth';
 import { itemUnitPrice, round2 } from '@/lib/pricing';
 
 // POST /api/quotes — snapshot the order's current items/staff into a new quote version
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     const { auth, error } = await requirePermission(request, 'create_quotes');
     if (error) return error;
@@ -96,3 +97,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const POST = withTenant(POST_);

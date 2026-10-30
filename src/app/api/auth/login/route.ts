@@ -2,10 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
-import { User, RolePermissions } from '@/lib/models';
+import { User, RolePermissions, Tenant } from '@/lib/models';
 import { signToken, cookieOptions, COOKIE } from '@/lib/auth';
 import { buildPermissions } from '@/lib/permissions';
 import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
+import { runAsSystem, runWithTenant } from '@/lib/tenantContext';
+import { getTenantLicense } from '@/lib/license';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +27,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Emails are globally unique, so the account identifies its tenant.
+    const user = await runAsSystem(() => User.findOne({ email: email.toLowerCase() }));
     if (!user || !user.isActive)
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
@@ -36,10 +39,22 @@ export async function POST(request: NextRequest) {
     // Successful auth — clear the throttle counter.
     rateLimitReset(rlKey);
 
-    const roleDoc = await RolePermissions.findOne({ role: user.role }).lean();
+    const tenantId = String(user.tenantId);
+    const license = await getTenantLicense(tenantId);
+    if (!license.active)
+      return NextResponse.json({ error: 'license_inactive', reason: license.reason }, { status: 403 });
+
+    const roleDoc = await runWithTenant(tenantId, () => RolePermissions.findOne({ role: user.role }).lean());
     const permissions = buildPermissions(user.role, roleDoc?.permissions);
 
-    const token = await signToken({ id: user._id.toString(), role: user.role, name: user.name, permissions });
+    await Tenant.updateOne({ _id: tenantId }, { lastActivityAt: new Date() });
+
+    const token = await signToken({
+      id: user._id.toString(), role: user.role, name: user.name, permissions,
+      tenantId,
+      // Lets the edge middleware block expired licenses without a DB call.
+      licenseExpiresAt: license.expiresAt ? license.expiresAt.getTime() : null,
+    });
 
     const res = NextResponse.json({ ok: true, user: { id: user._id, name: user.name, email: user.email, role: user.role, permissions } });
     res.cookies.set(COOKIE, token, cookieOptions());

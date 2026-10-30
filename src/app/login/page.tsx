@@ -25,6 +25,10 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
+      if (res.status === 403 && data.error === 'license_inactive') {
+        router.push(`/license-expired?reason=${data.reason || ''}`);
+        return;
+      }
       if (!res.ok) { setError(data.error || t.login.loginFailed); return; }
       router.push(searchParams.get('from') || '/');
       router.refresh();

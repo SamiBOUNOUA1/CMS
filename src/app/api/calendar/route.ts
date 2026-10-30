@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
@@ -6,7 +7,7 @@ import { Order } from '@/lib/models';
 // Opt out of Next.js static caching so newly confirmed events appear immediately.
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+async function GET_() {
   try {
     await connectDB();
     const orders = await Order.find({ event: { $exists: true, $ne: null } })
@@ -17,3 +18,5 @@ export async function GET() {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

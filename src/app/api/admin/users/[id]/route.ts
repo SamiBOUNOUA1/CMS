@@ -1,11 +1,13 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { userLimitError } from '@/lib/license';
 
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { error } = await requirePermission(request, 'manage_users');
     if (error) return error;
@@ -17,6 +19,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     if (body.role) update.role = body.role;
     if (typeof body.isActive === 'boolean') update.isActive = body.isActive;
     if (body.password) update.passwordHash = await hash(body.password, 12);
+
+    // Re-activating a user counts against the plan's user limit.
+    if (body.isActive === true) {
+      const current = await User.findById(params.id).select('isActive').lean();
+      if (current && !current.isActive) {
+        const limitErr = await userLimitError();
+        if (limitErr) return limitErr;
+      }
+    }
 
     // Prevent demoting the last admin
     if (body.role && body.role !== 'admin') {
@@ -36,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { auth, error } = await requirePermission(request, 'manage_users');
     if (error) return error;
@@ -61,3 +72,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

@@ -45,6 +45,7 @@ export default function UsersPage() {
   const t = useT();
   const tu = t.users;
   const [users, setUsers] = useState<User[]>([]);
+  const [maxUsers, setMaxUsers] = useState(0); // plan limit on active users, 0 = unlimited
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -74,6 +75,7 @@ export default function UsersPage() {
       const res = await fetch('/api/admin/users');
       const data = await res.json();
       setUsers(data.users || []);
+      setMaxUsers(data.maxUsers || 0);
     } finally {
       setLoading(false);
     }
@@ -178,7 +180,12 @@ export default function UsersPage() {
 
       {/* Header */}
       <div className="flex justify-between items-start mb-6 gap-3">
-        <p className="text-[13px] text-g-text-2 m-0">{tu.userCount(users.length)}</p>
+        <p className="text-[13px] text-g-text-2 m-0">
+          {tu.userCount(users.length)}
+          {maxUsers > 0 && (
+            <span className="ml-2">· {users.filter(u => u.isActive).length} / {maxUsers} {tu.activeOfMax}</span>
+          )}
+        </p>
         <button onClick={() => { setShowForm(true); resetForm(); }} className="bg-google-blue text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer flex-shrink-0 shadow-google-1">
           {tu.addUser}
         </button>

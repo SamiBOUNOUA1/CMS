@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
@@ -7,7 +8,7 @@ import { requirePermission } from '@/lib/requireAuth';
 // PATCH /api/orders/[id]/packing-items — toggle a single packing-item checkbox
 // on one of the order's line items. Body: { groupIndex, itemIndex, packingItemId, checked }.
 // Guarded by edit_orders in middleware; re-checked here as defense.
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { error } = await requirePermission(request, 'edit_orders');
     if (error) return error;
@@ -35,3 +36,5 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const PATCH = withTenant(PATCH_);

@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryCategory } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 
-export async function GET() {
+async function GET_() {
   try {
     await connectDB();
     const categories = await InventoryCategory.find({}).sort({ name: 1 });
@@ -14,7 +15,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'manage_inventory');
     if (error) return error;
@@ -27,3 +28,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const POST = withTenant(POST_);

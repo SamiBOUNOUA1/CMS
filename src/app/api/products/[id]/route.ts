@@ -1,9 +1,10 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Product } from '@/lib/models';
 
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     const body = await request.json();
@@ -29,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
   }
 }
 
-export async function DELETE(_, { params }) {
+async function DELETE_(_, { params }) {
   try {
     await connectDB();
     await Product.findByIdAndDelete(params.id);
@@ -38,3 +39,6 @@ export async function DELETE(_, { params }) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

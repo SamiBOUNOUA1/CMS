@@ -1,5 +1,10 @@
 /**
- * Seeds the initial admin user and built-in Role documents.
+ * Seeds a tenant with its built-in Role documents and an initial admin user.
+ * (New customers are normally created from the platform console at /platform;
+ * this script is for local development and bootstrapping.)
+ *
+ * The tenant is looked up by --tenant <slug>, or created as TENANT_NAME
+ * (default "Demo Company") with a 1-year license.
  *
  * Usage:
  *   Development:  node scripts/seed-admin.mjs
@@ -63,6 +68,7 @@ console.log(`Admin email : ${adminEmail}\n`);
 
 // --- Schemas ---
 const userSchema = new mongoose.Schema({
+  tenantId: mongoose.Schema.Types.ObjectId,
   name: String,
   email: { type: String, unique: true, lowercase: true },
   passwordHash: String,
@@ -71,7 +77,8 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const roleSchema = new mongoose.Schema({
-  name:      { type: String, required: true, unique: true, trim: true, lowercase: true },
+  tenantId:  { type: mongoose.Schema.Types.ObjectId, required: true },
+  name:      { type: String, required: true, trim: true, lowercase: true },
   label:     { type: String, required: true, trim: true },
   isDefault: { type: Boolean, default: false },
   isSystem:  { type: Boolean, default: false },
@@ -83,6 +90,33 @@ const Role = mongoose.models.Role || mongoose.model('Role', roleSchema);
 
 await mongoose.connect(uri);
 
+// --- Resolve / create the tenant ---
+const tenants = mongoose.connection.db.collection('tenants');
+const tenantIndex = args.indexOf('--tenant');
+const tenantName = process.env.TENANT_NAME || 'Demo Company';
+const slug = (tenantIndex !== -1 ? args[tenantIndex + 1] : tenantName)
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+let tenant = await tenants.findOne({ slug });
+if (!tenant) {
+  if (tenantIndex !== -1) {
+    console.error(`ERROR: no tenant with slug "${slug}"`);
+    process.exit(1);
+  }
+  const now = new Date();
+  const doc = {
+    name: tenantName, slug, contactName: '', contactEmail: adminEmail, contactPhone: '',
+    status: 'active', plan: null, overrides: { maxUsers: null, modules: null },
+    license: { startsAt: now, expiresAt: new Date(now.getTime() + 365 * 24 * 3600 * 1000) },
+    notes: '', lastActivityAt: null, createdAt: now, updatedAt: now,
+  };
+  const { insertedId } = await tenants.insertOne(doc);
+  tenant = { ...doc, _id: insertedId };
+  console.log(`✓ Tenant created: ${tenantName} (${insertedId})`);
+} else {
+  console.log(`  Using tenant: ${tenant.name} (${tenant._id})`);
+}
+const tenantId = tenant._id;
+
 // --- Seed built-in roles (upsert so re-running is safe) ---
 const builtInRoles = [
   { name: 'admin',   label: 'Admin',   isSystem: true,  isDefault: false, sortOrder: 0 },
@@ -92,8 +126,8 @@ const builtInRoles = [
 
 for (const r of builtInRoles) {
   const existing = await Role.findOneAndUpdate(
-    { name: r.name },
-    { $setOnInsert: r },
+    { tenantId, name: r.name },
+    { $setOnInsert: { ...r, tenantId } },
     { upsert: true, new: false }
   );
   if (!existing) {
@@ -109,6 +143,7 @@ if (existingUser) {
   console.log(`\nAdmin already exists: ${adminEmail}`);
 } else {
   await User.create({
+    tenantId,
     name: 'Admin',
     email: adminEmail,
     passwordHash: hashSync(adminPassword, 12),
