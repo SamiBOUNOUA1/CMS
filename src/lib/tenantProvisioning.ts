@@ -4,6 +4,8 @@ import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { Tenant, User, Role, CompanySettings } from '@/lib/models';
 import { runAsSystem, runWithTenant } from '@/lib/tenantContext';
+import { getBucket } from '@/lib/storage';
+import { invalidateTenantLicense } from '@/lib/license';
 
 // Same built-in roles scripts/seed-admin.mjs creates. Permissions per role come
 // from DEFAULT_PERMISSIONS (lib/permissions.ts) until a tenant customises them.
@@ -80,9 +82,32 @@ export async function provisionTenant(input: ProvisionInput) {
 
 /** Removes every tenant-owned document for a tenant (used for rollback). */
 async function deleteTenantData(tenantId: string) {
-  await runAsSystem(async () => {
+  const tid = new mongoose.Types.ObjectId(tenantId);
+  return runAsSystem(async () => {
+    let deleted = 0;
     for (const model of Object.values(mongoose.models)) {
-      if (model.schema.path('tenantId')) await model.deleteMany({ tenantId });
+      if (model.schema.path('tenantId')) deleted += (await model.deleteMany({ tenantId: tid })).deletedCount ?? 0;
     }
+    return deleted;
   });
+}
+
+/**
+ * Permanently deletes a tenant: all of its documents, its stored files and the
+ * Tenant record itself. Irreversible — callers must confirm first.
+ */
+export async function deleteTenant(tenantId: string) {
+  await connectDB();
+  const documents = await deleteTenantData(tenantId);
+  let files = 0;
+  try {
+    const [list] = await getBucket().getFiles({ prefix: `tenants/${tenantId}/` });
+    await Promise.all(list.map(f => f.delete()));
+    files = list.length;
+  } catch {
+    /* storage not configured (e.g. local dev) — nothing to remove */
+  }
+  await Tenant.deleteOne({ _id: tenantId });
+  invalidateTenantLicense(tenantId);
+  return { documents, files };
 }
