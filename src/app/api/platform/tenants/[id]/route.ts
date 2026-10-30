@@ -6,6 +6,7 @@ import { Tenant } from '@/lib/models';
 import { withPlatformAdmin } from '@/lib/requireAuth';
 import { evaluateLicense, invalidateTenantLicense } from '@/lib/license';
 import { tenantMetrics, tenantAdmins } from '@/lib/platformMetrics';
+import { deleteTenant } from '@/lib/tenantProvisioning';
 
 const notFound = () => NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -48,4 +49,18 @@ export const PATCH = withPlatformAdmin(async (request, { params }) => {
   if (!tenant) return notFound();
   invalidateTenantLicense(params.id);
   return NextResponse.json({ tenant });
+});
+
+// Permanent deletion. The body must repeat the tenant's exact name as a guard
+// against deleting the wrong customer.
+export const DELETE = withPlatformAdmin(async (request, { params }) => {
+  if (!mongoose.Types.ObjectId.isValid(params.id)) return notFound();
+  await connectDB();
+  const tenant = await Tenant.findById(params.id).select('name').lean();
+  if (!tenant) return notFound();
+  const { confirmName } = await request.json().catch(() => ({}));
+  if (confirmName !== tenant.name)
+    return NextResponse.json({ error: 'Type the exact company name to confirm deletion' }, { status: 400 });
+  const result = await deleteTenant(params.id);
+  return NextResponse.json({ ok: true, ...result });
 });

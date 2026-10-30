@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, FormSelect, FormTextarea, btnFilled, btnOutline } from '@/app/components/FormPrimitives';
 import { LicenseBadge, OPTIONAL_MODULES, api, fmtDate, fmtBytes, toDateInput, addPeriod, type LicenseState } from '../../shared';
 
@@ -31,6 +32,9 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmName, setConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
   const [form, setForm] = useState({
     name: '', contactName: '', contactEmail: '', contactPhone: '', notes: '',
     plan: '', licenseStartsAt: '', licenseExpiresAt: '',
@@ -107,6 +111,18 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
       setNotice(`Password reset for ${email}.`);
     } catch (e) {
       setError((e as Error).message);
+    }
+  };
+
+  const deleteTenant = async () => {
+    if (!data || confirmName !== data.tenant.name) return;
+    setDeleting(true); setError('');
+    try {
+      await api(`/api/platform/tenants/${params.id}`, { method: 'DELETE', body: JSON.stringify({ confirmName }) });
+      router.push('/platform');
+    } catch (e) {
+      setError((e as Error).message);
+      setDeleting(false);
     }
   };
 
@@ -236,6 +252,25 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
           </div>
         ))}
       </FormCard>
+
+      <div className="bg-g-surface border border-google-red rounded-2xl p-4 sm:p-6 mb-4">
+        <FormSectionLabel>Danger zone</FormSectionLabel>
+        <p className="text-sm text-g-text m-0 mb-1">Delete this tenant permanently.</p>
+        <p className="text-xs text-g-text-2 m-0 mb-3">
+          Removes all of its users, orders, customers, quotes, inventory, settings and stored images. This cannot be undone.
+          To only block access, use “Suspend access” instead.
+        </p>
+        <Field label={`Type "${tenant.name}" to confirm`}>
+          <FormInput value={confirmName} onChange={e => setConfirmName(e.target.value)} />
+        </Field>
+        <button
+          onClick={deleteTenant} disabled={confirmName !== tenant.name || deleting}
+          className="mt-3 rounded-full py-2 px-5 text-sm font-medium border-none text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: '#d93025' }}
+        >
+          {deleting ? 'Deleting…' : 'Delete tenant'}
+        </button>
+      </div>
 
       <p className="text-xs text-g-text-2">Created {fmtDate(tenant.createdAt)} · ID {tenant._id}</p>
     </div>
