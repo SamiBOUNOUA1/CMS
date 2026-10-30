@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment, WhatsAppSettings } from '@/lib/models';
@@ -11,7 +12,7 @@ import { requirePermission } from '@/lib/requireAuth';
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
-export async function POST(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function POST_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     const { auth, error } = await requirePermission(request, 'edit_orders');
     if (error) return error;
@@ -67,3 +68,5 @@ export async function POST(request: NextRequest, { params }: { params: Record<st
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const POST = withTenant(POST_);

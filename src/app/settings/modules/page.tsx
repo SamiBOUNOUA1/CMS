@@ -12,6 +12,7 @@ interface Module {
   color: string;
   builtIn: boolean;
   isEnabled: boolean;
+  allowedByPlan?: boolean;
 }
 
 const ClipboardListIcon = () => (
@@ -155,6 +156,12 @@ export default function ModulesSettingsPage() {
                       {ts.alwaysOn}
                     </span>
                   )}
+                  {mod.allowedByPlan === false && (
+                    <span className="inline-flex items-center gap-1 py-[2px] px-2 rounded-[10px] bg-g-bg text-g-text-2 text-[11px] font-medium">
+                      <LockIcon />
+                      {t.license.notInPlan}
+                    </span>
+                  )}
                 </div>
                 <p className="m-0 text-[13px] text-g-text-2 leading-[1.5]">
                   {mod.description}
@@ -173,7 +180,7 @@ export default function ModulesSettingsPage() {
                 </span>
                 <Toggle
                   checked={mod.isEnabled}
-                  disabled={mod.builtIn || !canEdit}
+                  disabled={mod.builtIn || mod.allowedByPlan === false || !canEdit}
                   onChange={(v) => handleToggle(mod, v)}
                 />
               </div>

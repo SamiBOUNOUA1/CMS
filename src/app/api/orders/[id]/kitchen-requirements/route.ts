@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Product } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 
-export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   const { error } = await requirePermission(request, 'view_kitchen');
   if (error) return error;
 
@@ -71,3 +72,5 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 
   return NextResponse.json({ dishes });
 }
+
+export const GET = withTenant(GET_);

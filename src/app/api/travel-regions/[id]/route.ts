@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { TravelRegionConfig } from '@/lib/models';
 
 // PATCH /api/travel-regions/[id]
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     const body = await request.json();
@@ -35,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 }
 
 // DELETE /api/travel-regions/[id]
-export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     await TravelRegionConfig.findByIdAndDelete(params.id);
@@ -44,3 +45,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

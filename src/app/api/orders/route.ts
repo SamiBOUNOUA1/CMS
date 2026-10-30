@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, FlowTemplate } from '@/lib/models';
@@ -13,7 +14,7 @@ const ORDER_LIST_FIELDS =
   'clientName clientEmail clientPhone eventType eventDate guestCount tableCount status paymentStatus event createdAt totalAmount';
 
 // GET /api/orders — list orders with latest active quote summary
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/orders — create a new order
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     const { auth, error } = await requirePermission(request, 'create_orders');
     if (error) return error;
@@ -137,3 +138,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const POST = withTenant(POST_);

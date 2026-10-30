@@ -1,13 +1,14 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getBucket } from '@/lib/storage';
+import { getBucket, tenantObjectPath } from '@/lib/storage';
 import { requirePermission } from '@/lib/requireAuth';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const EXT_MAP = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'manage_inventory');
     if (error) return error;
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const ext = EXT_MAP[file.type];
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const objectPath = `inventory/${filename}`;
+    const objectPath = tenantObjectPath(`inventory/${filename}`);
 
     // Store in Cloud Storage — the local container filesystem is ephemeral on
     // Firebase App Hosting (Cloud Run) and is not served as static content.
@@ -47,3 +48,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const POST = withTenant(POST_);

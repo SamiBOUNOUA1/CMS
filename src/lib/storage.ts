@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { Storage } from '@google-cloud/storage';
+import { getTenantId } from '@/lib/tenantContext';
 
 // On Firebase App Hosting (Cloud Run) the runtime service account is picked up
 // automatically via Application Default Credentials — no key file needed.
@@ -45,4 +46,15 @@ export function getBucketName(): string {
 
 export function getBucket() {
   return getStorage().bucket(getBucketName());
+}
+
+/**
+ * Prefixes an object path with the current tenant's folder
+ * (`tenants/<tenantId>/...`) so tenants can never read each other's files.
+ * Must be called inside a tenant context (withTenant).
+ */
+export function tenantObjectPath(relativePath: string): string {
+  const tenantId = getTenantId();
+  if (!tenantId) throw new Error('tenantObjectPath requires a tenant context');
+  return `tenants/${tenantId}/${relativePath}`;
 }

@@ -1,9 +1,10 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryAdjustment } from '@/lib/models';
 
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -20,3 +21,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

@@ -3,13 +3,17 @@ import { jwtVerify } from 'jose';
 import { MODULE_REGISTRY } from '@/lib/modules';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-const PUBLIC = ['/login'];
-const PUBLIC_API = ['/api/auth/login', '/api/settings/modules/state'];
+const PUBLIC = ['/login', '/license-expired'];
+const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/settings/modules/state'];
+const PLATFORM_PUBLIC = ['/platform/login', '/api/platform/auth/login', '/api/platform/auth/logout'];
 
-async function getEnabledModuleIds(request: NextRequest): Promise<string[] | null> {
+async function getEnabledModuleIds(request: NextRequest, tenantId: string): Promise<string[] | null> {
   try {
     const origin = request.nextUrl.origin;
-    const res = await fetch(`${origin}/api/settings/modules/state`, {
+    // Module state is per tenant: forward the session cookie, and key the
+    // cache by tenant so one tenant's modules are never served to another.
+    const res = await fetch(`${origin}/api/settings/modules/state?t=${encodeURIComponent(tenantId)}`, {
+      headers: { cookie: request.headers.get('cookie') ?? '' },
       next: { revalidate: 30 },
     });
     if (!res.ok) return null;
@@ -23,6 +27,26 @@ async function getEnabledModuleIds(request: NextRequest): Promise<string[] | nul
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
+  // ── Platform (SaaS operator) console — separate session cookie ─────────────
+  if (pathname.startsWith('/platform') || pathname.startsWith('/api/platform')) {
+    if (PLATFORM_PUBLIC.includes(pathname)) return NextResponse.next();
+    const ptoken = request.cookies.get('cq_platform_token')?.value;
+    try {
+      if (!ptoken) throw new Error('no token');
+      const { payload } = await jwtVerify(ptoken, secret);
+      if (payload.platform !== true) throw new Error('not platform');
+      return NextResponse.next();
+    } catch {
+      if (pathname.startsWith('/api/')) {
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = '/platform/login';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (PUBLIC.includes(pathname) || PUBLIC_API.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
   }
@@ -32,6 +56,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   try {
     const { payload } = await jwtVerify(token, secret);
+    // Sessions must belong to a tenant (older pre-multi-tenant tokens and
+    // platform tokens are rejected → re-login).
+    if (!payload.tenantId || payload.platform) return redirectToLogin(request);
+    // License expiry is embedded in the token; suspension is enforced per
+    // request by withTenant/getAuth (DB-backed, cached ~60s).
+    if (typeof payload.licenseExpiresAt === 'number' && payload.licenseExpiresAt < Date.now()) {
+      return licenseBlocked(request);
+    }
     const permissions = (payload.permissions ?? {}) as Record<string, boolean>;
     const method = request.method;
     const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
@@ -215,7 +247,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
 
     // ── Module-level guards ──────────────────────────────────────────────────
-    const enabledModuleIds = await getEnabledModuleIds(request);
+    const enabledModuleIds = await getEnabledModuleIds(request, String(payload.tenantId));
     if (enabledModuleIds) {
       for (const mod of MODULE_REGISTRY) {
         if (mod.builtIn || enabledModuleIds.includes(mod.id)) continue;
@@ -246,6 +278,19 @@ function redirectToLogin(request: NextRequest): NextResponse {
   const url = request.nextUrl.clone();
   url.pathname = '/login';
   url.searchParams.set('from', request.nextUrl.pathname);
+  return NextResponse.redirect(url);
+}
+
+function licenseBlocked(request: NextRequest): NextResponse {
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return new NextResponse(JSON.stringify({ error: 'license_inactive', reason: 'expired' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = '/license-expired';
+  url.search = '';
   return NextResponse.redirect(url);
 }
 

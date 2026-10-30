@@ -1,5 +1,6 @@
 // @ts-nocheck
 import mongoose, { Schema, models, model } from 'mongoose';
+import { tenantPlugin } from '@/lib/tenantPlugin';
 
 // ── TRAVEL REGION CONFIG ──────────────────────────────────────────────────────
 const travelRegionConfigSchema = new Schema(
@@ -12,12 +13,13 @@ const travelRegionConfigSchema = new Schema(
   },
   { timestamps: true }
 );
+travelRegionConfigSchema.plugin(tenantPlugin);
 export const TravelRegionConfig = models.TravelRegionConfig || model('TravelRegionConfig', travelRegionConfigSchema);
 
 // ── ORDER STATUS CONFIG ───────────────────────────────────────────────────────
 const orderStatusConfigSchema = new Schema(
   {
-    name:         { type: String, required: true, unique: true, trim: true, lowercase: true },
+    name:         { type: String, required: true, trim: true, lowercase: true },
     label:        { type: String, required: true, trim: true },
     color:        { type: String, default: '#5f6368', trim: true },
     triggerEvent: { type: Boolean, default: false },
@@ -26,12 +28,14 @@ const orderStatusConfigSchema = new Schema(
   },
   { timestamps: true }
 );
+orderStatusConfigSchema.plugin(tenantPlugin);
+orderStatusConfigSchema.index({ tenantId: 1, name: 1 }, { unique: true });
 export const OrderStatusConfig = models.OrderStatusConfig || model('OrderStatusConfig', orderStatusConfigSchema);
 
 // ── EVENT TYPE CONFIG ─────────────────────────────────────────────────────────
 const eventTypeConfigSchema = new Schema(
   {
-    key: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    key: { type: String, required: true, trim: true, lowercase: true },
     label: { type: String, required: true, trim: true },
     countMode: { type: String, enum: ['persons', 'tables'], default: 'persons' },
     tableCapacity: { type: Number, default: 10, min: 1 },
@@ -40,36 +44,42 @@ const eventTypeConfigSchema = new Schema(
   },
   { timestamps: true }
 );
+eventTypeConfigSchema.plugin(tenantPlugin);
+eventTypeConfigSchema.index({ tenantId: 1, key: 1 }, { unique: true });
 export const EventTypeConfig = models.EventTypeConfig || model('EventTypeConfig', eventTypeConfigSchema);
 
 // ── CUSTOMER TYPE CONFIG ──────────────────────────────────────────────────────
 const customerTypeConfigSchema = new Schema(
   {
-    key:       { type: String, required: true, unique: true, trim: true, lowercase: true },
+    key:       { type: String, required: true, trim: true, lowercase: true },
     label:     { type: String, required: true, trim: true },
     isActive:  { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+customerTypeConfigSchema.plugin(tenantPlugin);
+customerTypeConfigSchema.index({ tenantId: 1, key: 1 }, { unique: true });
 export const CustomerTypeConfig = models.CustomerTypeConfig || model('CustomerTypeConfig', customerTypeConfigSchema);
 
 // ── STAFF ROLE CONFIG ─────────────────────────────────────────────────────────
 const staffRoleConfigSchema = new Schema(
   {
-    key:       { type: String, required: true, unique: true, trim: true },
+    key:       { type: String, required: true, trim: true },
     label:     { type: String, required: true, trim: true },
     isActive:  { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+staffRoleConfigSchema.plugin(tenantPlugin);
+staffRoleConfigSchema.index({ tenantId: 1, key: 1 }, { unique: true });
 export const StaffRoleConfig = models.StaffRoleConfig || model('StaffRoleConfig', staffRoleConfigSchema);
 
 // ── ROLE ──────────────────────────────────────────────────────────────────────
 const roleSchema = new Schema(
   {
-    name:      { type: String, required: true, unique: true, trim: true, lowercase: true },
+    name:      { type: String, required: true, trim: true, lowercase: true },
     label:     { type: String, required: true, trim: true },
     isDefault: { type: Boolean, default: false },
     isSystem:  { type: Boolean, default: false },
@@ -77,16 +87,20 @@ const roleSchema = new Schema(
   },
   { timestamps: true }
 );
+roleSchema.plugin(tenantPlugin);
+roleSchema.index({ tenantId: 1, name: 1 }, { unique: true });
 export const Role = models.Role || model('Role', roleSchema);
 
 // ── ROLE PERMISSIONS ──────────────────────────────────────────────────────────
 const rolePermissionsSchema = new Schema(
   {
-    role: { type: String, required: true, unique: true },
+    role: { type: String, required: true },
     permissions: { type: Map, of: Boolean, default: {} },
   },
   { timestamps: true }
 );
+rolePermissionsSchema.plugin(tenantPlugin);
+rolePermissionsSchema.index({ tenantId: 1, role: 1 }, { unique: true });
 export const RolePermissions = models.RolePermissions || model('RolePermissions', rolePermissionsSchema);
 
 // ── USER ──────────────────────────────────────────────────────────────────────
@@ -101,13 +115,16 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+userSchema.plugin(tenantPlugin);
 export const User = models.User || model('User', userSchema);
 
 // ── CATEGORY ──────────────────────────────────────────────────────────────────
 const categorySchema = new Schema(
-  { name: { type: String, required: true, trim: true, unique: true } },
+  { name: { type: String, required: true, trim: true } },
   { timestamps: true }
 );
+categorySchema.plugin(tenantPlugin);
+categorySchema.index({ tenantId: 1, name: 1 }, { unique: true });
 export const Category = models.Category || model('Category', categorySchema);
 
 // ── PRODUCT ───────────────────────────────────────────────────────────────────
@@ -126,7 +143,7 @@ const productOptionSchema = new Schema({
 
 const productSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true, unique: true },
+    name: { type: String, required: true, trim: true },
     shortDescription: { type: String, trim: true, default: '' },
     productType: { type: String, enum: ['simple', 'bundle'], default: 'simple' },
     defaultPrice: { type: Number, default: 0, min: 0 },
@@ -140,6 +157,8 @@ const productSchema = new Schema(
   },
   { timestamps: true }
 );
+productSchema.plugin(tenantPlugin);
+productSchema.index({ tenantId: 1, name: 1 }, { unique: true });
 export const Product = models.Product || model('Product', productSchema);
 
 // ── CLIENT ────────────────────────────────────────────────────────────────────
@@ -161,6 +180,7 @@ const clientSchema = new Schema(
   },
   { timestamps: true }
 );
+clientSchema.plugin(tenantPlugin);
 export const Client = models.Client || model('Client', clientSchema);
 
 // ── VENUE ─────────────────────────────────────────────────────────────────────
@@ -173,6 +193,7 @@ const venueSchema = new Schema(
   },
   { timestamps: true }
 );
+venueSchema.plugin(tenantPlugin);
 export const Venue = models.Venue || model('Venue', venueSchema);
 
 // ── CATALOG ITEM ──────────────────────────────────────────────────────────────
@@ -188,6 +209,7 @@ const catalogItemSchema = new Schema(
   },
   { timestamps: true }
 );
+catalogItemSchema.plugin(tenantPlugin);
 export const CatalogItem = models.CatalogItem || model('CatalogItem', catalogItemSchema);
 
 // ── MENU PACKAGE ──────────────────────────────────────────────────────────────
@@ -201,6 +223,7 @@ const menuPackageSchema = new Schema(
   },
   { timestamps: true }
 );
+menuPackageSchema.plugin(tenantPlugin);
 export const MenuPackage = models.MenuPackage || model('MenuPackage', menuPackageSchema);
 
 // ── FLOW INSTANCE STEP (embedded in Event and Order) ─────────────────────────
@@ -250,6 +273,7 @@ const eventSchema = new Schema(
 );
 eventSchema.index({ eventDate: 1 });
 eventSchema.index({ client: 1 });
+eventSchema.plugin(tenantPlugin);
 export const Event = models.Event || model('Event', eventSchema);
 
 // ── STAFF ASSIGNMENT (shared by Order and Quote) ──────────────────────────────
@@ -277,6 +301,7 @@ const flowTemplateSchema = new Schema({
   sortOrder:    { type: Number, default: 0 },
 }, { timestamps: true });
 
+flowTemplateSchema.plugin(tenantPlugin);
 export const FlowTemplate = models.FlowTemplate || model('FlowTemplate', flowTemplateSchema);
 
 // ── ORDER LINE GROUPS (editable working state stored on Order) ─────────────────
@@ -393,6 +418,7 @@ orderSchema.index({ createdAt: -1 });
 orderSchema.index({ event: 1 });
 orderSchema.index({ clientPhone: 1 });
 orderSchema.index({ paymentStatus: 1 });
+orderSchema.plugin(tenantPlugin);
 export const Order = models.Order || model('Order', orderSchema);
 
 // ── QUOTE ─────────────────────────────────────────────────────────────────────
@@ -448,13 +474,14 @@ quoteSchema.pre('save', function (next) {
 });
 
 quoteSchema.index({ order: 1, isActive: 1 });
+quoteSchema.plugin(tenantPlugin);
 export const Quote = models.Quote || model('Quote', quoteSchema);
 
 // ── INVOICE ───────────────────────────────────────────────────────────────────
 const invoiceSchema = new Schema(
   {
     quote: { type: Schema.Types.ObjectId, ref: 'Quote', required: true },
-    invoiceNumber: { type: String, required: true, unique: true },
+    invoiceNumber: { type: String, required: true },
     issuedDate: { type: Date, default: Date.now },
     dueDate: { type: Date, required: true },
     status: {
@@ -471,6 +498,8 @@ const invoiceSchema = new Schema(
   },
   { timestamps: true }
 );
+invoiceSchema.plugin(tenantPlugin);
+invoiceSchema.index({ tenantId: 1, invoiceNumber: 1 }, { unique: true });
 export const Invoice = models.Invoice || model('Invoice', invoiceSchema);
 
 // ── PAYMENT ───────────────────────────────────────────────────────────────────
@@ -490,26 +519,31 @@ const paymentSchema = new Schema(
   { timestamps: true }
 );
 paymentSchema.index({ order: 1 });
+paymentSchema.plugin(tenantPlugin);
 export const Payment = models.Payment || model('Payment', paymentSchema);
 
 // ── MODULE CONFIG ─────────────────────────────────────────────────────────────
 const moduleConfigSchema = new Schema(
   {
-    moduleId:  { type: String, required: true, unique: true, trim: true },
+    moduleId:  { type: String, required: true, trim: true },
     isEnabled: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
+moduleConfigSchema.plugin(tenantPlugin);
+moduleConfigSchema.index({ tenantId: 1, moduleId: 1 }, { unique: true });
 export const ModuleConfig = models.ModuleConfig || model('ModuleConfig', moduleConfigSchema);
 
 // ── INVENTORY CATEGORY ────────────────────────────────────────────────────────
 const inventoryCategorySchema = new Schema(
   {
-    name:  { type: String, required: true, unique: true, trim: true },
+    name:  { type: String, required: true, trim: true },
     color: { type: String, default: '#5f6368', trim: true },
   },
   { timestamps: true }
 );
+inventoryCategorySchema.plugin(tenantPlugin);
+inventoryCategorySchema.index({ tenantId: 1, name: 1 }, { unique: true });
 export const InventoryCategory = models.InventoryCategory || model('InventoryCategory', inventoryCategorySchema);
 
 // ── SUPPLIER ──────────────────────────────────────────────────────────────────
@@ -532,6 +566,7 @@ const supplierSchema = new Schema(
   },
   { timestamps: true }
 );
+supplierSchema.plugin(tenantPlugin);
 export const Supplier = models.Supplier || model('Supplier', supplierSchema);
 
 // ── WAREHOUSE ─────────────────────────────────────────────────────────────────
@@ -555,6 +590,7 @@ const warehouseSchema = new Schema(
   },
   { timestamps: true }
 );
+warehouseSchema.plugin(tenantPlugin);
 export const Warehouse = models.Warehouse || model('Warehouse', warehouseSchema);
 
 // ── INVENTORY ITEM ────────────────────────────────────────────────────────────
@@ -578,6 +614,7 @@ const inventoryItemSchema = new Schema(
 inventoryItemSchema.index({ isActive: 1, name: 1 });
 inventoryItemSchema.index({ warehouse: 1 });
 inventoryItemSchema.index({ category: 1 });
+inventoryItemSchema.plugin(tenantPlugin);
 export const InventoryItem = models.InventoryItem || model('InventoryItem', inventoryItemSchema);
 
 // ── INVENTORY ADJUSTMENT ──────────────────────────────────────────────────────
@@ -592,6 +629,7 @@ const inventoryAdjustmentSchema = new Schema(
   },
   { timestamps: true }
 );
+inventoryAdjustmentSchema.plugin(tenantPlugin);
 export const InventoryAdjustment = models.InventoryAdjustment || model('InventoryAdjustment', inventoryAdjustmentSchema);
 
 // ── LAUNDRY BATCH ─────────────────────────────────────────────────────────────
@@ -606,7 +644,7 @@ const laundryBatchItemSchema = new Schema({
 
 const laundryBatchSchema = new Schema(
   {
-    batchNumber:        { type: String, required: true, unique: true, trim: true },
+    batchNumber:        { type: String, required: true, trim: true },
     date:               { type: Date, required: true, default: Date.now },
     order:              { type: Schema.Types.ObjectId, ref: 'Order', default: null },
     cleaningSupplier:   { type: Schema.Types.ObjectId, ref: 'Supplier', default: null },
@@ -619,6 +657,8 @@ const laundryBatchSchema = new Schema(
   { timestamps: true }
 );
 laundryBatchSchema.index({ order: 1 });
+laundryBatchSchema.plugin(tenantPlugin);
+laundryBatchSchema.index({ tenantId: 1, batchNumber: 1 }, { unique: true });
 export const LaundryBatch = models.LaundryBatch || model('LaundryBatch', laundryBatchSchema);
 
 // ── COMPANY SETTINGS ──────────────────────────────────────────────────────────
@@ -639,6 +679,7 @@ const companySettingsSchema = new Schema(
   },
   { timestamps: true }
 );
+companySettingsSchema.plugin(tenantPlugin);
 export const CompanySettings = models.CompanySettings || model('CompanySettings', companySettingsSchema);
 
 // ── WHATSAPP SETTINGS ─────────────────────────────────────────────────────────
@@ -656,6 +697,7 @@ const whatsappSettingsSchema = new Schema(
   },
   { timestamps: true }
 );
+whatsappSettingsSchema.plugin(tenantPlugin);
 export const WhatsAppSettings = models.WhatsAppSettings || model('WhatsAppSettings', whatsappSettingsSchema);
 
 // ── DOCUMENT LAYOUT SETTINGS ──────────────────────────────────────────────────
@@ -679,6 +721,7 @@ const documentLayoutSettingsSchema = new Schema(
   },
   { timestamps: true }
 );
+documentLayoutSettingsSchema.plugin(tenantPlugin);
 export const DocumentLayoutSettings = models.DocumentLayoutSettings || model('DocumentLayoutSettings', documentLayoutSettingsSchema);
 
 // ── TASK ──────────────────────────────────────────────────────────────────────
@@ -694,6 +737,7 @@ const taskSchema = new Schema(
   { timestamps: true }
 );
 taskSchema.index({ owner: 1, scheduledDate: 1 });
+taskSchema.plugin(tenantPlugin);
 export const Task = models.Task || model('Task', taskSchema);
 
 // ── ACTIVITY ──────────────────────────────────────────────────────────────────
@@ -715,6 +759,7 @@ const activitySchema = new Schema(
   { timestamps: true }
 );
 activitySchema.index({ createdAt: -1 });
+activitySchema.plugin(tenantPlugin);
 export const Activity = models.Activity || model('Activity', activitySchema);
 
 // ── KITCHEN STOCK ─────────────────────────────────────────────────────────────
@@ -731,6 +776,7 @@ const kitchenStockItemSchema = new Schema(
   },
   { timestamps: true }
 );
+kitchenStockItemSchema.plugin(tenantPlugin);
 export const KitchenStockItem = models.KitchenStockItem || model('KitchenStockItem', kitchenStockItemSchema);
 
 const kitchenStockAdjustmentSchema = new Schema(
@@ -745,6 +791,7 @@ const kitchenStockAdjustmentSchema = new Schema(
   { timestamps: true }
 );
 kitchenStockAdjustmentSchema.index({ item: 1, createdAt: -1 });
+kitchenStockAdjustmentSchema.plugin(tenantPlugin);
 export const KitchenStockAdjustment = models.KitchenStockAdjustment || model('KitchenStockAdjustment', kitchenStockAdjustmentSchema);
 
 // ── KITCHEN RECIPES ───────────────────────────────────────────────────────────
@@ -772,4 +819,59 @@ const kitchenRecipeSchema = new Schema(
   },
   { timestamps: true }
 );
+kitchenRecipeSchema.plugin(tenantPlugin);
 export const KitchenRecipe = models.KitchenRecipe || model('KitchenRecipe', kitchenRecipeSchema);
+
+// ══ PLATFORM (cross-tenant) ═══════════════════════════════════════════════════
+// These models belong to the SaaS operator, not to a tenant, so they do NOT use
+// tenantPlugin. Only /api/platform/** and the auth/license layer touch them.
+
+// ── PLAN ──────────────────────────────────────────────────────────────────────
+const planSchema = new Schema(
+  {
+    name:     { type: String, required: true, unique: true, trim: true },
+    maxUsers: { type: Number, default: 0, min: 0 }, // 0 = unlimited
+    modules:  [{ type: String, trim: true }],       // optional module ids allowed (see MODULE_REGISTRY)
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const Plan = models.Plan || model('Plan', planSchema);
+
+// ── TENANT (a customer company) ───────────────────────────────────────────────
+const tenantSchema = new Schema(
+  {
+    name:         { type: String, required: true, trim: true },
+    slug:         { type: String, required: true, unique: true, trim: true, lowercase: true },
+    contactName:  { type: String, default: '', trim: true },
+    contactEmail: { type: String, default: '', trim: true, lowercase: true },
+    contactPhone: { type: String, default: '', trim: true },
+    status:       { type: String, enum: ['active', 'suspended'], default: 'active' },
+    plan:         { type: Schema.Types.ObjectId, ref: 'Plan', default: null },
+    // Per-tenant overrides of the plan; null = inherit from plan.
+    overrides: {
+      maxUsers: { type: Number, default: null },
+      modules:  { type: [String], default: null },
+    },
+    license: {
+      startsAt:  { type: Date, default: Date.now },
+      expiresAt: { type: Date, required: true },
+    },
+    notes:          { type: String, default: '' },
+    lastActivityAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
+export const Tenant = models.Tenant || model('Tenant', tenantSchema);
+
+// ── PLATFORM ADMIN (SaaS operator account, separate from tenant users) ─────────
+const platformAdminSchema = new Schema(
+  {
+    name:         { type: String, required: true, trim: true },
+    email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    isActive:     { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+export const PlatformAdmin = models.PlatformAdmin || model('PlatformAdmin', platformAdminSchema);

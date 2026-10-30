@@ -1,10 +1,11 @@
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { KitchenStockItem, KitchenStockAdjustment, KitchenRecipe } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { requirePermission } from '@/lib/requireAuth';
 
-export async function GET(
+async function GET_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -25,7 +26,7 @@ export async function GET(
   return NextResponse.json({ item, adjustments });
 }
 
-export async function PATCH(
+async function PATCH_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -73,7 +74,7 @@ export async function PATCH(
   return NextResponse.json({ item: item.toObject() });
 }
 
-export async function DELETE(
+async function DELETE_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -93,3 +94,7 @@ export async function DELETE(
   await KitchenStockItem.findByIdAndUpdate(params.id, { isActive: false });
   return NextResponse.json({ success: true });
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

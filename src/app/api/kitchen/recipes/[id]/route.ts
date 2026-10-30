@@ -1,3 +1,4 @@
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { KitchenRecipe } from '@/lib/models';
@@ -10,7 +11,7 @@ async function getPopulated(id: string) {
     .lean();
 }
 
-export async function GET(
+async function GET_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -24,7 +25,7 @@ export async function GET(
   return NextResponse.json({ recipe });
 }
 
-export async function PATCH(
+async function PATCH_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -67,7 +68,7 @@ export async function PATCH(
   return NextResponse.json({ recipe: populated });
 }
 
-export async function DELETE(
+async function DELETE_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -78,3 +79,7 @@ export async function DELETE(
   await KitchenRecipe.findByIdAndUpdate(params.id, { isActive: false });
   return NextResponse.json({ success: true });
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

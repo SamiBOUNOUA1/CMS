@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Role, User } from '@/lib/models';
 
 // GET /api/admin/roles — list all roles sorted by sortOrder
-export async function GET() {
+async function GET_() {
   try {
     await connectDB();
     const roles = await Role.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
@@ -16,7 +17,7 @@ export async function GET() {
 
 // POST /api/admin/roles — create a new role
 // Body: { label: string, isDefault?: boolean }
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     await connectDB();
     const { label, isDefault } = await request.json();
@@ -42,3 +43,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const POST = withTenant(POST_);

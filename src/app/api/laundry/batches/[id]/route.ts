@@ -1,3 +1,4 @@
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { LaundryBatch, InventoryItem, InventoryAdjustment } from '@/lib/models';
@@ -15,7 +16,7 @@ async function getPopulated(id: string) {
     .lean();
 }
 
-export async function GET(
+async function GET_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -29,7 +30,7 @@ export async function GET(
   return NextResponse.json({ batch });
 }
 
-export async function PATCH(
+async function PATCH_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -144,7 +145,7 @@ export async function PATCH(
   return NextResponse.json({ batch: await getPopulated(params.id) });
 }
 
-export async function DELETE(
+async function DELETE_(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -162,3 +163,7 @@ export async function DELETE(
   await LaundryBatch.findByIdAndDelete(params.id);
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

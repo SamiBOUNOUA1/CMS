@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import mongoose from 'mongoose';
@@ -36,7 +37,7 @@ const COLLECTION_MODELS: Record<string, unknown> = {
   rolePermissions:     RolePermissions,
 };
 
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     const { error } = await requirePermission(request, 'manage_data');
     if (error) return error;
@@ -147,3 +148,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const POST = withTenant(POST_);

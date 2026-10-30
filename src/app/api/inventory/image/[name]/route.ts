@@ -1,11 +1,12 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getBucket } from '@/lib/storage';
+import { getBucket, tenantObjectPath } from '@/lib/storage';
 
 // Streams an inventory image out of the (private) Cloud Storage bucket.
-// Auth is enforced by middleware via the cq_token cookie, which the browser
-// sends automatically on same-origin <img> requests.
-export async function GET(_request: NextRequest, { params }: { params: { name: string } }) {
+// Runs inside withTenant (cq_token cookie is sent on same-origin <img>
+// requests), and only ever reads from the caller's own tenant prefix.
+async function GET_(_request: NextRequest, { params }: { params: { name: string } }) {
   try {
     const name = params.name;
     // Guard against path traversal / nested paths — filenames are flat.
@@ -13,7 +14,7 @@ export async function GET(_request: NextRequest, { params }: { params: { name: s
       return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
     }
 
-    const file = getBucket().file(`inventory/${name}`);
+    const file = getBucket().file(tenantObjectPath(`inventory/${name}`));
     const [exists] = await file.exists();
     if (!exists) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -33,3 +34,5 @@ export async function GET(_request: NextRequest, { params }: { params: { name: s
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);

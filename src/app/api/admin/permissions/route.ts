@@ -1,11 +1,12 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { RolePermissions, Role } from '@/lib/models';
 import { ALL_PERMISSIONS, buildPermissions } from '@/lib/permissions';
 
 // GET /api/admin/permissions — returns current permission matrix for all dynamic roles
-export async function GET() {
+async function GET_() {
   try {
     await connectDB();
     const [roleDocs, permDocs] = await Promise.all([
@@ -26,7 +27,7 @@ export async function GET() {
 
 // PATCH /api/admin/permissions — update permissions for one role
 // Body: { role: 'manager', permissions: { create_quotes: true, ... } }
-export async function PATCH(request: NextRequest) {
+async function PATCH_(request: NextRequest) {
   try {
     await connectDB();
     const { role, permissions } = await request.json();
@@ -55,3 +56,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);

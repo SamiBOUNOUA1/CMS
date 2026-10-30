@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { compare, hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
@@ -6,7 +7,7 @@ import { User } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 
 // Returns the currently authenticated user's profile.
-export async function GET(request: NextRequest) {
+async function GET_(request: NextRequest) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Self-service update of the authenticated user's own profile.
-export async function PATCH(request: NextRequest) {
+async function PATCH_(request: NextRequest) {
   try {
     const auth = await getAuth(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,3 +70,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);

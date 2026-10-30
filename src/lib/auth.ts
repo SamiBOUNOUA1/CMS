@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE = 'cq_token';
+const PLATFORM_COOKIE = 'cq_platform_token'; // SaaS operator console session (separate from tenant users)
 const TTL = 60 * 60 * 8; // 8 hours
 
 export async function signToken(payload: Record<string, unknown>): Promise<string> {
@@ -31,4 +32,4 @@ export function cookieOptions(maxAge = TTL): Record<string, unknown> {
   };
 }
 
-export { COOKIE };
+export { COOKIE, PLATFORM_COOKIE };

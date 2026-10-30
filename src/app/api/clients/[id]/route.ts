@@ -1,10 +1,11 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client } from '@/lib/models';
 
 // GET /api/clients/[id]
-export async function GET(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     const client = await Client.findById(params.id).lean();
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Record<str
 }
 
 // PATCH /api/clients/[id]
-export async function PATCH(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     const client = await Client.findById(params.id);
@@ -35,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Record<s
 }
 
 // DELETE /api/clients/[id]
-export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
     await connectDB();
     const client = await Client.findByIdAndDelete(params.id);
@@ -45,3 +46,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Record<
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const PATCH = withTenant(PATCH_);
+export const DELETE = withTenant(DELETE_);

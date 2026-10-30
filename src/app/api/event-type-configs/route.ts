@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { EventTypeConfig } from '@/lib/models';
@@ -21,7 +22,7 @@ async function seedDefaults() {
 }
 
 // GET /api/event-type-configs — list all (active-first, then by sortOrder)
-export async function GET() {
+async function GET_() {
   try {
     await connectDB();
     await seedDefaults();
@@ -33,7 +34,7 @@ export async function GET() {
 }
 
 // POST /api/event-type-configs — create a new event type
-export async function POST(request: NextRequest) {
+async function POST_(request: NextRequest) {
   try {
     await connectDB();
     const body = await request.json();
@@ -58,3 +59,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = withTenant(GET_);
+export const POST = withTenant(POST_);
