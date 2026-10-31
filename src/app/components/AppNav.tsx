@@ -111,12 +111,25 @@ interface User {
   permissions: Record<string, boolean>;
 }
 
+// The tenant the signed-in user belongs to (from /api/auth/me).
+interface Company {
+  name: string;
+  logoUrl: string;
+}
+
+const BuildingIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="flex-shrink-0">
+    <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
+  </svg>
+);
+
 export default function AppNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { lang, switchLanguage, t } = useLanguage();
   const { theme, switchTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -124,7 +137,10 @@ export default function AppNav() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => r.ok ? r.json() : null)
-      .then(d => setUser(d?.user ?? null));
+      .then(d => {
+        setUser(d?.user ?? null);
+        setCompany(d?.company?.name ? d.company : null);
+      });
   }, [pathname]);
 
   useEffect(() => {
@@ -138,6 +154,7 @@ export default function AppNav() {
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
+    setCompany(null);
     router.push('/login');
     router.refresh();
   };
@@ -175,7 +192,7 @@ export default function AppNav() {
   return (
     <>
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2 no-underline mr-4">
+      <Link href="/" className="flex items-center gap-2 no-underline mr-3 flex-shrink-0">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="6" fill="#1a73e8" />
           <path d="M8 14h12M14 8v12" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
@@ -184,6 +201,19 @@ export default function AppNav() {
           Cat<span className="text-google-blue font-medium">ero</span>
         </span>
       </Link>
+
+      {/* Company (tenant) the user is signed in to */}
+      {company && (
+        <div className="flex items-center gap-2 min-w-0 pl-3 border-l border-g-border h-7" title={company.name}>
+          {company.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={company.logoUrl} alt="" className="h-6 w-6 rounded object-contain flex-shrink-0 hidden sm:block" />
+          )}
+          <span className="font-sans text-[15px] font-medium text-g-text truncate max-w-[140px] sm:max-w-[280px]">
+            {company.name}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1" />
 
@@ -245,6 +275,11 @@ export default function AppNav() {
                   <div className="px-4 py-3.5 border-b border-g-border">
                     <p className="m-0 font-sans text-sm font-medium text-g-text">{user.name}</p>
                     <p className="m-0 mt-0.5 text-xs text-g-text-2">{user.email}</p>
+                    {company && (
+                      <p className="m-0 mt-1.5 text-xs text-g-text flex items-center gap-1.5">
+                        <BuildingIcon />{company.name}
+                      </p>
+                    )}
                     <span
                       className="inline-block mt-1.5 rounded-[10px] py-0.5 px-2 text-[11px] font-medium"
                       style={{
@@ -431,6 +466,11 @@ export default function AppNav() {
                   <div className="min-w-0">
                     <p className="m-0 text-sm font-medium text-g-text overflow-hidden text-ellipsis whitespace-nowrap">{user.name}</p>
                     <p className="m-0 mt-px text-xs text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{user.email}</p>
+                    {company && (
+                      <p className="m-0 mt-1 text-xs text-g-text flex items-center gap-1.5 min-w-0">
+                        <BuildingIcon /><span className="overflow-hidden text-ellipsis whitespace-nowrap">{company.name}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Link

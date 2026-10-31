@@ -46,6 +46,14 @@ export const POST = withPlatformAdmin(async (request) => {
     });
     return NextResponse.json({ tenant }, { status: 201 });
   } catch (err) {
+    // A duplicate on a key without tenantId (other than the global email) means the
+    // DB still has pre-multi-tenant unique indexes, e.g. roles.name_1.
+    const keys = Object.keys(err.keyPattern ?? {});
+    if (err.code === 11000 && keys.length && !keys.includes('tenantId') && !keys.includes('email') && !keys.includes('slug')) {
+      return NextResponse.json({
+        error: `Database still has an old single-company index (${keys.join(', ')}). Run: node scripts/migrate-multitenant.mjs --env production --confirm`,
+      }, { status: 500 });
+    }
     const status = err.status || (err.code === 11000 ? 409 : 500);
     return NextResponse.json({ error: err.message }, { status });
   }
