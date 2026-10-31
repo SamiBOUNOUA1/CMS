@@ -112,6 +112,12 @@ const userSchema = new Schema(
     role: { type: String, required: true, default: 'viewer' },
     isActive: { type: Boolean, default: true },
     preferredLanguage: { type: String, enum: ['en', 'fr'], default: 'en' },
+    // Two-factor auth (TOTP). Secrets are encrypted (lib/mfa.ts); never selected by default.
+    mfaEnabled:       { type: Boolean, default: false },
+    mfaSecret:        { type: String, select: false },
+    mfaPendingSecret: { type: String, select: false },
+    mfaRecoveryCodes: { type: [String], select: false },
+    mfaLastStep:      { type: Number, select: false },
   },
   { timestamps: true }
 );
@@ -749,6 +755,7 @@ const activitySchema = new Schema(
       'inventory_adjusted', 'laundry_sent', 'laundry_received',
       'kitchen_stock_adjusted', 'kitchen_recipe_saved',
       'quote_sent', 'receipt_sent',
+      'mfa_enabled', 'mfa_disabled', 'mfa_reset',
     ]},
     entityType:  { type: String, required: true },
     entityId:    { type: Schema.Types.ObjectId, required: true },
@@ -833,6 +840,9 @@ const planSchema = new Schema(
     maxUsers: { type: Number, default: 0, min: 0 }, // 0 = unlimited
     modules:  [{ type: String, trim: true }],       // optional module ids allowed (see MODULE_REGISTRY)
     isActive: { type: Boolean, default: true },
+    price:         { type: Number, default: 0, min: 0 },
+    currency:      { type: String, default: 'MAD', trim: true, uppercase: true },
+    billingPeriod: { type: String, enum: ['monthly', 'yearly'], default: 'monthly' },
   },
   { timestamps: true }
 );
@@ -871,7 +881,37 @@ const platformAdminSchema = new Schema(
     email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     isActive:     { type: Boolean, default: true },
+    mfaEnabled:       { type: Boolean, default: false },
+    mfaSecret:        { type: String, select: false },
+    mfaPendingSecret: { type: String, select: false },
+    mfaRecoveryCodes: { type: [String], select: false },
+    mfaLastStep:      { type: Number, select: false },
   },
   { timestamps: true }
 );
 export const PlatformAdmin = models.PlatformAdmin || model('PlatformAdmin', platformAdminSchema);
+
+// ── TENANT PAYMENT (subscription payment received from a tenant) ──────────────
+// Kept when the tenant is deleted (accounting history), hence the name snapshot.
+const tenantPaymentSchema = new Schema(
+  {
+    tenant:        { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+    tenantName:    { type: String, default: '', trim: true },
+    invoiceNumber: { type: String, required: true, unique: true },
+    amount:        { type: Number, required: true, min: 0 },
+    currency:      { type: String, default: 'MAD', trim: true, uppercase: true },
+    paidAt:        { type: Date, required: true, index: true },
+    periodFrom:    { type: Date, required: true },
+    periodTo:      { type: Date, required: true },
+    method:        { type: String, enum: ['cash', 'transfer', 'cheque', 'card', 'other'], default: 'transfer' },
+    reference:     { type: String, default: '', trim: true },
+    note:          { type: String, default: '', trim: true },
+    createdBy:     { type: Schema.Types.ObjectId, ref: 'PlatformAdmin', default: null },
+  },
+  { timestamps: true }
+);
+export const TenantPayment = models.TenantPayment || model('TenantPayment', tenantPaymentSchema);
+
+// ── PLATFORM COUNTER (monotonic sequences, e.g. invoice numbers per year) ──────
+const platformCounterSchema = new Schema({ _id: String, seq: { type: Number, default: 0 } });
+export const PlatformCounter = models.PlatformCounter || model('PlatformCounter', platformCounterSchema);

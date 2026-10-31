@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
-import { signToken, cookieOptions, PLATFORM_COOKIE } from '@/lib/auth';
+import { signPendingToken, cookieOptions, PLATFORM_MFA_PENDING_COOKIE, MFA_PENDING_TTL } from '@/lib/auth';
 import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
+import { issuePlatformSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,10 +28,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
     rateLimitReset(rlKey);
-    const token = await signToken({ id: admin._id.toString(), name: admin.name, platform: true });
-    const res = NextResponse.json({ ok: true, admin: { name: admin.name, email: admin.email } });
-    res.cookies.set(PLATFORM_COOKIE, token, cookieOptions());
-    return res;
+
+    if (admin.mfaEnabled) {
+      const pending = await signPendingToken({ id: admin._id.toString(), platform: true });
+      const res = NextResponse.json({ mfaRequired: true });
+      res.cookies.set(PLATFORM_MFA_PENDING_COOKIE, pending, cookieOptions(MFA_PENDING_TTL));
+      return res;
+    }
+
+    return issuePlatformSession(admin);
   } catch (err: unknown) {
     console.error('platform login error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

@@ -13,6 +13,27 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Second step, shown when the account has two-factor auth.
+  const [mfaStep, setMfaStep] = useState(false);
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [code, setCode] = useState('');
+
+  const finish = async (res: Response) => {
+    const data = await res.json();
+    if (res.status === 403 && data.error === 'license_inactive') {
+      router.push(`/license-expired?reason=${data.reason || ''}`);
+      return;
+    }
+    if (data.mfaRequired) { setMfaStep(true); setCode(''); return; }
+    if (!res.ok) {
+      if (data.error === 'invalid_code') setError(t.login.invalidCode);
+      else if (data.error === 'mfa_expired') { setError(t.login.mfaExpired); setMfaStep(false); }
+      else setError(data.error || t.login.loginFailed);
+      return;
+    }
+    router.push(searchParams.get('from') || '/');
+    router.refresh();
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,18 +45,44 @@ function LoginForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (res.status === 403 && data.error === 'license_inactive') {
-        router.push(`/license-expired?reason=${data.reason || ''}`);
-        return;
-      }
-      if (!res.ok) { setError(data.error || t.login.loginFailed); return; }
-      router.push(searchParams.get('from') || '/');
-      router.refresh();
+      await finish(res);
     } finally {
       setLoading(false);
     }
   };
+
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/mfa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(useRecovery ? { recoveryCode: code } : { code }),
+      });
+      await finish(res);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const labelCls = 'block text-xs font-medium text-g-text-2 mb-1.5 font-sans uppercase tracking-[0.04em]';
+  const errorBox = error && (
+    <div className="bg-google-red-light text-google-red rounded-lg px-3.5 py-2.5 text-[13px] mb-4">
+      {error}
+    </div>
+  );
+  const submitBtn = (idle: string, busy: string) => (
+    <button
+      type="submit"
+      disabled={loading}
+      className="w-full py-3 text-white border-none rounded-lg text-[15px] font-sans font-medium"
+      style={{ background: loading ? '#9aa0a6' : '#1a73e8', cursor: loading ? 'not-allowed' : 'pointer' }}
+    >
+      {loading ? busy : idle}
+    </button>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-g-bg font-[Roboto,Arial,sans-serif]">
@@ -52,12 +99,45 @@ function LoginForm() {
           <h1 className="font-sans text-[22px] font-normal text-g-text m-0">
             Cat<span className="text-google-blue font-medium">ero</span>
           </h1>
-          <p className="text-sm text-g-text-2 mt-1.5 mb-0">{t.login.signInTo}</p>
+          <p className="text-sm text-g-text-2 mt-1.5 mb-0">{mfaStep ? t.login.mfaTitle : t.login.signInTo}</p>
         </div>
 
+        {mfaStep ? (
+          <form onSubmit={submitCode}>
+            <p className="text-sm text-g-text-2 mb-4 mt-0">
+              {useRecovery ? t.login.mfaRecoveryPrompt : t.login.mfaPrompt}
+            </p>
+            <div className="mb-6">
+              <label className={labelCls}>{useRecovery ? t.login.mfaRecoveryCode : t.login.mfaCode}</label>
+              <FormInput
+                key={useRecovery ? 'recovery' : 'totp'}
+                value={code}
+                onChange={e => setCode(useRecovery ? e.target.value : e.target.value.replace(/\D/g, '').slice(0, 6))}
+                required
+                autoFocus
+                autoComplete="one-time-code"
+                inputMode={useRecovery ? 'text' : 'numeric'}
+                placeholder={useRecovery ? 'xxxx-xxxx' : '123456'}
+                className="text-center tracking-[0.3em] text-lg"
+              />
+            </div>
+            {errorBox}
+            {submitBtn(t.login.verify, t.login.verifying)}
+            <div className="flex flex-col items-center gap-2 mt-5 text-[13px]">
+              <button type="button" className="text-google-blue bg-transparent border-none cursor-pointer"
+                onClick={() => { setUseRecovery(v => !v); setCode(''); setError(''); }}>
+                {useRecovery ? t.login.useApp : t.login.useRecovery}
+              </button>
+              <button type="button" className="text-g-text-2 bg-transparent border-none cursor-pointer"
+                onClick={() => { setMfaStep(false); setUseRecovery(false); setCode(''); setError(''); }}>
+                {t.login.back}
+              </button>
+            </div>
+          </form>
+        ) : (
         <form onSubmit={submit}>
           <div className="mb-4">
-            <label className="block text-xs font-medium text-g-text-2 mb-1.5 font-sans uppercase tracking-[0.04em]">
+            <label className={labelCls}>
               {t.login.email}
             </label>
             <FormInput
@@ -71,7 +151,7 @@ function LoginForm() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-xs font-medium text-g-text-2 mb-1.5 font-sans uppercase tracking-[0.04em]">
+            <label className={labelCls}>
               {t.login.password}
             </label>
             <FormInput
@@ -83,21 +163,10 @@ function LoginForm() {
             />
           </div>
 
-          {error && (
-            <div className="bg-google-red-light text-google-red rounded-lg px-3.5 py-2.5 text-[13px] mb-4">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 text-white border-none rounded-lg text-[15px] font-sans font-medium"
-            style={{ background: loading ? '#9aa0a6' : '#1a73e8', cursor: loading ? 'not-allowed' : 'pointer' }}
-          >
-            {loading ? t.login.signingIn : t.login.signIn}
-          </button>
+          {errorBox}
+          {submitBtn(t.login.signIn, t.login.signingIn)}
         </form>
+        )}
       </div>
     </div>
   );

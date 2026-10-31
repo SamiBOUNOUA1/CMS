@@ -9,6 +9,7 @@ interface User {
   email: string;
   role: string;
   isActive: boolean;
+  mfaEnabled?: boolean;
 }
 
 interface Role {
@@ -118,7 +119,7 @@ export default function UsersPage() {
     }
   };
 
-  const updateUser = async (id: string, patch: Partial<User & { password?: string }>) => {
+  const updateUser = async (id: string, patch: Partial<User & { password?: string; resetMfa?: boolean }>) => {
     const res = await fetch(`/api/admin/users/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -128,7 +129,11 @@ export default function UsersPage() {
     if (!res.ok) { notify(data.error, 'error'); return; }
     setUsers(us => us.map(u => u._id === id ? data.user : u));
     setEditUser(null);
-    notify(tu.notifications.updated);
+    notify(patch.resetMfa ? tu.notifications.mfaReset : tu.notifications.updated);
+  };
+
+  const resetMfa = (id: string) => {
+    if (confirm(tu.resetMfaConfirm)) updateUser(id, { resetMfa: true });
   };
 
   const deleteUser = async (id: string) => {
@@ -173,7 +178,7 @@ export default function UsersPage() {
       {editUser && (
         <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 z-[200]">
           <div className="bg-g-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] p-5 sm:p-6 shadow-google-3">
-            <EditForm user={users.find(u => u._id === editUser)!} roles={roles} onSave={patch => updateUser(editUser, patch)} onCancel={() => setEditUser(null)} tu={tu} />
+            <EditForm user={users.find(u => u._id === editUser)!} roles={roles} onSave={patch => updateUser(editUser, patch)} onResetMfa={() => resetMfa(editUser)} onCancel={() => setEditUser(null)} tu={tu} />
           </div>
         </div>
       )}
@@ -250,7 +255,7 @@ export default function UsersPage() {
                   {u.name[0].toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm text-g-text">{u.name}</div>
+                  <div className="font-medium text-sm text-g-text">{u.name}{u.mfaEnabled && <MfaBadge tu={tu} />}</div>
                   <div className="text-xs text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</div>
                 </div>
                 <RoleBadge roleName={u.role} label={roleLabel(u.role)} />
@@ -290,7 +295,7 @@ export default function UsersPage() {
             <div key={u._id} className="flex items-center" style={{ padding: '14px 20px', gap: 12, borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}>
               {editUser === u._id ? (
                 <div className="flex-1">
-                  <EditForm user={u} roles={roles} onSave={patch => updateUser(u._id, patch)} onCancel={() => setEditUser(null)} inline tu={tu} />
+                  <EditForm user={u} roles={roles} onSave={patch => updateUser(u._id, patch)} onResetMfa={() => resetMfa(u._id)} onCancel={() => setEditUser(null)} inline tu={tu} />
                 </div>
               ) : (
                 <>
@@ -299,6 +304,7 @@ export default function UsersPage() {
                       {u.name[0].toUpperCase()}
                     </div>
                     <span className="text-sm font-medium text-g-text">{u.name}</span>
+                    {u.mfaEnabled && <MfaBadge tu={tu} />}
                   </div>
                   <div style={{ flex: 2 }} className="text-[13px] text-g-text-2 overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</div>
                   <div style={{ flex: 1 }}><RoleBadge roleName={u.role} label={roleLabel(u.role)} /></div>
@@ -332,10 +338,11 @@ export default function UsersPage() {
   );
 }
 
-function EditForm({ user, roles, onSave, onCancel, inline, tu }: {
+function EditForm({ user, roles, onSave, onResetMfa, onCancel, inline, tu }: {
   user: User;
   roles: Role[];
   onSave: (patch: Partial<User & { password?: string }>) => void;
+  onResetMfa: () => void;
   onCancel: () => void;
   inline?: boolean;
   tu: ReturnType<typeof useT>['users'];
@@ -372,8 +379,23 @@ function EditForm({ user, roles, onSave, onCancel, inline, tu }: {
         <button onClick={onCancel}
           className="bg-transparent text-google-blue border border-g-border rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
          >{tu.cancel}</button>
+        {user.mfaEnabled && (
+          <button onClick={onResetMfa}
+            className="bg-transparent text-google-red border border-g-border rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer whitespace-nowrap"
+           >{tu.resetMfa}</button>
+        )}
       </div>
     </div>
+  );
+}
+
+function MfaBadge({ tu }: { tu: ReturnType<typeof useT>['users'] }) {
+  return (
+    <span title={tu.mfaOn}
+      className="ml-1.5 align-middle rounded-xl py-[1px] px-1.5 text-[10px] font-semibold"
+      style={{ background: 'var(--google-green-light)', color: 'var(--google-green)' }}>
+      {tu.mfaBadge}
+    </span>
   );
 }
 

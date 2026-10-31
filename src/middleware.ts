@@ -4,8 +4,8 @@ import { MODULE_REGISTRY } from '@/lib/modules';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const PUBLIC = ['/login', '/license-expired'];
-const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/settings/modules/state'];
-const PLATFORM_PUBLIC = ['/platform/login', '/api/platform/auth/login', '/api/platform/auth/logout'];
+const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state'];
+const PLATFORM_PUBLIC = ['/platform/login', '/api/platform/auth/login', '/api/platform/auth/logout', '/api/platform/auth/mfa/verify'];
 
 async function getEnabledModuleIds(request: NextRequest, tenantId: string): Promise<string[] | null> {
   try {
@@ -14,7 +14,10 @@ async function getEnabledModuleIds(request: NextRequest, tenantId: string): Prom
     // cache by tenant so one tenant's modules are never served to another.
     const res = await fetch(`${origin}/api/settings/modules/state?t=${encodeURIComponent(tenantId)}`, {
       headers: { cookie: request.headers.get('cookie') ?? '' },
-      next: { revalidate: 30 },
+      // No HTTP/data cache: hosted Next.js may persist it and serve stale module
+      // state after a plan change. The route itself is cheap (in-memory cache in
+      // lib/license.ts, cleared whenever a plan/tenant/toggle changes).
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -34,7 +37,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     try {
       if (!ptoken) throw new Error('no token');
       const { payload } = await jwtVerify(ptoken, secret);
-      if (payload.platform !== true) throw new Error('not platform');
+      if (payload.platform !== true || payload.mfaPending) throw new Error('not platform');
       return NextResponse.next();
     } catch {
       if (pathname.startsWith('/api/')) {
@@ -58,7 +61,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const { payload } = await jwtVerify(token, secret);
     // Sessions must belong to a tenant (older pre-multi-tenant tokens and
     // platform tokens are rejected → re-login).
-    if (!payload.tenantId || payload.platform) return redirectToLogin(request);
+    if (!payload.tenantId || payload.platform || payload.mfaPending) return redirectToLogin(request);
     // License expiry is embedded in the token; suspension is enforced per
     // request by withTenant/getAuth (DB-backed, cached ~60s).
     if (typeof payload.licenseExpiresAt === 'number' && payload.licenseExpiresAt < Date.now()) {
@@ -247,7 +250,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
 
     // ── Module-level guards ──────────────────────────────────────────────────
-    const enabledModuleIds = await getEnabledModuleIds(request, String(payload.tenantId));
+    // Live state first; if that lookup fails (e.g. the server can't reach its own
+    // URL), fall back to the modules recorded in the session at login rather
+    // than letting every module through. APIs are also enforced in withTenant.
+    const enabledModuleIds = (await getEnabledModuleIds(request, String(payload.tenantId)))
+      ?? (Array.isArray(payload.modules) ? (payload.modules as string[]) : null);
     if (enabledModuleIds) {
       for (const mod of MODULE_REGISTRY) {
         if (mod.builtIn || enabledModuleIds.includes(mod.id)) continue;

@@ -2,8 +2,8 @@
 import mongoose from 'mongoose';
 import { connectDB } from '@/lib/mongodb';
 import { NextResponse } from 'next/server';
-import { Tenant, User } from '@/lib/models';
-import { getTenantId } from '@/lib/tenantContext';
+import { Tenant, User, ModuleConfig } from '@/lib/models';
+import { getTenantId, runWithTenant } from '@/lib/tenantContext';
 import { MODULE_REGISTRY } from '@/lib/modules';
 
 export interface TenantLicense {
@@ -25,8 +25,38 @@ const TTL_MS = 60_000;
 const g = globalThis as unknown as { __tenantLicenseCache?: Map<string, { at: number; value: TenantLicense }> };
 const cache = (g.__tenantLicenseCache ??= new Map());
 
+const g2 = globalThis as unknown as { __tenantModulesCache?: Map<string, { at: number; value: string[] }> };
+const modulesCache = (g2.__tenantModulesCache ??= new Map());
+
+/** Drops cached license + enabled modules for a tenant (call after changing its plan, status or toggles). */
 export function invalidateTenantLicense(tenantId: string) {
   cache.delete(String(tenantId));
+  modulesCache.delete(String(tenantId));
+}
+
+/**
+ * Module ids the tenant can use right now: built-in modules, plus optional ones
+ * that its plan allows AND the tenant hasn't switched off. Cached like the license.
+ */
+export async function getEnabledModules(tenantId: string): Promise<string[]> {
+  const key = String(tenantId);
+  const hit = modulesCache.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
+
+  const allowed = new Set((await getTenantLicense(key)).allowedModules);
+  const stored = await runWithTenant(key, () => ModuleConfig.find({}).lean());
+  const storedMap = Object.fromEntries(stored.map(r => [r.moduleId, r.isEnabled]));
+  const value = MODULE_REGISTRY
+    .filter(m => m.builtIn || (allowed.has(m.id) && storedMap[m.id] !== false))
+    .map(m => m.id);
+  modulesCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+/** The optional module an API path belongs to, if any (e.g. /api/kitchen/... → 'kitchen'). */
+export function moduleForApiPath(pathname: string): string | null {
+  const mod = MODULE_REGISTRY.find(m => !m.builtIn && m.apiPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')));
+  return mod ? mod.id : null;
 }
 
 export function evaluateLicense(tenant): TenantLicense {

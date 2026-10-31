@@ -5,7 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { ModuleConfig } from '@/lib/models';
 import { MODULE_REGISTRY } from '@/lib/modules';
 import { getTenantId } from '@/lib/tenantContext';
-import { getTenantLicense } from '@/lib/license';
+import { getTenantLicense, invalidateTenantLicense } from '@/lib/license';
 import { requirePermission } from '@/lib/requireAuth';
 
 async function GET_() {
@@ -62,6 +62,7 @@ async function PATCH_(request: NextRequest) {
       results.push(doc);
     }
 
+    invalidateTenantLicense(getTenantId()); // toggles changed → refresh enabled modules
     return NextResponse.json({ updated: results.length });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

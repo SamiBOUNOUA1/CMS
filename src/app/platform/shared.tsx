@@ -45,6 +45,26 @@ export function fmtBytes(n?: number | null) {
   return `${(n / 1024 ** 3).toFixed(2)} GB`;
 }
 
+export function fmtMoney(amount?: number | null, currency = 'MAD') {
+  return `${(amount ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ${currency}`;
+}
+
+/** Formats per-currency totals ({MAD: 900, EUR: 50}) as "900 MAD · 50 EUR". */
+export function fmtMoneyMap(m?: Record<string, number> | null) {
+  const entries = Object.entries(m ?? {}).filter(([, v]) => v);
+  return entries.length ? entries.map(([c, v]) => fmtMoney(v, c)).join(' · ') : '0';
+}
+
+export const PAYMENT_METHODS = [
+  { id: 'transfer', name: 'Bank transfer' },
+  { id: 'cash', name: 'Cash' },
+  { id: 'cheque', name: 'Cheque' },
+  { id: 'card', name: 'Card' },
+  { id: 'other', name: 'Other' },
+];
+
+export const periodLabel = (p?: string) => (p === 'yearly' ? 'year' : 'month');
+
 export async function api<T = any>(url: string, init?: RequestInit): Promise<T> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const res = await fetch(url, {
     ...init,

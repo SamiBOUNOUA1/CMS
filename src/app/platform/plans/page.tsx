@@ -1,12 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, btnFilled, btnOutline, removeBtn } from '@/app/components/FormPrimitives';
-import { OPTIONAL_MODULES, api } from '../shared';
+import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, FormSelect, btnFilled, btnOutline, removeBtn } from '@/app/components/FormPrimitives';
+import { OPTIONAL_MODULES, api, fmtMoney, periodLabel } from '../shared';
 
-interface Plan { _id: string; name: string; maxUsers: number; modules: string[]; isActive: boolean; tenantCount: number }
+type BillingPeriod = 'monthly' | 'yearly';
 
-const EMPTY = { name: '', maxUsers: '0', modules: OPTIONAL_MODULES.map(m => m.id), isActive: true };
+interface Plan {
+  _id: string; name: string; maxUsers: number; modules: string[]; isActive: boolean; tenantCount: number;
+  price: number; currency: string; billingPeriod: BillingPeriod;
+}
+
+const EMPTY = {
+  name: '', maxUsers: '0', modules: OPTIONAL_MODULES.map(m => m.id), isActive: true,
+  price: '0', currency: 'MAD', billingPeriod: 'monthly' as BillingPeriod,
+};
 
 export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -20,13 +28,16 @@ export default function PlansPage() {
   const startEdit = (p?: Plan) => {
     setError('');
     setEditing(p ? p._id : 'new');
-    setForm(p ? { name: p.name, maxUsers: String(p.maxUsers), modules: p.modules, isActive: p.isActive } : EMPTY);
+    setForm(p ? {
+      name: p.name, maxUsers: String(p.maxUsers), modules: p.modules, isActive: p.isActive,
+      price: String(p.price ?? 0), currency: p.currency || 'MAD', billingPeriod: p.billingPeriod || 'monthly',
+    } : EMPTY);
   };
 
   const save = async () => {
     setError('');
     try {
-      const body = JSON.stringify({ ...form, maxUsers: Number(form.maxUsers) || 0 });
+      const body = JSON.stringify({ ...form, maxUsers: Number(form.maxUsers) || 0, price: Number(form.price) || 0 });
       if (editing === 'new') await api('/api/platform/plans', { method: 'POST', body });
       else await api(`/api/platform/plans/${editing}`, { method: 'PATCH', body });
       setEditing(null);
@@ -56,7 +67,7 @@ export default function PlansPage() {
         {!editing && <button className={btnFilled} onClick={() => startEdit()}>New plan</button>}
       </div>
       <p className="text-sm text-g-text-2 mt-0 mb-5">
-        A plan sets the user limit and the optional modules a tenant can use. Order management is always included.
+        A plan sets the price, the user limit and the optional modules a tenant can use. Order management is always included.
       </p>
 
       {error && <div className="bg-google-red-light text-google-red rounded-lg px-3.5 py-2.5 text-[13px] mb-4">{error}</div>}
@@ -68,6 +79,18 @@ export default function PlansPage() {
             <Field label="Name"><FormInput value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></Field>
             <Field label="Max active users (0 = unlimited)">
               <FormInput type="number" min={0} value={form.maxUsers} onChange={e => setForm(f => ({ ...f, maxUsers: e.target.value }))} />
+            </Field>
+            <Field label="Price (0 = free)">
+              <FormInput type="number" min={0} step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+            </Field>
+            <Field label="Billed">
+              <FormSelect value={form.billingPeriod} onChange={e => setForm(f => ({ ...f, billingPeriod: e.target.value as BillingPeriod }))}>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </FormSelect>
+            </Field>
+            <Field label="Currency (3 letters)">
+              <FormInput maxLength={3} value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value.toUpperCase() }))} />
             </Field>
           </FormGrid>
           <div className="text-[11px] font-medium uppercase tracking-[0.04em] text-g-text-2 mt-4 mb-2">Modules</div>
@@ -97,6 +120,7 @@ export default function PlansPage() {
               {p.name}{!p.isActive && <span className="text-g-text-2 font-normal"> (inactive)</span>}
             </div>
             <div className="text-xs text-g-text-2 mt-0.5">
+              {p.price ? `${fmtMoney(p.price, p.currency)} / ${periodLabel(p.billingPeriod)}` : 'Free'} ·{' '}
               {p.maxUsers ? `${p.maxUsers} users` : 'Unlimited users'} ·{' '}
               {p.modules.length ? OPTIONAL_MODULES.filter(m => p.modules.includes(m.id)).map(m => m.name).join(', ') : 'Order management only'}
               {' '}· {p.tenantCount} tenant{p.tenantCount === 1 ? '' : 's'}
