@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE, PLATFORM_COOKIE } from '@/lib/auth';
-import { getTenantLicense } from '@/lib/license';
+import { getTenantLicense, getEnabledModules, moduleForApiPath } from '@/lib/license';
 import { runWithTenant } from '@/lib/tenantContext';
 
 export interface AuthContext {
@@ -16,7 +16,7 @@ async function readSession(request: NextRequest): Promise<AuthContext | null> {
   if (!token) return null;
   const payload = await verifyToken(token);
   // Tenant tokens must carry a tenantId; platform tokens never do.
-  if (!payload || !payload.tenantId || payload.platform) return null;
+  if (!payload || !payload.tenantId || payload.platform || payload.mfaPending) return null;
   return {
     userId: String(payload.id),
     role: String(payload.role),
@@ -80,6 +80,12 @@ export function withTenant(handler: RouteHandler): RouteHandler {
     if (!license.active) {
       return NextResponse.json({ error: 'license_inactive', reason: license.reason }, { status: 403 });
     }
+    // Module access is enforced here too (not only in middleware), so an API of
+    // a module outside the plan / switched off can never be reached by URL.
+    const moduleId = moduleForApiPath(request.nextUrl.pathname);
+    if (moduleId && !(await getEnabledModules(auth.tenantId)).includes(moduleId)) {
+      return NextResponse.json({ error: 'module_disabled', module: moduleId }, { status: 403 });
+    }
     return runWithTenant(auth.tenantId, () => handler(request, ctx));
   };
 }
@@ -95,7 +101,7 @@ export async function getPlatformAuth(request: NextRequest): Promise<PlatformAut
   const token = request.cookies.get(PLATFORM_COOKIE)?.value;
   if (!token) return null;
   const payload = await verifyToken(token);
-  if (!payload || payload.platform !== true) return null;
+  if (!payload || payload.platform !== true || payload.mfaPending) return null;
   return { adminId: String(payload.id), name: String(payload.name ?? '') };
 }
 

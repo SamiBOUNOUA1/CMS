@@ -11,6 +11,7 @@ import {
   FormSelect,
   btnFilled,
 } from '@/app/components/FormPrimitives';
+import MfaSettings from '@/app/components/MfaSettings';
 
 type Lang = 'en' | 'fr';
 
@@ -157,6 +158,11 @@ export default function ProfilePage() {
       <button onClick={handleSave} disabled={saving} className={btnFilled}>
         {saving ? tp.saving : tp.save}
       </button>
+
+      <div className="mt-10">
+        <FormSectionLabel>{tp.mfa.section}</FormSectionLabel>
+        <MfaSettings apiBase="/api/me/mfa" labels={tp.mfa} notify={showNotif} />
+      </div>
 
       {notif && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-5 rounded-lg text-sm shadow-google-2 z-[9999]"

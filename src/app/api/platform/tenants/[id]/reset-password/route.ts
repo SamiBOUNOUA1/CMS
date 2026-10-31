@@ -19,7 +19,8 @@ export const POST = withPlatformAdmin(async (request, { params }) => {
   const passwordHash = await hash(password, 12);
   const res = await runAsSystem(() => User.updateOne(
     { _id: userId, tenantId: params.id, role: 'admin' },
-    { $set: { passwordHash, isActive: true } },
+    // Also clears two-factor auth so an admin who lost their phone gets back in.
+    { $set: { passwordHash, isActive: true, mfaEnabled: false }, $unset: { mfaSecret: 1, mfaPendingSecret: 1, mfaRecoveryCodes: 1, mfaLastStep: 1 } },
   ));
   if (!res.matchedCount) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ ok: true });

@@ -10,7 +10,7 @@ import { provisionTenant } from '@/lib/tenantProvisioning';
 export const GET = withPlatformAdmin(async () => {
   await connectDB();
   const [tenants, counts] = await Promise.all([
-    Tenant.find().populate('plan', 'name maxUsers modules').sort({ createdAt: -1 }).lean(),
+    Tenant.find().populate('plan', 'name maxUsers modules price currency billingPeriod').sort({ createdAt: -1 }).lean(),
     countsByTenant(),
   ]);
   const rows = tenants.map(t => {

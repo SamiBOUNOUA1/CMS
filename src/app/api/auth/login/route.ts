@@ -2,12 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
-import { User, RolePermissions, Tenant } from '@/lib/models';
-import { signToken, cookieOptions, COOKIE } from '@/lib/auth';
-import { buildPermissions } from '@/lib/permissions';
+import { User } from '@/lib/models';
+import { signPendingToken, cookieOptions, MFA_PENDING_COOKIE, MFA_PENDING_TTL } from '@/lib/auth';
 import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
-import { runAsSystem, runWithTenant } from '@/lib/tenantContext';
+import { runAsSystem } from '@/lib/tenantContext';
 import { getTenantLicense } from '@/lib/license';
+import { issueTenantSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,21 +44,16 @@ export async function POST(request: NextRequest) {
     if (!license.active)
       return NextResponse.json({ error: 'license_inactive', reason: license.reason }, { status: 403 });
 
-    const roleDoc = await runWithTenant(tenantId, () => RolePermissions.findOne({ role: user.role }).lean());
-    const permissions = buildPermissions(user.role, roleDoc?.permissions);
+    // Two-factor accounts get a short-lived pending token; the real session is
+    // issued by /api/auth/mfa/verify once the code checks out.
+    if (user.mfaEnabled) {
+      const pending = await signPendingToken({ id: user._id.toString(), tenantId });
+      const res = NextResponse.json({ mfaRequired: true });
+      res.cookies.set(MFA_PENDING_COOKIE, pending, cookieOptions(MFA_PENDING_TTL));
+      return res;
+    }
 
-    await Tenant.updateOne({ _id: tenantId }, { lastActivityAt: new Date() });
-
-    const token = await signToken({
-      id: user._id.toString(), role: user.role, name: user.name, permissions,
-      tenantId,
-      // Lets the edge middleware block expired licenses without a DB call.
-      licenseExpiresAt: license.expiresAt ? license.expiresAt.getTime() : null,
-    });
-
-    const res = NextResponse.json({ ok: true, user: { id: user._id, name: user.name, email: user.email, role: user.role, permissions } });
-    res.cookies.set(COOKIE, token, cookieOptions());
-    return res;
+    return issueTenantSession(user);
   } catch (err: unknown) {
     console.error('login error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

@@ -6,10 +6,12 @@ import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { userLimitError } from '@/lib/license';
+import { MFA_CLEAR } from '@/lib/mfaService';
+import { logActivity } from '@/lib/activityLogger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const { error } = await requirePermission(request, 'manage_users');
+    const { auth, error } = await requirePermission(request, 'manage_users');
     if (error) return error;
     await connectDB();
     const body = await request.json();
@@ -39,8 +41,17 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
       }
     }
 
-    const user = await User.findByIdAndUpdate(params.id, update, { new: true }).select('-passwordHash');
+    // Lost-device recovery: an admin can switch off a user's two-factor auth.
+    const resetMfa = body.resetMfa === true;
+    const op = resetMfa
+      ? { $set: { ...update, ...MFA_CLEAR.$set }, $unset: MFA_CLEAR.$unset }
+      : update;
+
+    const user = await User.findByIdAndUpdate(params.id, op, { new: true }).select('-passwordHash');
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (resetMfa) {
+      await logActivity({ action: 'mfa_reset', entityType: 'user', entityId: params.id, entityLabel: user.name, performedBy: auth.userId });
+    }
     return NextResponse.json({ user });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

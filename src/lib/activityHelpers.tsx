@@ -10,6 +10,9 @@ export const ACTION_LABELS: Record<string, string> = {
   laundry_received:     'Laundry batch received',
   quote_sent:           'Quote sent on WhatsApp',
   receipt_sent:         'Receipt sent on WhatsApp',
+  mfa_enabled:          'Two-factor auth enabled',
+  mfa_disabled:         'Two-factor auth disabled',
+  mfa_reset:            'Two-factor auth reset',
 };
 
 export function ActivityIcon({ action }: { action: string }) {
@@ -83,6 +86,15 @@ export function ActivityIcon({ action }: { action: string }) {
           <polyline points="8 17 12 21 16 17"/>
           <line x1="12" y1="12" x2="12" y2="21"/>
           <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>
+        </svg>
+      );
+    case 'mfa_enabled':
+    case 'mfa_disabled':
+    case 'mfa_reset':
+      return (
+        <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
       );
     default:

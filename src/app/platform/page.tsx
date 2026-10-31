@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { btnFilled, FormInput } from '@/app/components/FormPrimitives';
-import { LicenseBadge, fmtDate, api, type LicenseState } from './shared';
+import { LicenseBadge, fmtDate, fmtMoney, fmtMoneyMap, periodLabel, api, type LicenseState } from './shared';
 
 interface TenantRow {
   _id: string;
   name: string;
   contactEmail: string;
   status: 'active' | 'suspended';
-  plan: { name: string } | null;
+  plan: { name: string; price?: number; currency?: string; billingPeriod?: 'monthly' | 'yearly' } | null;
   license: { expiresAt: string };
   licenseState: LicenseState;
   maxUsers: number;
@@ -37,7 +37,14 @@ export default function PlatformTenantsPage() {
   const summary = useMemo(() => {
     const list = tenants ?? [];
     const soon = Date.now() + 30 * 24 * 3600 * 1000;
+    const mrr: Record<string, number> = {};
+    for (const t of list) {
+      if (t.licenseState !== 'active' || !t.plan?.price) continue;
+      const cur = t.plan.currency || 'MAD';
+      mrr[cur] = (mrr[cur] ?? 0) + (t.plan.billingPeriod === 'yearly' ? t.plan.price / 12 : t.plan.price);
+    }
     return {
+      mrr,
       total: list.length,
       active: list.filter(t => t.licenseState === 'active').length,
       expiring: list.filter(t => t.licenseState === 'active' && new Date(t.license.expiresAt).getTime() < soon).length,
@@ -52,16 +59,17 @@ export default function PlatformTenantsPage() {
         <Link href="/platform/tenants/new" className={`${btnFilled} no-underline`}>New tenant</Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
         {[
           ['Customers', summary.total],
           ['Active', summary.active],
           ['Expiring ≤ 30 days', summary.expiring],
           ['Expired / suspended', summary.blocked],
+          ['MRR', fmtMoneyMap(summary.mrr)],
         ].map(([label, n]) => (
           <div key={label} className="bg-g-surface border border-g-border rounded-2xl p-4">
             <div className="text-[11px] uppercase tracking-wider text-g-text-2 mb-1">{label}</div>
-            <div className="text-[24px] text-g-text">{n}</div>
+            <div className="text-[24px] text-g-text break-words">{n}</div>
           </div>
         ))}
       </div>
@@ -96,7 +104,12 @@ export default function PlatformTenantsPage() {
                   <Link href={`/platform/tenants/${t._id}`} className="text-google-blue no-underline font-medium">{t.name}</Link>
                   <div className="text-xs text-g-text-2">{t.contactEmail}</div>
                 </td>
-                <td className="px-4 py-3 text-g-text">{t.plan?.name ?? '—'}</td>
+                <td className="px-4 py-3 text-g-text">
+                  {t.plan?.name ?? '—'}
+                  {!!t.plan?.price && (
+                    <div className="text-xs text-g-text-2 whitespace-nowrap">{fmtMoney(t.plan.price, t.plan.currency)} / {periodLabel(t.plan.billingPeriod)}</div>
+                  )}
+                </td>
                 <td className="px-4 py-3"><LicenseBadge state={t.licenseState} expiresAt={t.license?.expiresAt} /></td>
                 <td className="px-4 py-3 text-g-text">{fmtDate(t.license?.expiresAt)}</td>
                 <td className="px-4 py-3 text-right text-g-text">

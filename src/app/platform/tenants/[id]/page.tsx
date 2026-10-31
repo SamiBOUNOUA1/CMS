@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, FormSelect, FormTextarea, btnFilled, btnOutline } from '@/app/components/FormPrimitives';
 import { LicenseBadge, OPTIONAL_MODULES, api, fmtDate, fmtBytes, toDateInput, addPeriod, type LicenseState } from '../../shared';
+import PaymentsCard, { type PlanBilling } from './PaymentsCard';
 
 interface Detail {
   tenant: {
     _id: string; name: string; status: 'active' | 'suspended';
     contactName: string; contactEmail: string; contactPhone: string; notes: string;
-    plan: { _id: string; name: string; maxUsers: number; modules: string[] } | null;
+    plan: ({ _id: string; name: string; maxUsers: number; modules: string[] } & PlanBilling) | null;
     overrides: { maxUsers: number | null; modules: string[] | null };
     license: { startsAt: string; expiresAt: string };
     lastActivityAt: string | null; createdAt: string;
@@ -104,11 +105,11 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
   };
 
   const resetPassword = async (userId: string, email: string) => {
-    const password = prompt(`New temporary password for ${email} (min. 8 characters):`);
+    const password = prompt(`New temporary password for ${email} (min. 8 characters). This also turns off their two-factor authentication:`);
     if (!password) return;
     try {
       await api(`/api/platform/tenants/${params.id}/reset-password`, { method: 'POST', body: JSON.stringify({ userId, password }) });
-      setNotice(`Password reset for ${email}.`);
+      setNotice(`Password reset and two-factor auth cleared for ${email}.`);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -193,6 +194,8 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
           <button type="button" className={btnOutline} onClick={() => extend(12)}>+1 year</button>
         </div>
       </FormCard>
+
+      <PaymentsCard tenantId={params.id} plan={tenant.plan} licenseExpiresAt={tenant.license.expiresAt} onChanged={load} />
 
       <FormCard>
         <FormSectionLabel>Limits</FormSectionLabel>
