@@ -10,8 +10,10 @@
  *     the per-tenant compound ones ({ tenantId, name }).
  *  5. Copies Cloud Storage images inventory/* → tenants/<id>/inventory/*.
  *
- * Safe to re-run: documents that already have a tenantId are left alone and an
- * existing tenant with the same slug is reused.
+ * Safe to re-run: documents that already have a tenantId are left alone. Without
+ * --name, a re-run reuses the oldest tenant (the one the first run created); with
+ * --name, the tenant with that name's slug is reused or created. Re-running also
+ * repairs old global unique indexes if an older app version recreated them.
  *
  * Usage:
  *   Development:  node scripts/migrate-multitenant.mjs [--name "Traiteur Mazar"] [--expires 2027-12-31] [--skip-storage]
@@ -95,9 +97,14 @@ const slug = slugify(name);
 const tenants = db.collection('tenants');
 await tenants.createIndex({ slug: 1 }, { unique: true });
 
-let tenant = await tenants.findOne({ slug });
+// Re-run without --name: target the oldest tenant (the one created by the first
+// run) instead of guessing from the company name, which may have been changed
+// since — guessing wrong would create an extra, empty tenant.
+let tenant = argVal('--name')
+  ? await tenants.findOne({ slug })
+  : (await tenants.find({}).sort({ createdAt: 1 }).limit(1).toArray())[0] ?? await tenants.findOne({ slug });
 if (tenant) {
-  console.log(`  Tenant already exists: ${tenant.name} (${tenant._id})`);
+  console.log(`  Tenant already exists: ${tenant.name} (${tenant._id}) — untagged data will be attached to it`);
 } else {
   const expires = argVal('--expires') ? new Date(argVal('--expires')) : new Date(Date.now() + 365 * 24 * 3600 * 1000);
   if (Number.isNaN(expires.getTime())) { console.error('Invalid --expires date'); process.exit(1); }
