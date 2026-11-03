@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { compare, hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // Self-service password change for the signed-in platform operator.
 // Requires the current password for verification.
@@ -26,6 +27,6 @@ export const POST = withPlatformAdmin(async (request: NextRequest, _ctx, admin) 
     await doc.save();
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 });

@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
 import { lineGroupsTotal } from '@/lib/pricing';
+import { serverError } from '@/lib/logger';
 
 // Fields the orders list view needs — excludes the large nested arrays
 // (lineGroups, staffAssignments, materials, flowInstance) to keep responses small.
@@ -61,8 +62,7 @@ async function GET_(request: NextRequest) {
 
     return NextResponse.json({ orders: enriched });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -134,8 +134,7 @@ async function POST_(request: NextRequest) {
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

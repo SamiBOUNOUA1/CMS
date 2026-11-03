@@ -2,6 +2,7 @@
 import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { getBucket, tenantObjectPath } from '@/lib/storage';
+import { serverError } from '@/lib/logger';
 
 // Streams an inventory image out of the (private) Cloud Storage bucket.
 // Runs inside withTenant (cq_token cookie is sent on same-origin <img>
@@ -31,7 +32,7 @@ async function GET_(_request: NextRequest, { params }: { params: { name: string 
       },
     });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

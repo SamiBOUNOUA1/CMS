@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { OrderStatusConfig } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 const DEFAULT_STATUSES = [
   { name: 'new',       label: 'New',       color: '#5f6368', triggerEvent: false, isSystem: true, sortOrder: 0 },
@@ -28,7 +29,7 @@ async function GET_() {
     const statuses = await OrderStatusConfig.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
     return NextResponse.json({ statuses });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -53,7 +54,7 @@ async function POST_(request: NextRequest) {
     });
     return NextResponse.json({ status }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -6,6 +6,7 @@ import { Quote, Order } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { requirePermission } from '@/lib/requireAuth';
 import { itemUnitPrice, round2 } from '@/lib/pricing';
+import { serverError } from '@/lib/logger';
 
 // POST /api/quotes — snapshot the order's current items/staff into a new quote version
 async function POST_(request: NextRequest) {
@@ -93,8 +94,7 @@ async function POST_(request: NextRequest) {
 
     return NextResponse.json({ quote }, { status: 201 });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

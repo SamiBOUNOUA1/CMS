@@ -3,13 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { ACTION_LABELS, ActivityIcon } from '@/lib/activityHelpers';
+import { formatMoneyOrDash } from '@/lib/money';
+import { Skeleton, SkeletonList } from '@/app/components/Skeleton';
 
-function formatCurrency(n: number | null | undefined, cur = '€') {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n) + ' ' + cur;
-}
+const formatCurrency = (n: number | null | undefined, cur = '€') => formatMoneyOrDash(n, cur, 0);
 
 interface ReportKpis {
   revenueThisMonth: number;
@@ -144,7 +143,7 @@ export default function HomePage() {
         {/* Greeting */}
         <div className="mb-8">
           <h1 className="font-sans text-[26px] font-normal text-g-text m-0">
-            {user ? tp.greeting(user.name) : '…'}
+            {user ? tp.greeting(user.name) : <Skeleton className="h-7 w-64 max-w-full" />}
           </h1>
           <p className="mt-1.5 mb-0 text-[13px] text-g-text-2 font-[Roboto,Arial]">
             {format(new Date(), 'EEEE, d MMMM yyyy')}
@@ -195,9 +194,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {loadingTasks && (
-            <div className="text-g-text-3 text-sm font-[Roboto,Arial] py-3">…</div>
-          )}
+          {loadingTasks && <SkeletonList rows={3} />}
 
           {!loadingTasks && tasks.length === 0 && (
             <div className="text-g-text-3 text-sm font-[Roboto,Arial] py-3">{tp.noTasks}</div>
@@ -214,9 +211,10 @@ export default function HomePage() {
                 className="w-5 h-5 rounded flex-shrink-0 p-0 flex items-center justify-center cursor-pointer"
                 style={{
                   border: `2px solid ${task.completed ? 'var(--google-green)' : 'var(--google-text-secondary)'}`,
-                  background: task.completed ? '#137333' : 'transparent',
+                  background: task.completed ? 'var(--google-green)' : 'transparent',
                 }}
                 title={task.completed ? tt.statusCompleted : tt.statusPending}
+                aria-label={task.completed ? tt.statusCompleted : tt.statusPending}
               >
                 {task.completed && (
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="white">
@@ -232,13 +230,7 @@ export default function HomePage() {
                     {typeLabel(task.type)}
                   </span>
                   {task.notes && (
-                    <span
-                      className="text-[13px] font-[Roboto,Arial]"
-                      style={{
-                        color: task.completed ? '#9aa0a6' : '#202124',
-                        textDecoration: task.completed ? 'line-through' : 'none',
-                      }}
-                    >
+                    <span className={`text-[13px] font-[Roboto,Arial] ${task.completed ? 'text-g-text-3 line-through' : 'text-g-text'}`}>
                       {task.notes}
                     </span>
                   )}
@@ -258,20 +250,18 @@ export default function HomePage() {
       {canViewActivities && (
         <div className="lg:sticky lg:top-6">
           <div className="flex items-center justify-between mb-3.5">
-            <h2 className="font-sans text-[17px] font-medium text-g-text m-0">Recent Activity</h2>
+            <h2 className="font-sans text-[17px] font-medium text-g-text m-0">{tp.recentActivity}</h2>
             <Link href="/activities" className="text-[13px] text-google-blue no-underline font-[Roboto,Arial]">
-              View all →
+              {tp.viewAllActivity} →
             </Link>
           </div>
 
           <div className="bg-g-surface border border-g-border rounded-xl overflow-hidden">
-            {loadingActivities && (
-              <div className="px-4 py-3 text-g-text-3 text-[13px] font-[Roboto,Arial]">…</div>
-            )}
+            {loadingActivities && <SkeletonList rows={5} card={false} />}
 
             {!loadingActivities && activities.length === 0 && (
               <div className="px-4 py-6 text-center text-g-text-3 text-[13px] font-[Roboto,Arial]">
-                No recent activity.
+                {tp.noActivity}
               </div>
             )}
 
@@ -286,7 +276,7 @@ export default function HomePage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium text-g-text leading-tight truncate">
-                    {ACTION_LABELS[a.action] ?? a.action}
+                    {t.activityPage.actions[a.action] ?? ACTION_LABELS[a.action] ?? a.action}
                   </div>
                   {a.entityLabel && (
                     <div className="text-[12px] text-g-text-2 font-[Roboto,Arial] truncate mt-0.5">

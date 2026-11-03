@@ -7,6 +7,7 @@ import { MODULE_REGISTRY } from '@/lib/modules';
 import { getTenantId } from '@/lib/tenantContext';
 import { getTenantLicense, invalidateTenantLicense } from '@/lib/license';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function GET_() {
   try {
@@ -23,7 +24,7 @@ async function GET_() {
 
     return NextResponse.json({ modules });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -65,7 +66,7 @@ async function PATCH_(request: NextRequest) {
     invalidateTenantLicense(getTenantId()); // toggles changed → refresh enabled modules
     return NextResponse.json({ updated: results.length });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

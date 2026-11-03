@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
 
 const ClipboardListIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -49,49 +49,10 @@ const ICON_MAP: Record<string, () => JSX.Element> = {
   ChefHat: ChefHatIcon,
 };
 
-interface SubRoute {
-  href: string;
-  label: string;
-  labelFr: string;
-  permission?: string;
-}
-
-interface Module {
-  id: string;
-  name: string;
-  nameFr: string;
-  icon: string;
-  color: string;
-  isEnabled: boolean;
-  permissions: string[];
-  routes: string[];
-  primaryRoute: string;
-  subRoutes: SubRoute[];
-}
-
-interface User {
-  permissions: Record<string, boolean>;
-}
-
 export default function SideNav() {
   const pathname = usePathname();
-  const { lang } = useLanguage();
-  const [user, setUser] = useState<User | null>(null);
-  const [modules, setModules] = useState<Module[]>([]);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/settings/modules')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setModules(d.modules ?? []));
-  }, []);
-
-  const perms = user?.permissions ?? {};
+  const { lang, t } = useLanguage();
+  const { user, modules, perms } = useUser();
 
   const visibleModules = modules.filter(mod =>
     mod.isEnabled && mod.permissions.some(p => perms[p])
@@ -141,19 +102,19 @@ export default function SideNav() {
         <div className="py-2 pb-3 border-t border-g-border">
           <Link
             href={settingsHref}
-            title="Settings"
+            title={t.nav.settings}
             className="flex items-center gap-3 py-3 pl-[21px] no-underline rounded-r-lg overflow-hidden whitespace-nowrap transition-[background,color,border-color] duration-150"
             style={{
-              color: pathname.startsWith('/settings') ? '#1a73e8' : 'var(--google-text-secondary)',
-              background: pathname.startsWith('/settings') ? '#e8f0fe' : 'transparent',
-              borderLeft: pathname.startsWith('/settings') ? '3px solid #1a73e8' : '3px solid transparent',
+              color: pathname.startsWith('/settings') ? 'var(--google-blue-accent)' : 'var(--google-text-secondary)',
+              background: pathname.startsWith('/settings') ? 'var(--google-blue-light)' : 'transparent',
+              borderLeft: pathname.startsWith('/settings') ? '3px solid var(--google-blue-accent)' : '3px solid transparent',
             }}
           >
             <span className="flex-shrink-0 flex items-center">
               <GearIcon />
             </span>
             <span className="sidenav-label font-sans text-sm font-normal">
-              Settings
+              {t.nav.settings}
             </span>
           </Link>
         </div>

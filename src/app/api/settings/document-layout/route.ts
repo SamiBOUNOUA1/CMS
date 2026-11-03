@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { DocumentLayoutSettings } from '@/lib/models';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // GET /api/settings/document-layout — returns the single document-layout settings doc.
 // Read access is broad (the layout drives quote & receipt PDFs that any user may view/print),
@@ -20,7 +21,7 @@ async function GET_(request: NextRequest) {
     ).lean();
     return NextResponse.json({ settings });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -50,7 +51,7 @@ async function PATCH_(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

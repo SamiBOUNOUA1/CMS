@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
+import { useRowLink } from '@/lib/useRowLink';
+import { SkeletonList } from '@/app/components/Skeleton';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -20,10 +21,9 @@ interface Customer {
 interface CustomerType { key: string; label: string; isActive: boolean; }
 
 export default function CustomersPage() {
-  const isMobile = useIsMobile();
   const t = useT();
   const tp = t.customersPage;
-  const router = useRouter();
+  const rowLink = useRowLink();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerTypes, setCustomerTypes] = useState<CustomerType[]>([]);
@@ -33,12 +33,9 @@ export default function CustomersPage() {
   const [sortBy, setSortBy] = useState('name');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
-  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const { perms } = useUser();
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then((d: any) => d?.user?.permissions && setPerms(d.user.permissions));
     fetch('/api/settings/customer-types')
       .then(r => r.ok ? r.json() : { configs: [] })
       .then((d: any) => setCustomerTypes(d.configs || []));
@@ -92,7 +89,7 @@ export default function CustomersPage() {
   });
 
   return (
-    <div className="mx-auto" style={{ maxWidth: 1100, padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="mx-auto max-w-[1100px] px-4 py-5 sm:px-6 sm:py-8">
       {notification && (
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm font-medium z-[200] shadow-google-2 whitespace-nowrap"
@@ -128,7 +125,7 @@ export default function CustomersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="m-0 font-normal page-title" style={{ fontSize: isMobile ? 22 : 28 }}>{tp.title}</h1>
+          <h1 className="m-0 font-normal page-title text-[22px] sm:text-[28px]">{tp.title}</h1>
           <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.customerCount(customers.length)}</p>
         </div>
         {perms.edit_customers && (
@@ -192,12 +189,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Loading */}
-      {loading && (
-        <div className="text-center py-15 text-g-text-3">
-          <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin mx-auto mb-3" />
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        </div>
-      )}
+      {loading && <SkeletonList rows={8} />}
 
       {/* Empty state */}
       {!loading && sorted.length === 0 && (
@@ -211,8 +203,8 @@ export default function CustomersPage() {
       )}
 
       {/* Desktop table */}
-      {!loading && sorted.length > 0 && !isMobile && (
-        <div className="bg-g-surface border border-g-border rounded-xl overflow-hidden">
+      {!loading && sorted.length > 0 && (
+        <div className="hidden sm:block bg-g-surface border border-g-border rounded-xl overflow-hidden">
           <div className="flex px-5 py-2.5 bg-g-bg border-b border-g-border">
             {[tp.table.name, tp.table.email, tp.table.phone, tp.table.type, tp.table.actions].map((h: string, i: number) => (
               <div key={i} style={{ flex: i === 0 ? 2 : i === 4 ? 'none' : 1, width: i === 4 ? 100 : undefined }}
@@ -224,10 +216,8 @@ export default function CustomersPage() {
           {sorted.map((c, idx) => (
             <div
               key={c._id}
-              onClick={() => router.push(`/customers/${c._id}`)}
-              className="flex px-5 py-3.5 items-center border-b border-g-border cursor-pointer last:border-b-0"
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
-              onMouseLeave={e => (e.currentTarget.style.background = '')}
+              {...rowLink(`/customers/${c._id}`)}
+              className="hover:bg-[var(--google-row-hover)] flex px-5 py-3.5 items-center border-b border-g-border cursor-pointer last:border-b-0"
             >
               <div className="flex-[2] flex items-center gap-3 min-w-0">
                 <div
@@ -272,12 +262,12 @@ export default function CustomersPage() {
       )}
 
       {/* Mobile cards */}
-      {!loading && sorted.length > 0 && isMobile && (
-        <div className="flex flex-col gap-2.5">
+      {!loading && sorted.length > 0 && (
+        <div className="sm:hidden flex flex-col gap-2.5">
           {sorted.map(c => (
             <div
               key={c._id}
-              onClick={() => router.push(`/customers/${c._id}`)}
+              {...rowLink(`/customers/${c._id}`)}
               className="bg-g-surface border border-g-border rounded-xl p-4 cursor-pointer"
             >
               <div className="flex items-center justify-between gap-3">

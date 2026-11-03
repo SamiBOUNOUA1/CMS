@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useT, useCurrency } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
+import { formatMoney } from '@/lib/money';
+import { useRowLink } from '@/lib/useRowLink';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -52,6 +55,7 @@ function recipeCost(recipe: any) {
 export default function KitchenRecipesPage() {
   const t = useT();
   const router = useRouter();
+  const rowLink = useRowLink();
   const currency = useCurrency();
   const tk = (t as any).kitchenPage.recipes;
 
@@ -59,12 +63,11 @@ export default function KitchenRecipesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
 
-  useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d && setUser(d.user));
+  useEffect(() => {
   }, []);
 
   useEffect(() => {
@@ -93,8 +96,7 @@ export default function KitchenRecipesPage() {
     }
   }
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + currency;
+  const fmt = (n: number) => formatMoney(n, currency);
 
   const CATS = ['starter', 'main', 'dessert', 'side', 'other'] as const;
 
@@ -182,12 +184,10 @@ export default function KitchenRecipesPage() {
                 const cost = recipeCost(recipe);
                 const catCfg = CATEGORY_COLORS[recipe.category] ?? CATEGORY_COLORS.other;
                 return (
-                  <tr
+                  <tr className="hover:bg-[var(--google-row-hover)]"
                     key={recipe._id}
-                    onClick={() => router.push(`/kitchen/recipes/${recipe._id}`)}
+                    {...rowLink(`/kitchen/recipes/${recipe._id}`)}
                     style={{ borderBottom: '1px solid var(--google-border)', cursor: 'pointer' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8f9fa')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--google-text-primary)' }}>{recipe.name}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--google-text-secondary)', fontSize: 13 }}>{recipe.nameFr || '—'}</td>

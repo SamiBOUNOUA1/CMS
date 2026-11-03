@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 

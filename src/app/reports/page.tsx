@@ -3,12 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
-import { useIsMobile } from '@/lib/useIsMobile';
+import { formatMoneyOrDash } from '@/lib/money';
 
-function formatCurrency(n: number | null | undefined, cur = '€') {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n) + ' ' + cur;
-}
+const formatCurrency = (n: number | null | undefined, cur = '€') => formatMoneyOrDash(n, cur, 0);
 
 interface ReportData {
   range: string;
@@ -39,7 +36,6 @@ export default function ReportsPage() {
   const t = useT();
   const tr = t.reportsPage;
   const currency = useCurrency();
-  const isMobile = useIsMobile();
 
   const [range, setRange] = useState<string>('12m');
   const [data, setData] = useState<ReportData | null>(null);
@@ -141,9 +137,9 @@ export default function ReportsPage() {
             <SectionTitle>{tr.revenueByMonth}</SectionTitle>
             {data.revenueByMonth.every(m => m.revenue === 0) ? (
               <p className="text-g-text-3 text-sm m-0">{tr.empty}</p>
-            ) : isMobile ? (
+            ) : (<>
               /* Mobile: horizontal bars with always-visible values */
-              <div className="space-y-2.5">
+              <div className="sm:hidden space-y-2.5">
                 {data.revenueByMonth.filter(m => m.revenue > 0).map(m => (
                   <div key={m.key} className="flex items-center gap-2.5">
                     <span className="text-[11px] text-g-text-2 w-8 flex-shrink-0">{m.label}</span>
@@ -154,9 +150,8 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-            ) : (
               /* Desktop: vertical bars, value on hover */
-              <div className="flex items-end gap-1.5 h-[180px]">
+              <div className="hidden sm:flex items-end gap-1.5 h-[180px]">
                 {data.revenueByMonth.map(m => (
                   <div key={m.key} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full group">
                     <span className="text-[10px] text-g-text-3 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -171,7 +166,7 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-            )}
+            </>)}
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

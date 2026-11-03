@@ -2,13 +2,14 @@
 import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order } from '@/lib/models';
+import { Order, EventTypeConfig } from '@/lib/models';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // Returns the order's materials with the linked inventory item populated for display
 async function loadMaterials(id: string) {
   const order = await Order.findById(id)
-    .select('clientName eventType eventDate materials')
+    .select('clientName eventType eventDate guestCount tableCount materials')
     .populate('materials.inventoryItem', 'name imageUrl unit currentStock')
     .populate('materials.checkedBy', 'name')
     .populate('materials.missingBy', 'name')
@@ -29,17 +30,30 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
     // Drop entries whose inventory item was deleted so the UI never renders blanks
     const materials = (order.materials ?? []).filter((m: any) => m.inventoryItem);
 
+    // Template "per guest/table" items scale by this count: tables for table-mode
+    // event types, guests otherwise (same rule as order pricing).
+    const typeConfig = await EventTypeConfig.findOne({ key: order.eventType })
+      .select('countMode tableCapacity').lean();
+    const countMode = typeConfig?.countMode === 'tables' ? 'tables' : 'persons';
+    const scaleCount = countMode === 'tables'
+      ? (order.tableCount || Math.ceil((order.guestCount || 0) / (typeConfig?.tableCapacity || 10)))
+      : (order.guestCount || 0);
+
     return NextResponse.json({
       order: {
         _id: order._id,
         clientName: order.clientName,
         eventType: order.eventType,
         eventDate: order.eventDate,
+        guestCount: order.guestCount,
+        tableCount: order.tableCount,
+        countMode,
+        scaleCount,
       },
       materials,
     });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -81,7 +95,7 @@ async function PUT_(request: NextRequest, { params }: { params: Record<string, s
     const updated = await loadMaterials(params.id);
     return NextResponse.json({ materials: (updated?.materials ?? []).filter((m: any) => m.inventoryItem) });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -122,7 +136,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     const updated = await loadMaterials(params.id);
     return NextResponse.json({ materials: (updated?.materials ?? []).filter((m: any) => m.inventoryItem) });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

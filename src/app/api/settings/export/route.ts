@@ -12,6 +12,7 @@ import {
   Role, RolePermissions,
 } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 const GROUP_COLLECTIONS: Record<string, { key: string; model: unknown }[]> = {
   settings: [
@@ -82,7 +83,7 @@ async function GET_(request: NextRequest) {
 
     return NextResponse.json(envelope);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

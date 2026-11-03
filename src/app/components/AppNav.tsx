@@ -5,6 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTheme } from '@/lib/ThemeContext';
+import { useUser } from '@/lib/UserContext';
+import ThemeSwitch, { THEME_OPTIONS } from './ThemeSwitch';
 
 const ModuleClipboardIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -51,71 +53,11 @@ const MODULE_ICON_MAP: Record<string, () => JSX.Element> = {
   BarChart: ModuleBarChartIcon,
 };
 
-const SunIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7zm0-5a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1zm9-9h-2a1 1 0 0 0 0 2h2a1 1 0 0 0 0-2zM5 12a1 1 0 0 1-1 1H2a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1zm12.07-7.07a1 1 0 0 1 0 1.41l-1.41 1.42a1 1 0 1 1-1.42-1.42l1.42-1.41a1 1 0 0 1 1.41 0zm-12.73 0a1 1 0 0 1 1.41 0l1.42 1.41a1 1 0 1 1-1.42 1.42L4.93 6.34a1 1 0 0 1 0-1.41zm12.73 14.14a1 1 0 0 1-1.41 0l-1.42-1.41a1 1 0 1 1 1.42-1.42l1.41 1.42a1 1 0 0 1 0 1.41zm-12.73 0a1 1 0 0 1 0-1.41l1.42-1.42a1 1 0 1 1 1.42 1.42l-1.42 1.41a1 1 0 0 1-1.42 0z" />
-  </svg>
-);
-
-const MoonIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-);
-
-const SystemIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M20 3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h6v2H8v2h8v-2h-2v-2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 13H4V5h16v11z" />
-  </svg>
-);
-
 const GearIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
     <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.02 7.02 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.36 2.54a7.37 7.37 0 0 0-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.05.24.26.42.5.42h4c.25 0 .46-.18.49-.42l.36-2.54a7.37 7.37 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
   </svg>
 );
-
-const THEME_OPTIONS = [
-  { value: 'light', Icon: SunIcon, label: 'Light' },
-  { value: 'dark', Icon: MoonIcon, label: 'Dark' },
-  { value: 'system', Icon: SystemIcon, label: 'System' },
-] as const;
-
-interface SubRoute {
-  href: string;
-  label: string;
-  labelFr: string;
-  permission?: string;
-  anyPermission?: string[];
-}
-
-interface Module {
-  id: string;
-  name: string;
-  nameFr: string;
-  icon: string;
-  color: string;
-  isEnabled: boolean;
-  permissions: string[];
-  routes: string[];
-  primaryRoute: string;
-  subRoutes: SubRoute[];
-}
-
-interface User {
-  _id?: string;
-  id?: string;
-  name: string;
-  email: string;
-  role: string;
-  permissions: Record<string, boolean>;
-}
-
-// The tenant the signed-in user belongs to (from /api/auth/me).
-interface Company {
-  name: string;
-  logoUrl: string;
-}
 
 const BuildingIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="flex-shrink-0">
@@ -128,38 +70,19 @@ export default function AppNav() {
   const pathname = usePathname();
   const { lang, switchLanguage, t } = useLanguage();
   const { theme, switchTheme } = useTheme();
-  const [user, setUser] = useState<User | null>(null);
-  const [company, setCompany] = useState<Company | null>(null);
-  const [modules, setModules] = useState<Module[]>([]);
+  const { user, company, modules, perms, clear } = useUser();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        setUser(d?.user ?? null);
-        setCompany(d?.company?.name ? d.company : null);
-      });
-  }, [pathname]);
-
-  useEffect(() => {
-    fetch('/api/settings/modules')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setModules(d.modules ?? []));
-  }, []);
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    setCompany(null);
+    clear();
     router.push('/login');
     router.refresh();
   };
 
-  const perms = user?.permissions ?? {};
   const settingsHref = perms.manage_catalog
     ? '/settings/catalog'
     : perms.manage_users
@@ -168,25 +91,6 @@ export default function AppNav() {
 
   const visibleModules = modules.filter(mod =>
     mod.isEnabled && mod.permissions.some(p => perms[p])
-  );
-
-  const themePill = (
-    <div className="flex rounded-full border border-g-border overflow-hidden flex-shrink-0">
-      {THEME_OPTIONS.map(({ value, Icon, label }) => (
-        <button
-          key={value}
-          onClick={() => switchTheme(value)}
-          title={label}
-          className="py-1 px-2.5 border-none cursor-pointer text-xs font-sans font-medium flex items-center transition-[background,color] duration-150"
-          style={{
-            background: theme === value ? '#1a73e8' : 'transparent',
-            color: theme === value ? '#fff' : 'var(--google-text-secondary)',
-          }}
-        >
-          <Icon />
-        </button>
-      ))}
-    </div>
   );
 
   return (
@@ -220,7 +124,7 @@ export default function AppNav() {
       <div className="flex items-center gap-2 ml-auto">
         {/* Theme switcher — desktop only */}
         <div className="hidden sm:flex">
-          {themePill}
+          <ThemeSwitch />
         </div>
 
         {/* Language switcher — desktop only */}
@@ -245,10 +149,11 @@ export default function AppNav() {
           <Link
             href={settingsHref}
             title={t.nav.settings}
+            aria-label={t.nav.settings}
             className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center flex-shrink-0 no-underline transition-[background,color] duration-150"
             style={{
               background: pathname.startsWith('/settings') ? 'var(--google-blue-light)' : 'transparent',
-              color: pathname.startsWith('/settings') ? '#1a73e8' : 'var(--google-text-secondary)',
+              color: pathname.startsWith('/settings') ? 'var(--google-blue-accent)' : 'var(--google-text-secondary)',
             }}
           >
             <GearIcon />
@@ -262,6 +167,9 @@ export default function AppNav() {
               onClick={() => setUserMenuOpen(o => !o)}
               className="w-9 h-9 rounded-full border-none cursor-pointer bg-google-blue text-white text-sm font-medium font-sans flex items-center justify-center flex-shrink-0"
               title={user.name}
+              aria-label={user.name}
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
             >
               {user.name[0].toUpperCase()}
             </button>
@@ -283,8 +191,8 @@ export default function AppNav() {
                     <span
                       className="inline-block mt-1.5 rounded-[10px] py-0.5 px-2 text-[11px] font-medium"
                       style={{
-                        background: ({ admin: '#fce8e6', manager: '#e8f0fe' } as Record<string, string>)[user.role] ?? 'var(--google-bg)',
-                        color: ({ admin: '#d93025', manager: '#1a73e8' } as Record<string, string>)[user.role] ?? 'var(--google-text-secondary)',
+                        background: ({ admin: 'var(--google-red-light)', manager: 'var(--google-blue-light)' } as Record<string, string>)[user.role] ?? 'var(--google-bg)',
+                        color: ({ admin: 'var(--google-red-accent)', manager: 'var(--google-blue-accent)' } as Record<string, string>)[user.role] ?? 'var(--google-text-secondary)',
                       }}
                     >
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -315,7 +223,8 @@ export default function AppNav() {
         <button
           className="flex sm:hidden w-9 h-9 rounded-lg border-none bg-transparent cursor-pointer text-g-text-2 items-center justify-center"
           onClick={() => setDrawerOpen(o => !o)}
-          aria-label="Menu"
+          aria-label={t.nav.menu}
+          aria-expanded={drawerOpen}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
@@ -335,9 +244,10 @@ export default function AppNav() {
           >
             {/* Drawer header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-g-border">
-              <span className="font-sans text-base font-medium text-g-text">{t.nav.quotes}</span>
+              <span className="font-sans text-base font-medium text-g-text">{t.nav.menu}</span>
               <button
                 onClick={() => setDrawerOpen(false)}
+                aria-label={t.nav.close}
                 className="border-none bg-transparent cursor-pointer text-g-text-2 p-1"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
@@ -404,7 +314,7 @@ export default function AppNav() {
                 onClick={() => setDrawerOpen(false)}
                 className="flex items-center gap-3 px-5 py-3.5 font-sans text-[15px] font-medium no-underline border-t border-g-border transition-[background] duration-100"
                 style={{
-                  color: pathname.startsWith('/settings') ? '#1a73e8' : 'var(--google-text-primary)',
+                  color: pathname.startsWith('/settings') ? 'var(--google-blue-accent)' : 'var(--google-text-primary)',
                   background: pathname.startsWith('/settings') ? 'var(--google-blue-light)' : 'transparent',
                 }}
               >
@@ -415,7 +325,7 @@ export default function AppNav() {
 
             {/* Language switcher in drawer */}
             <div className="px-5 py-3 border-t border-g-border">
-              <p className="m-0 mb-2 text-xs text-g-text-3 font-sans font-medium uppercase tracking-[0.05em]">{lang === 'fr' ? 'Langue' : 'Language'}</p>
+              <p className="m-0 mb-2 text-xs text-g-text-3 font-sans font-medium uppercase tracking-[0.05em]">{t.nav.language}</p>
               <div className="flex gap-1.5">
                 {(['en', 'fr'] as const).map(l => (
                   <button
@@ -436,9 +346,9 @@ export default function AppNav() {
 
             {/* Theme switcher in drawer */}
             <div className="px-5 py-3 border-t border-g-border">
-              <p className="m-0 mb-2 text-xs text-g-text-3 font-sans font-medium uppercase tracking-[0.05em]">Theme</p>
+              <p className="m-0 mb-2 text-xs text-g-text-3 font-sans font-medium uppercase tracking-[0.05em]">{t.nav.theme}</p>
               <div className="flex gap-1.5">
-                {THEME_OPTIONS.map(({ value, Icon, label }) => (
+                {THEME_OPTIONS.map(({ value, Icon, labelKey }) => (
                   <button
                     key={value}
                     onClick={() => switchTheme(value)}
@@ -450,7 +360,7 @@ export default function AppNav() {
                     }}
                   >
                     <Icon />
-                    {label}
+                    {t.nav[labelKey]}
                   </button>
                 ))}
               </div>

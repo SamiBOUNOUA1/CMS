@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { TravelRegionConfig } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // PATCH /api/travel-regions/[id]
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -31,7 +32,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (!region) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ region });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -42,7 +43,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await TravelRegionConfig.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

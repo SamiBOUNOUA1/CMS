@@ -6,6 +6,7 @@ import { Order, Payment } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth } from '@/lib/requireAuth';
 import { applyStatusEventTrigger, canAutoConfirm } from '@/lib/orderStatus';
+import { serverError } from '@/lib/logger';
 
 // Sets order.paymentStatus from the already-known total paid and persists it.
 // Caller passes totalPaid so we don't re-query the payments collection.
@@ -32,7 +33,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
       .lean();
     return NextResponse.json({ payments });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -109,7 +110,7 @@ async function POST_(request: NextRequest, { params }: { params: Record<string, 
     // `order` was just saved with the updated status; return it instead of re-fetching.
     return NextResponse.json({ payment, order: order.toObject() }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

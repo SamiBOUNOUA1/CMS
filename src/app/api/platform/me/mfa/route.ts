@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
 import { mfaStatus, startSetup, confirmSetup, disableMfa, regenerateRecoveryCodes } from '@/lib/mfaService';
+import { serverError } from '@/lib/logger';
 
 // Two-factor status of the signed-in platform operator.
 export const GET = withPlatformAdmin(async (_request: NextRequest, _ctx, admin) => {
@@ -13,7 +14,7 @@ export const GET = withPlatformAdmin(async (_request: NextRequest, _ctx, admin) 
     if (!status) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(status);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 });
 
@@ -37,6 +38,6 @@ export const POST = withPlatformAdmin(async (request: NextRequest, _ctx, admin) 
     const { label, ...rest } = result; // eslint-disable-line @typescript-eslint/no-unused-vars
     return NextResponse.json(rest);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 });

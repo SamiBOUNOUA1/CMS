@@ -5,6 +5,7 @@ import { compare, hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // Returns the currently authenticated user's profile.
 async function GET_(request: NextRequest) {
@@ -17,7 +18,7 @@ async function GET_(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ user });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -67,7 +68,7 @@ async function PATCH_(request: NextRequest) {
     return NextResponse.json({ user: safe });
   } catch (err: unknown) {
     if (err?.code === 11000) return NextResponse.json({ error: 'Email already in use' }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

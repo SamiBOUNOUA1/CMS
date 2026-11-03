@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useT, useLanguage } from '@/lib/LanguageContext';
+import { useRowLink } from '@/lib/useRowLink';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -52,7 +52,7 @@ const ImgPlaceholderIcon = () => (
 export default function InventoryPage() {
   const t = useT();
   const { currency } = useLanguage();
-  const router = useRouter();
+  const rowLink = useRowLink();
   const ti = t.inventoryPage;
 
   const [items, setItems] = useState<any[]>([]);
@@ -281,7 +281,7 @@ export default function InventoryPage() {
             {items.map((item: any) => (
               <div
                 key={item._id}
-                onClick={() => router.push(`/inventory/${item._id}`)}
+                {...rowLink(`/inventory/${item._id}`)}
                 className="bg-g-surface border border-g-border rounded-2xl p-3.5 cursor-pointer active:bg-g-bg transition-colors"
               >
                 <div className="flex gap-3">
@@ -354,10 +354,8 @@ export default function InventoryPage() {
                 {items.map((item: any) => (
                   <tr
                     key={item._id}
-                    onClick={() => router.push(`/inventory/${item._id}`)}
-                    className="border-b border-g-border last:border-b-0 cursor-pointer transition-colors"
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    {...rowLink(`/inventory/${item._id}`)}
+                    className="hover:bg-[var(--google-row-hover)] border-b border-g-border last:border-b-0 cursor-pointer transition-colors"
                   >
                     <td className="py-2.5 pl-3.5 pr-1">
                       {item.imageUrl ? (

@@ -35,6 +35,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
   const [saving, setSaving] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [openLogs, setOpenLogs] = useState<number | null>(null);
   const router = useRouter();
   const [form, setForm] = useState({
     name: '', contactName: '', contactEmail: '', contactPhone: '', notes: '',
@@ -63,7 +64,9 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     load();
     api<{ plans: PlanOpt[] }>('/api/platform/plans').then(d => setPlans(d.plans)).catch(() => {});
-  }, [load]);
+    api<{ total: number }>(`/api/platform/logs?tenant=${params.id}&status=open&limit=1`)
+      .then(d => setOpenLogs(d.total)).catch(() => {});
+  }, [load, params.id]);
 
   const set = (k: keyof typeof form, v: unknown) => setForm(f => ({ ...f, [k]: v }));
 
@@ -174,6 +177,13 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
             </div>
           ))}
         </div>
+        {openLogs !== null && (
+          <div className="mt-4 text-sm text-g-text-2">
+            Open errors / warnings: <span className={openLogs ? 'text-google-red font-medium' : ''}>{openLogs}</span>
+            {' · '}
+            <Link href={`/platform/logs?tenant=${params.id}`} className="text-google-blue no-underline">View logs</Link>
+          </div>
+        )}
       </FormCard>
 
       <FormCard>

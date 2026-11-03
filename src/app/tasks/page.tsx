@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useT } from '@/lib/LanguageContext';
-import { useIsMobile } from '@/lib/useIsMobile';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import { btnFilled } from '@/app/components/FormPrimitives';
 import TaskCreateModal from '@/app/components/TaskCreateModal';
 
@@ -38,7 +37,6 @@ export default function TasksPage() {
   const t = useT();
   const tp = t.tasksPage;
   const tm = t.taskModal;
-  const isMobile = useIsMobile(640);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,8 +133,8 @@ export default function TasksPage() {
       )}
 
       {!loading && pendingTasks.length > 0 && (
-        isMobile ? (
-          <div className="flex flex-col gap-2.5">
+        <>
+          <div className="sm:hidden flex flex-col gap-2.5">
             {pendingTasks.map(task => {
               const dlStyle = getDeadlineStyle(task);
               return (
@@ -167,8 +165,7 @@ export default function TasksPage() {
               );
             })}
           </div>
-        ) : (
-          <div className="bg-g-surface border border-g-border rounded-xl overflow-hidden">
+          <div className="hidden sm:block bg-g-surface border border-g-border rounded-xl overflow-hidden">
             <div className="flex py-2.5 px-5 bg-g-bg border-b border-g-border">
               <div className="w-7 flex-shrink-0" />
               <div className="flex-1 text-[11px] font-medium uppercase tracking-wide text-g-text-2">{tp.table.type}</div>
@@ -212,7 +209,7 @@ export default function TasksPage() {
               );
             })}
           </div>
-        )
+        </>
       )}
 
       {deleteId && (

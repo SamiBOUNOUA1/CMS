@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Role, User } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // GET /api/admin/roles — list all roles sorted by sortOrder
 async function GET_() {
@@ -11,7 +12,7 @@ async function GET_() {
     const roles = await Role.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
     return NextResponse.json({ roles });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -40,7 +41,7 @@ async function POST_(request: NextRequest) {
     return NextResponse.json({ role }, { status: 201 });
   } catch (err: unknown) {
     if (err.code === 11000) return NextResponse.json({ error: 'A role with that name already exists' }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment, InventoryItem, OrderStatusConfig, EventTypeConfig } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // Resolve the range query param into a start Date (null = all time is not used; we always bound).
 function rangeStart(range: string): Date {
@@ -145,8 +146,7 @@ async function GET_(request: NextRequest) {
       alerts: { lowStockCount, overdueUnpaidCount },
     });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // GET /api/admin/managers — list all active users (assignable to an event team)
 async function GET_(request: NextRequest) {
@@ -23,8 +24,7 @@ async function GET_(request: NextRequest) {
 
     return NextResponse.json({ managers });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Task } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   const auth = await getAuth(request);
@@ -39,7 +40,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 
     return NextResponse.json({ task: updated });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -61,7 +62,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await Task.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

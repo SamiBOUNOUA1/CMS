@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // GET /api/orders/[id]/event-flow
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -17,7 +18,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ flowInstance: order.event?.flowInstance ?? null, event: order.event, order });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -87,7 +88,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     await event.save();
     return NextResponse.json({ flowInstance: event.flowInstance });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

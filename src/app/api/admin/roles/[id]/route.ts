@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Role, User, RolePermissions } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // PATCH /api/admin/roles/[id] — update label, isDefault, sortOrder
 // Cannot change the name of a system role; name is always derived from label for non-system roles
@@ -48,7 +49,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     return NextResponse.json({ role });
   } catch (err: unknown) {
     if (err.code === 11000) return NextResponse.json({ error: 'A role with that name already exists' }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -73,7 +74,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

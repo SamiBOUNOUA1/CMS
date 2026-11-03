@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Product } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 async function GET_() {
   try {
@@ -10,7 +11,7 @@ async function GET_() {
     const products = await Product.find().populate('category', 'name').populate('linkedRecipe', 'name nameFr').sort({ name: 1 }).lean();
     return NextResponse.json({ products });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -35,7 +36,7 @@ async function POST_(request: NextRequest) {
     return NextResponse.json({ product: populated }, { status: 201 });
   } catch (err: unknown) {
     if (err.code === 11000) return NextResponse.json({ error: 'Product name already exists' }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

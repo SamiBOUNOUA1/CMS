@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import { Activity } from '@/lib/models';
+import { logWarn } from '@/lib/logger';
 
 interface LogActivityParams {
   action: string;
@@ -22,6 +23,6 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
       metadata:    params.metadata ?? {},
     });
   } catch (err) {
-    console.error('[activityLogger] Failed to log activity:', err);
+    await logWarn('Activity log write failed', { err });
   }
 }

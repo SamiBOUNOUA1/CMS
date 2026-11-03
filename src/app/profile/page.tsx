@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useT, useLanguage } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
 import {
   formPageCls,
   FormSectionLabel,
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const t = useT();
   const tp = t.profile;
   const { switchLanguage } = useLanguage();
+  const { refresh: refreshUser } = useUser();
 
   const [form, setForm] = useState<ProfileForm>({ name: '', email: '', preferredLanguage: 'en' });
   const [role, setRole] = useState('');
@@ -89,6 +91,7 @@ export default function ProfilePage() {
       if (!res.ok) { setError(data.error || tp.saveFailed); return; }
 
       switchLanguage(form.preferredLanguage);
+      refreshUser();
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

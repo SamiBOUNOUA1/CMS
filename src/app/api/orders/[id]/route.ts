@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
 import { lineGroupsTotal } from '@/lib/pricing';
 import { applyStatusEventTrigger } from '@/lib/orderStatus';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -25,7 +26,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
 
     return NextResponse.json({ order, quotes });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -123,8 +124,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     const quotes = await Quote.find({ order: params.id }).sort({ versionNumber: 1 }).lean();
     return NextResponse.json({ order: order.toObject(), quotes });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -137,7 +137,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await Order.findByIdAndDelete(params.id);
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

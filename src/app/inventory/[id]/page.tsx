@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useT, useLanguage } from '@/lib/LanguageContext';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
+import { useUser } from '@/lib/UserContext';
 
 export default function InventoryItemPage({ params }) {
   const t = useT();
@@ -34,12 +35,11 @@ export default function InventoryItemPage({ params }) {
   const [toast, setToast] = useState('');
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user } = useUser();
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d && setUser(d.user));
     fetch('/api/inventory/categories')
       .then(r => r.ok ? r.json() : { categories: [] })
       .then(d => setCategories(d.categories ?? []));

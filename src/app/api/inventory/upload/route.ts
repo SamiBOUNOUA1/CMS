@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { getBucket, tenantObjectPath } from '@/lib/storage';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -45,7 +46,7 @@ async function POST_(request: NextRequest) {
     // Served back through our streaming route (keeps the bucket private).
     return NextResponse.json({ url: `/api/inventory/image/${filename}` });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

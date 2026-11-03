@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
+import { useRowLink } from '@/lib/useRowLink';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -27,10 +27,9 @@ const typeBadgeStyle = (type: string) => {
 };
 
 export default function SuppliersPage() {
-  const isMobile = useIsMobile();
   const t = useT();
   const tp = t.suppliersPage;
-  const router = useRouter();
+  const rowLink = useRowLink();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,13 +38,8 @@ export default function SuppliersPage() {
   const [sortBy, setSortBy] = useState('name');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
-  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const { perms } = useUser();
 
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then((d: any) => d?.user?.permissions && setPerms(d.user.permissions));
-  }, []);
 
   const fetchSuppliers = useCallback(async () => {
     setLoading(true);
@@ -94,7 +88,7 @@ export default function SuppliersPage() {
   });
 
   return (
-    <div className="mx-auto" style={{ maxWidth: 1100, padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="mx-auto max-w-[1100px] px-4 py-5 sm:px-6 sm:py-8">
       {/* Toast */}
       {notification && (
         <div
@@ -132,7 +126,7 @@ export default function SuppliersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="m-0 font-medium text-g-text" style={{ fontSize: isMobile ? 22 : 26 }}>{tp.title}</h1>
+          <h1 className="m-0 font-medium text-g-text text-[22px] sm:text-[26px]">{tp.title}</h1>
           <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.supplierCount(suppliers.length)}</p>
         </div>
         {perms.edit_suppliers && (
@@ -217,8 +211,8 @@ export default function SuppliersPage() {
       )}
 
       {/* Desktop table */}
-      {!loading && sorted.length > 0 && !isMobile && (
-        <div className="bg-g-surface border border-g-border rounded-2xl overflow-hidden shadow-google-1">
+      {!loading && sorted.length > 0 && (
+        <div className="hidden sm:block bg-g-surface border border-g-border rounded-2xl overflow-hidden shadow-google-1">
           <div className="flex px-5 py-3 bg-g-bg border-b border-g-border">
             {[tp.table.name, tp.table.email, tp.table.phone, tp.table.type, tp.table.actions].map((h: string, i: number) => (
               <div
@@ -233,10 +227,8 @@ export default function SuppliersPage() {
           {sorted.map((s) => (
             <div
               key={s._id}
-              onClick={() => router.push(`/inventory/suppliers/${s._id}`)}
-              className="flex px-5 py-3.5 items-center border-b border-g-border last:border-b-0 cursor-pointer transition-colors"
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
-              onMouseLeave={e => (e.currentTarget.style.background = '')}
+              {...rowLink(`/inventory/suppliers/${s._id}`)}
+              className="hover:bg-[var(--google-row-hover)] flex px-5 py-3.5 items-center border-b border-g-border last:border-b-0 cursor-pointer transition-colors"
             >
               <div className="flex-[2] flex items-center gap-3 min-w-0">
                 <div
@@ -277,12 +269,12 @@ export default function SuppliersPage() {
       )}
 
       {/* Mobile cards */}
-      {!loading && sorted.length > 0 && isMobile && (
-        <div className="flex flex-col gap-2.5">
+      {!loading && sorted.length > 0 && (
+        <div className="sm:hidden flex flex-col gap-2.5">
           {sorted.map(s => (
             <div
               key={s._id}
-              onClick={() => router.push(`/inventory/suppliers/${s._id}`)}
+              {...rowLink(`/inventory/suppliers/${s._id}`)}
               className="bg-g-surface border border-g-border rounded-2xl p-4 cursor-pointer shadow-google-1"
             >
               <div className="flex items-center justify-between gap-3">

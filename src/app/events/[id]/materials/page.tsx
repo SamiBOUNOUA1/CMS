@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
+import { MaterialImage, InventorySearch, QtyStepper, resolveTemplateItems } from '@/app/components/MaterialPicker';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -19,14 +20,6 @@ interface Material {
   inventoryItem: { _id: string; name: string; imageUrl?: string; unit?: string };
 }
 
-const ImgPlaceholder = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <circle cx="8.5" cy="8.5" r="1.5" />
-    <path d="M21 15l-5-5L5 21" />
-  </svg>
-);
-
 const CheckIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
@@ -39,37 +32,11 @@ const WarnIcon = () => (
   </svg>
 );
 
-const SearchIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-  </svg>
-);
 
 function Spinner() {
   return <div className="w-8 h-8 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />;
 }
 
-function MaterialImage({ url, name, size, onPreview }: { url?: string; name: string; size: number; onPreview?: (url: string) => void }) {
-  if (url) {
-    const img = <img src={url} alt={name} className="object-cover rounded-xl border border-g-border block" style={{ width: size, height: size }} />;
-    if (!onPreview) return <div className="flex-shrink-0">{img}</div>;
-    return (
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onPreview(url); }}
-        className="p-0 border-0 bg-transparent cursor-zoom-in flex-shrink-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-google-blue"
-        aria-label={`View image of ${name}`}
-      >
-        {img}
-      </button>
-    );
-  }
-  return (
-    <div className="rounded-xl bg-g-bg border border-g-border flex items-center justify-center text-g-text-3 flex-shrink-0" style={{ width: size, height: size }}>
-      <ImgPlaceholder />
-    </div>
-  );
-}
 
 export default function EventMaterialsPage() {
   const { id } = useParams() as { id: string };
@@ -82,6 +49,7 @@ export default function EventMaterialsPage() {
   const [canManage, setCanManage] = useState(false);
   const [canCheck, setCanCheck] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [openTemplates, setOpenTemplates] = useState(false); // open template picker when entering edit mode
   const [toast, setToast] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -208,16 +176,27 @@ export default function EventMaterialsPage() {
         <EditList
           orderId={id}
           materials={materials}
-          onCancel={() => setEditing(false)}
-          onSaved={(next) => { setMaterials(next); setEditing(false); notify('List saved'); }}
+          scaleCount={header.scaleCount ?? header.guestCount ?? 0}
+          countMode={header.countMode === 'tables' ? 'tables' : 'persons'}
+          openTemplatesOnMount={openTemplates}
+          onCancel={() => { setEditing(false); setOpenTemplates(false); }}
+          onSaved={(next) => { setMaterials(next); setEditing(false); setOpenTemplates(false); notify('List saved'); }}
         />
       ) : total === 0 ? (
         <div className="bg-g-surface rounded-2xl border border-g-border py-14 px-6 text-center">
           <div className="text-[40px] mb-3">📦</div>
           <p className="text-base text-g-text m-0 mb-1 font-medium">No materials yet</p>
           <p className="text-sm text-g-text-2 m-0">
-            {canManage ? 'Tap “Build list” to add the items needed for this event.' : 'The materials list has not been prepared yet.'}
+            {canManage ? 'Start from a template, or tap “Build list” to add items one by one.' : 'The materials list has not been prepared yet.'}
           </p>
+          {canManage && (
+            <button
+              onClick={() => { setOpenTemplates(true); setEditing(true); }}
+              className="mt-4 py-2.5 px-5 rounded-full bg-google-blue text-white text-[13px] font-medium border-none cursor-pointer shadow-google-1"
+            >
+              📋 Use a template
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -318,48 +297,73 @@ export default function EventMaterialsPage() {
 }
 
 // ── Admin edit mode ───────────────────────────────────────────────────────────
+type DraftRow = { item: Material['inventoryItem']; quantity: number };
+
 function EditList({
-  orderId, materials, onCancel, onSaved,
+  orderId, materials, scaleCount, countMode, openTemplatesOnMount, onCancel, onSaved,
 }: {
   orderId: string;
   materials: Material[];
+  scaleCount: number; // guests, or tables for table-mode events
+  countMode: 'persons' | 'tables';
+  openTemplatesOnMount?: boolean;
   onCancel: () => void;
   onSaved: (next: Material[]) => void;
 }) {
   // Working draft: list of { inventoryItem (populated), quantity }
-  const [draft, setDraft] = useState(
+  const [draft, setDraft] = useState<DraftRow[]>(
     materials.map(m => ({ item: m.inventoryItem, quantity: m.quantity }))
   );
-  const [search, setSearch] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // Live search inventory items to add
+  // Templates
+  const [templates, setTemplates] = useState<any[] | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(!!openTemplatesOnMount);
+  const [pending, setPending] = useState<any | null>(null); // template awaiting replace/merge choice
+  const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  const flash = (msg: string) => { setNotice(msg); setTimeout(() => setNotice(null), 2800); };
+
   useEffect(() => {
-    const handle = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      setSearching(true);
-      fetch(`/api/inventory/items?${params}`)
-        .then(r => r.ok ? r.json() : { items: [] })
-        .then((d: any) => setResults(d.items || []))
-        .finally(() => setSearching(false));
-    }, 250);
-    return () => clearTimeout(handle);
-  }, [search]);
+    if (!pickerOpen || templates) return;
+    fetch('/api/material-templates', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : { templates: [] })
+      .then((d: any) => setTemplates(d.templates || []));
+  }, [pickerOpen, templates]);
 
   const addedIds = new Set(draft.map(d => d.item._id));
-  const addable = results.filter(r => !addedIds.has(r._id));
 
-  const addItem = (item: any) => {
-    setDraft(d => [...d, { item, quantity: 1 }]);
-    setSearch('');
-    setResults([]);
-  };
+  const addItem = (item: any) => setDraft(d => [...d, { item, quantity: 1 }]);
   const removeItem = (itemId: string) => setDraft(d => d.filter(x => x.item._id !== itemId));
   const setQty = (itemId: string, qty: number) =>
-    setDraft(d => d.map(x => x.item._id === itemId ? { ...x, quantity: Math.max(0, qty) } : x));
+    setDraft(d => d.map(x => x.item._id === itemId ? { ...x, quantity: Math.max(0, Math.round(qty)) } : x));
+
+  // Apply a template: 'replace' swaps the whole draft; 'merge' only adds items not already listed
+  const applyTemplate = (tpl: any, how: 'replace' | 'merge') => {
+    const rows = resolveTemplateItems(tpl.items || [], scaleCount) as DraftRow[];
+    if (how === 'replace') {
+      setDraft(rows);
+    } else {
+      setDraft(d => {
+        const have = new Set(d.map(x => x.item._id));
+        return [...d, ...rows.filter(r => !have.has(r.item._id))];
+      });
+    }
+    setPending(null);
+    setPickerOpen(false);
+    flash(`Template “${tpl.name}” applied — review and save`);
+  };
+
+  const pickTemplate = (tpl: any) => {
+    if (draft.length === 0) applyTemplate(tpl, 'replace');
+    else setPending(tpl);
+  };
+
+  const closePicker = useCallback(() => { setPickerOpen(false); setPending(null); }, []);
+  const closeSaveAs = useCallback(() => setSaveAsOpen(false), []);
 
   const save = async () => {
     setSaving(true);
@@ -372,48 +376,62 @@ function EditList({
     if (res.ok) {
       const data = await res.json();
       onSaved(data.materials || []);
+    } else {
+      flash('Could not save — try again');
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    const name = templateName.trim();
+    if (!name || savingTemplate) return;
+    setSavingTemplate(true);
+    const res = await fetch('/api/material-templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        items: draft.map(d => ({ inventoryItem: d.item._id, mode: 'fixed', quantity: d.quantity })),
+      }),
+    });
+    setSavingTemplate(false);
+    if (res.ok) {
+      setSaveAsOpen(false);
+      setTemplateName('');
+      setTemplates(null); // refetch next time the picker opens
+      flash(`Saved as template “${name}”`);
+    } else {
+      flash('Could not save template');
     }
   };
 
   return (
     <div>
-      {/* Search / add panel */}
-      <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 p-4 mb-4">
-        <div className="text-[11px] font-semibold text-g-text-3 uppercase tracking-wide mb-2">Add material from inventory</div>
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-g-text-3 pointer-events-none"><SearchIcon /></span>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search inventory items…"
-            className="w-full py-2.5 pl-11 pr-4 rounded-full border border-g-border text-sm bg-g-bg text-g-text outline-none focus:border-google-blue transition-colors"
-          />
-        </div>
-        {search && (
-          <div className="mt-2 max-h-[260px] overflow-y-auto flex flex-col gap-1">
-            {searching ? (
-              <div className="py-3 text-center text-[13px] text-g-text-3">Searching…</div>
-            ) : addable.length === 0 ? (
-              <div className="py-3 text-center text-[13px] text-g-text-3">No matching items</div>
-            ) : addable.map(item => (
-              <button
-                key={item._id}
-                onClick={() => addItem(item)}
-                className="flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-g-bg text-left cursor-pointer bg-transparent"
-              >
-                <MaterialImage url={item.imageUrl} name={item.name} size={40} />
-                <span className="flex-1 min-w-0 text-sm text-g-text truncate">{item.name}</span>
-                <span className="text-google-blue text-[13px] font-medium flex-shrink-0">+ Add</span>
-              </button>
-            ))}
-          </div>
+      {/* Template shortcuts */}
+      <div className="flex gap-2.5 mb-4 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-full border border-google-blue text-google-blue bg-g-surface text-[13px] font-medium cursor-pointer"
+        >
+          📋 Use a template
+        </button>
+        {draft.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSaveAsOpen(true)}
+            className="flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-full border border-g-border text-g-text bg-g-surface text-[13px] font-medium cursor-pointer"
+          >
+            💾 Save as template
+          </button>
         )}
       </div>
+
+      <InventorySearch excludeIds={addedIds} onAdd={addItem} />
 
       {/* Draft list */}
       {draft.length === 0 ? (
         <div className="bg-g-surface rounded-2xl border border-g-border py-10 px-6 text-center text-sm text-g-text-2 mb-4">
-          No materials in the list. Search above to add items.
+          No materials in the list. Use a template or search above to add items.
         </div>
       ) : (
         <div className="flex flex-col gap-2.5 mb-4">
@@ -424,17 +442,7 @@ function EditList({
                 <div className="font-medium text-g-text text-sm leading-snug truncate">{d.item.name}</div>
                 <div className="text-[12px] text-g-text-3 mt-0.5">{d.item.unit || 'unit'}</div>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button onClick={() => setQty(d.item._id, d.quantity - 1)} className="w-8 h-8 rounded-full border border-g-border bg-g-surface text-g-text-2 text-lg leading-none flex items-center justify-center cursor-pointer">−</button>
-                <input
-                  type="number"
-                  value={d.quantity}
-                  onChange={e => setQty(d.item._id, Number(e.target.value))}
-                  className="w-12 text-center py-1.5 rounded-lg border border-g-border text-sm bg-g-bg text-g-text outline-none focus:border-google-blue"
-                  min={0}
-                />
-                <button onClick={() => setQty(d.item._id, d.quantity + 1)} className="w-8 h-8 rounded-full border border-g-border bg-g-surface text-g-text-2 text-lg leading-none flex items-center justify-center cursor-pointer">+</button>
-              </div>
+              <QtyStepper value={d.quantity} onChange={v => setQty(d.item._id, v)} />
               <button onClick={() => removeItem(d.item._id)} className="flex-shrink-0 text-g-text-3 hover:text-google-red border-none bg-transparent cursor-pointer p-1" aria-label="Remove">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
               </button>
@@ -452,6 +460,109 @@ function EditList({
           {saving ? 'Saving…' : 'Save list'}
         </button>
       </div>
+
+      {/* Template picker */}
+      {pickerOpen && (
+        <Sheet onClose={closePicker} title={pending ? `Apply “${pending.name}”` : 'Choose a template'}>
+          {pending ? (
+            <div className="flex flex-col gap-2.5">
+              <p className="text-sm text-g-text-2 m-0 mb-1">
+                This list already has {draft.length} item{draft.length === 1 ? '' : 's'}. What should happen?
+              </p>
+              <button onClick={() => applyTemplate(pending, 'merge')} className="w-full py-3 rounded-full bg-google-blue text-white text-sm font-medium border-none cursor-pointer">
+                Add to list <span className="opacity-80 font-normal">(keep current items)</span>
+              </button>
+              <button onClick={() => applyTemplate(pending, 'replace')} className="w-full py-3 rounded-full border border-google-red text-google-red bg-g-surface text-sm font-medium cursor-pointer">
+                Replace list
+              </button>
+              <button onClick={() => setPending(null)} className="w-full py-2 text-g-text-2 text-sm bg-transparent border-none cursor-pointer">← Back</button>
+            </div>
+          ) : templates === null ? (
+            <div className="flex justify-center py-8"><Spinner /></div>
+          ) : templates.length === 0 ? (
+            <div className="text-center py-6 text-sm text-g-text-2">
+              No templates yet.<br />
+              Build a list here and tap “Save as template”, or create one in{' '}
+              <a href="/settings/material-templates" className="text-google-blue">Settings → Material Templates</a>.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto">
+              {scaleCount > 0 && (
+                <div className="text-[12px] text-g-text-3 mb-1">“Per guest / table” quantities are calculated for {scaleCount} {countMode === 'tables' ? (scaleCount === 1 ? 'table' : 'tables') : (scaleCount === 1 ? 'guest' : 'guests')}.</div>
+              )}
+              {templates.map(tpl => (
+                <button
+                  key={tpl._id}
+                  onClick={() => pickTemplate(tpl)}
+                  className="w-full text-left p-3.5 rounded-2xl border border-g-border bg-g-surface hover:bg-g-bg cursor-pointer flex items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-g-text text-[15px] truncate">{tpl.name}</div>
+                    <div className="text-[12px] text-g-text-2 mt-0.5 truncate">
+                      {tpl.items.length} item{tpl.items.length === 1 ? '' : 's'}
+                      {tpl.description ? ` · ${tpl.description}` : ''}
+                    </div>
+                  </div>
+                  <span className="text-google-blue text-[13px] font-medium flex-shrink-0">Use</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </Sheet>
+      )}
+
+      {/* Save current list as a template */}
+      {saveAsOpen && (
+        <Sheet onClose={closeSaveAs} title="Save as template">
+          <p className="text-[13px] text-g-text-2 m-0 mb-3">
+            Saves these {draft.length} items with their quantities. You can switch items to “per guest” later in Settings → Material Templates.
+          </p>
+          <input
+            autoFocus
+            value={templateName}
+            onChange={e => setTemplateName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveAsTemplate(); }}
+            placeholder="Template name, e.g. Wedding standard"
+            className="w-full py-2.5 px-4 rounded-full border border-g-border text-sm bg-g-bg text-g-text outline-none focus:border-google-blue mb-3"
+          />
+          <button
+            onClick={saveAsTemplate}
+            disabled={savingTemplate || !templateName.trim()}
+            className="w-full py-3 rounded-full bg-google-blue text-white text-sm font-medium border-none cursor-pointer disabled:opacity-50"
+          >
+            {savingTemplate ? 'Saving…' : 'Save template'}
+          </button>
+        </Sheet>
+      )}
+
+      {notice && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg text-sm whitespace-nowrap z-[1000]" style={{ background: '#202124' }}>
+          {notice}
+        </div>
+      )}
     </div>
+  );
+}
+
+// Simple modal: bottom sheet on mobile, centered card on larger screens
+function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <>
+      <div onClick={onClose} className="fixed inset-0 bg-black/40 z-[299]" />
+      <div className="fixed z-[300] bg-g-surface shadow-google-3 p-5 left-0 right-0 bottom-0 rounded-t-2xl sm:left-1/2 sm:right-auto sm:bottom-auto sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:w-[460px]">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-base font-medium text-g-text">{title}</div>
+          <button onClick={onClose} aria-label="Close" className="text-g-text-3 bg-transparent border-none cursor-pointer p-1">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </>
   );
 }

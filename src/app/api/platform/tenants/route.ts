@@ -6,6 +6,7 @@ import { withPlatformAdmin } from '@/lib/requireAuth';
 import { evaluateLicense } from '@/lib/license';
 import { countsByTenant } from '@/lib/platformMetrics';
 import { provisionTenant } from '@/lib/tenantProvisioning';
+import { logError } from '@/lib/logger';
 
 export const GET = withPlatformAdmin(async () => {
   await connectDB();
@@ -55,6 +56,7 @@ export const POST = withPlatformAdmin(async (request) => {
       }, { status: 500 });
     }
     const status = err.status || (err.code === 11000 ? 409 : 500);
+    if (status >= 500) await logError(err, { status });
     return NextResponse.json({ error: err.message }, { status });
   }
 });

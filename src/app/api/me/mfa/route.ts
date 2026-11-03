@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { mfaStatus, startSetup, confirmSetup, disableMfa, regenerateRecoveryCodes } from '@/lib/mfaService';
+import { serverError } from '@/lib/logger';
 
 // Two-factor status of the authenticated user.
 async function GET_(request: NextRequest) {
@@ -16,7 +17,7 @@ async function GET_(request: NextRequest) {
     if (!status) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(status);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -57,7 +58,7 @@ async function POST_(request: NextRequest) {
     const { label, ...rest } = result; // eslint-disable-line @typescript-eslint/no-unused-vars
     return NextResponse.json(rest);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
