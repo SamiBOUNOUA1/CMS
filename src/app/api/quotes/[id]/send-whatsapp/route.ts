@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { withTenant } from '@/lib/requireAuth';
+import { logWarn } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Quote, WhatsAppSettings } from '@/lib/models';
@@ -60,6 +61,9 @@ async function POST_(request: NextRequest, { params }: { params: Record<string, 
 
     return NextResponse.json({ ok: true, to });
   } catch (err: unknown) {
+    // Shown to the tenant's own user (they need it to fix their WhatsApp setup);
+    // the operator log gets a sanitized copy.
+    await logWarn('WhatsApp send failed', { err, status: 500 });
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

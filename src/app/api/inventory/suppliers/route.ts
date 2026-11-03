@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Supplier } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ async function GET_(request: NextRequest) {
     const suppliers = await Supplier.find(query).sort({ name: 1 });
     return NextResponse.json({ suppliers });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -49,7 +50,7 @@ async function POST_(request: NextRequest) {
     const supplier = await Supplier.create(body);
     return NextResponse.json({ supplier }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

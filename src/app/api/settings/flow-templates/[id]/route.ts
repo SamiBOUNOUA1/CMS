@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { FlowTemplate, Order } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // PATCH /api/settings/flow-templates/[id]
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -25,7 +26,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (!template) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ template });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -43,7 +44,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await FlowTemplate.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

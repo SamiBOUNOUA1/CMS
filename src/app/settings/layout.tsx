@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useT } from '@/lib/LanguageContext';
 import { useEffect, useState } from 'react';
+import { useUser } from '@/lib/UserContext';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const IconCatalog = () => (
@@ -49,6 +50,11 @@ const IconCustomerTypes = () => (
 const IconTravelRegions = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+  </svg>
+);
+const IconMaterialTemplates = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z" />
   </svg>
 );
 const IconStaffRoles = () => (
@@ -128,6 +134,7 @@ function useNavGroups(t: ReturnType<typeof useT>, perms: Record<string, boolean>
         { href: '/settings/order-statuses',  label: ts.tabs.orderStatuses, icon: <IconOrderStatuses />,   perm: 'manage_order_statuses' },
         { href: '/settings/customer-types',  label: ts.tabs.customerTypes, icon: <IconCustomerTypes />,   perm: 'manage_customer_types' },
         { href: '/settings/travel-regions',  label: ts.tabs.travelRegions, icon: <IconTravelRegions />,   perm: 'manage_event_types' },
+        { href: '/settings/material-templates', label: ts.tabs.materialTemplates, icon: <IconMaterialTemplates />, perm: 'manage_event_materials' },
         { href: '/settings/staff-roles',     label: ts.tabs.staffRoles,    icon: <IconStaffRoles />,       perm: 'manage_event_types' },
         { href: '/settings/flow-templates',  label: ts.tabs.flowTemplates, icon: <IconFlow />,             perm: 'manage_flow_templates' },
       ].filter(i => perms[i.perm]),
@@ -209,14 +216,8 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const t = useT();
   const ts = t.settings;
 
-  const [user, setUser] = useState<{ permissions: Record<string, boolean> } | null>(null);
+  const { user } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
-  }, []);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 

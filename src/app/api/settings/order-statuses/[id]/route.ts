@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { OrderStatusConfig } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -22,7 +23,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (!status) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ status });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -35,7 +36,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await status.deleteOne();
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

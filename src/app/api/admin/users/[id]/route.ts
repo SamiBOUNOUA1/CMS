@@ -8,6 +8,7 @@ import { requirePermission } from '@/lib/requireAuth';
 import { userLimitError } from '@/lib/license';
 import { MFA_CLEAR } from '@/lib/mfaService';
 import { logActivity } from '@/lib/activityLogger';
+import { serverError } from '@/lib/logger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -54,7 +55,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     }
     return NextResponse.json({ user });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -80,7 +81,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await User.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

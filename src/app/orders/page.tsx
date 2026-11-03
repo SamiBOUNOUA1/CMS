@@ -1,12 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useIsMobile } from '@/lib/useIsMobile';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { btnFilled, btnOutline } from '@/app/components/FormPrimitives';
+import { ConfirmDialog } from '@/app/components/Modal';
+import { useToast } from '@/app/components/Toast';
+import { useUser } from '@/lib/UserContext';
+import { formatMoneyOrDash } from '@/lib/money';
+import { useRowLink } from '@/lib/useRowLink';
+import { SkeletonList } from '@/app/components/Skeleton';
+import { ClipboardIcon, CheckCircleIcon, DocumentIcon, PaymentsIcon } from '@/app/components/Icons';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -20,10 +25,7 @@ function avatarColor(name = '') {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function formatCurrency(n: number | null | undefined, cur = '€') {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + cur;
-}
+const formatCurrency = (n: number | null | undefined, cur = '€') => formatMoneyOrDash(n, cur);
 
 interface Status { name: string; label: string; color?: string; }
 interface Order {
@@ -34,8 +36,7 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const router = useRouter();
-  const isMobile = useIsMobile();
+  const rowLink = useRowLink();
   const t = useT();
   const tp = t.ordersPage;
   const currency = useCurrency();
@@ -47,13 +48,9 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
-  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const { perms } = useUser();
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then((d: any) => d?.user?.permissions && setPerms(d.user.permissions));
     fetch('/api/settings/order-statuses')
       .then(r => r.ok ? r.json() : { statuses: [] })
       .then((d: any) => setStatuses(d.statuses || []));
@@ -82,14 +79,12 @@ export default function OrdersPage() {
     return () => clearTimeout(t);
   }, [fetchOrders]);
 
-  const showNotification = (msg: string, type = 'success') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3500);
-  };
+  const showNotification = useToast();
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
       showNotification(tp.deleted);
       fetchOrders();
     } catch {
@@ -110,59 +105,48 @@ export default function OrdersPage() {
   const totalPipeline = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
 
   return (
-    <div className="max-w-[1200px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
-      {notification && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg z-[1000] text-sm shadow-google-2 whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#202124' }}
-        >
-          {notification.msg}
-        </div>
-      )}
-
-      {deleteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-md shadow-google-2">
-            <h3 className="text-xl font-medium text-g-text mb-3">{tp.deleteDialog.title}</h3>
-            <p className="text-sm text-g-text-2 mb-6">{tp.deleteDialog.body}</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteId(null)} className={btnOutline}>{tp.deleteDialog.cancel}</button>
-              <button onClick={() => handleDelete(deleteId)} className={`${btnFilled} bg-google-red`}>{tp.deleteDialog.delete}</button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="max-w-[1200px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
+      <ConfirmDialog
+        open={!!deleteId}
+        title={tp.deleteDialog.title}
+        body={tp.deleteDialog.body}
+        cancelLabel={tp.deleteDialog.cancel}
+        confirmLabel={tp.deleteDialog.delete}
+        onCancel={() => setDeleteId(null)}
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+      />
 
       {/* Header */}
       <div className="flex items-start justify-between mb-5 gap-3">
         <div>
-          <h1 className="page-title font-normal m-0" style={{ fontSize: isMobile ? 22 : 28 }}>{tp.title}</h1>
+          <h1 className="page-title font-normal m-0 text-[22px] sm:text-[28px]">{tp.title}</h1>
           <p className="text-[13px] text-g-text-2 mt-1 mb-0">{tp.orderCount(orders.length)}</p>
         </div>
         {perms.create_orders && (
           <Link href="/orders/new" className={`${btnFilled} flex-shrink-0 flex items-center`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: isMobile ? 0 : 6 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="sm:mr-1.5" aria-hidden>
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
             </svg>
-            {!isMobile && tp.newOrder}
+            <span className="hidden sm:inline">{tp.newOrder}</span>
+            <span className="sr-only sm:hidden">{tp.newOrder}</span>
           </Link>
         )}
       </div>
 
       {/* Stats */}
-      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)' }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { label: tp.stats.total, value: orders.length, icon: '📋', color: '#1a73e8' },
-          { label: tp.stats.withEvent, value: withEventCount, icon: '✅', color: '#137333' },
-          { label: tp.stats.quotes, value: orders.reduce((s, o) => s + (o.quoteCount || 0), 0), icon: '📄', color: '#f9ab00' },
-          { label: tp.stats.pipeline, value: formatCurrency(totalPipeline, currency), icon: '💶', color: '#1a73e8', large: true },
+          { label: tp.stats.total, value: orders.length, Icon: ClipboardIcon, color: 'var(--google-blue-accent)' },
+          { label: tp.stats.withEvent, value: withEventCount, Icon: CheckCircleIcon, color: 'var(--google-green-accent)' },
+          { label: tp.stats.quotes, value: orders.reduce((s, o) => s + (o.quoteCount || 0), 0), Icon: DocumentIcon, color: 'var(--google-yellow)' },
+          { label: tp.stats.pipeline, value: formatCurrency(totalPipeline, currency), Icon: PaymentsIcon, color: 'var(--google-blue-accent)', large: true },
         ].map(card => (
-          <div key={card.label} className="bg-g-surface rounded-xl border border-g-border shadow-google-1" style={{ padding: isMobile ? '14px 16px' : '20px 24px' }}>
+          <div key={card.label} className="bg-g-surface rounded-xl border border-g-border shadow-google-1 px-4 py-3.5 sm:px-6 sm:py-5">
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-base">{card.icon}</span>
+              <span className="flex" style={{ color: card.color }}><card.Icon size={16} /></span>
               <span className="text-[11px] text-g-text-2">{card.label}</span>
             </div>
-            <div style={{ fontSize: (card as any).large ? (isMobile ? 15 : 18) : (isMobile ? 22 : 28), color: card.color }} className="font-normal">
+            <div style={{ color: card.color }} className={`font-normal ${(card as any).large ? 'text-[15px] sm:text-lg' : 'text-[22px] sm:text-[28px]'}`}>
               {card.value}
             </div>
           </div>
@@ -219,11 +203,11 @@ export default function OrdersPage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex justify-center p-20"><Spinner /></div>
+        <SkeletonList rows={8} />
       ) : sorted.length === 0 ? (
         <EmptyState tp={tp} canCreate={perms.create_orders} />
-      ) : isMobile ? (
-        <div className="flex flex-col gap-2.5">
+      ) : (<>
+        <div className="sm:hidden flex flex-col gap-2.5">
           {sorted.map(order => {
             const sc = statusMap[order.status];
             const statusBg = sc?.color ? sc.color + '22' : 'var(--google-bg)';
@@ -231,7 +215,7 @@ export default function OrdersPage() {
             return (
               <div
                 key={order._id}
-                onClick={() => router.push(`/orders/${order._id}`)}
+                {...rowLink(`/orders/${order._id}`)}
                 className="bg-g-surface rounded-xl border border-g-border p-4 shadow-google-1 cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-2.5">
@@ -257,7 +241,7 @@ export default function OrdersPage() {
                   </span>
                   <div className="flex gap-1">
                     {perms.delete_orders && (
-                      <button onClick={(e) => { e.stopPropagation(); setDeleteId(order._id); }} className="inline-flex items-center justify-center w-9 h-9 rounded-full border-none bg-transparent cursor-pointer text-google-red">
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteId(order._id); }} aria-label={tp.deleteOrder} title={tp.deleteOrder} className="inline-flex items-center justify-center w-9 h-9 rounded-full border-none bg-transparent cursor-pointer text-google-red">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                       </button>
                     )}
@@ -267,8 +251,8 @@ export default function OrdersPage() {
             );
           })}
         </div>
-      ) : (
-        <div className="bg-g-surface rounded-xl border border-g-border shadow-google-1 overflow-hidden">
+
+        <div className="hidden sm:block bg-g-surface rounded-xl border border-g-border shadow-google-1 overflow-hidden">
           <div className="flex items-center px-6 py-4 gap-4 bg-g-bg font-medium text-[11px] text-g-text-2 uppercase tracking-wider">
             <div className="flex-[2]">{tp.table.clientEvent}</div>
             <div className="flex-1">{tp.table.date}</div>
@@ -276,7 +260,7 @@ export default function OrdersPage() {
             <div className="flex-1">{tp.table.status}</div>
             <div className="flex-1 text-center">{tp.table.quotes}</div>
             <div className="flex-1 text-right">{tp.table.total}</div>
-            <div className="flex-1 text-right">{tp.table.actions}</div>
+            <div className="w-10 flex-none text-right"><span className="sr-only">{tp.table.actions}</span></div>
           </div>
           {sorted.map((order, i) => {
             const sc = statusMap[order.status];
@@ -285,11 +269,9 @@ export default function OrdersPage() {
             return (
               <div
                 key={order._id}
-                onClick={() => router.push(`/orders/${order._id}`)}
-                className="flex items-center px-6 py-4 gap-4 bg-g-surface transition-colors cursor-pointer"
+                {...rowLink(`/orders/${order._id}`)}
+                className="hover:bg-[var(--google-row-hover)] flex items-center px-6 py-4 gap-4 bg-g-surface transition-colors cursor-pointer"
                 style={{ borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'var(--google-surface)')}
               >
                 <div className="flex-[2] flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-medium text-base" style={{ background: avatarColor(order.clientName) }}>
@@ -311,16 +293,16 @@ export default function OrdersPage() {
                     {sc?.label || order.status}
                   </span>
                 </div>
-                <div className="flex-1 text-center text-[13px] text-g-text-2">
+                <div className="flex-1 text-center text-[13px] text-g-text-2 whitespace-nowrap">
                   {order.quoteCount || 0}
-                  {order.activeQuoteVersion ? ` (v${order.activeQuoteVersion} active)` : ''}
+                  {order.activeQuoteVersion ? ` (${tp.activeVersion(order.activeQuoteVersion)})` : ''}
                 </div>
                 <div className="flex-1 text-right font-medium text-[15px] text-g-text">
                   {formatCurrency(order.totalAmount, currency)}
                 </div>
-                <div className="flex-1 flex justify-end gap-1">
+                <div className="w-10 flex-none flex justify-end gap-1">
                   {perms.delete_orders && (
-                    <button onClick={(e) => { e.stopPropagation(); setDeleteId(order._id); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-g-bg text-google-red border-none cursor-pointer">
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteId(order._id); }} aria-label={tp.deleteOrder} title={tp.deleteOrder} className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-g-bg text-google-red border-none cursor-pointer">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                     </button>
                   )}
@@ -329,21 +311,16 @@ export default function OrdersPage() {
             );
           })}
         </div>
-      )}
+      </>)}
     </div>
   );
 }
 
-function Spinner() {
-  return (
-    <div className="w-10 h-10 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />
-  );
-}
 
 function EmptyState({ tp, canCreate }: { tp: any; canCreate: boolean }) {
   return (
     <div className="text-center py-20 px-6">
-      <div className="text-[56px] mb-4">📋</div>
+      <div className="flex justify-center mb-4 text-g-text-3"><ClipboardIcon size={56} /></div>
       <h3 className="text-xl font-normal text-g-text mb-2">{tp.empty.title}</h3>
       <p className="text-sm text-g-text-2 mb-6">{tp.empty.body}</p>
       {canCreate && <Link href="/orders/new" className={btnFilled}>{tp.newOrder}</Link>}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useT, useLanguage } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
 
 interface Module {
   id: string;
@@ -72,14 +73,8 @@ export default function ModulesSettingsPage() {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [user, setUser] = useState<{ permissions?: Record<string, boolean> } | null>(null);
+  const { user, refreshModules } = useUser();
   const [toast, setToast] = useState('');
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
-  }, []);
 
   useEffect(() => {
     fetch('/api/settings/modules')
@@ -103,6 +98,7 @@ export default function ModulesSettingsPage() {
         body: JSON.stringify({ moduleId: mod.id, isEnabled: newValue }),
       });
       if (!res.ok) throw new Error();
+      refreshModules();
       const label = lang === 'fr' ? mod.nameFr : mod.name;
       showToast(newValue ? ts.notifications.enabled(label) : ts.notifications.disabled(label));
     } catch {

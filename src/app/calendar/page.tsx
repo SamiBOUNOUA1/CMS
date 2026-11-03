@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, parseISO } from 'date-fns';
+import { format } from '@/lib/dateFormat';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 
@@ -175,17 +176,45 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
   const type = order.eventType || 'other';
   const c = EVENT_TYPE_COLORS[type] || EVENT_TYPE_COLORS.other;
 
+  // Drives the enter/exit animation: mount hidden, then slide in; on close, slide out before unmounting.
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    setTimeout(onClose, 300);
+  }, [onClose]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [handleClose]);
 
   return (
     <>
-      <div onClick={onClose} className="fixed inset-0 bg-black/35 z-[200]" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] bg-g-surface rounded-[20px] shadow-google-2 w-full max-w-[460px] overflow-hidden">
-        <div className="pb-4 pt-5 px-6" style={{ background: c.bg, borderBottom: `3px solid ${c.border}` }}>
+      <div
+        onClick={handleClose}
+        className={`fixed inset-0 bg-black/35 z-[200] transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      />
+      <div
+        className={[
+          // Mobile: bottom sheet, full width, stuck to the bottom
+          'fixed inset-x-0 bottom-0 z-[201] bg-g-surface shadow-google-2 w-full overflow-hidden',
+          'rounded-t-[20px] max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]',
+          'transition-[transform,opacity] duration-300 ease-out',
+          visible ? 'translate-y-0' : 'translate-y-full',
+          // Desktop: centered dialog that fades in
+          'sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2',
+          'sm:rounded-[20px] sm:max-w-[460px] sm:pb-0',
+          visible ? 'sm:opacity-100' : 'sm:opacity-0',
+        ].join(' ')}
+      >
+        <div className="pb-4 pt-5 px-6 relative" style={{ background: c.bg, borderBottom: `3px solid ${c.border}` }}>
+          <span className="sm:hidden absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-black/20" />
           <div className="flex justify-between items-start">
             <div>
               <span className="inline-flex items-center gap-1 rounded-full py-0.5 px-2.5 text-xs font-medium text-white mb-2" style={{ background: c.border }}>
@@ -200,7 +229,7 @@ function OrderModal({ order, onClose, t, currency }: { order: any; onClose: () =
                 </p>
               )}
             </div>
-            <button onClick={onClose} className="border-none bg-transparent cursor-pointer p-1 flex-shrink-0" style={{ color: c.text }}>
+            <button onClick={handleClose} className="border-none bg-transparent cursor-pointer p-1 flex-shrink-0" style={{ color: c.text }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
             </button>
           </div>

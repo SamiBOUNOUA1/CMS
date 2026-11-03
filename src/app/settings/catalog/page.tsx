@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useT, useCurrency } from '@/lib/LanguageContext';
+import { formatMoney } from '@/lib/money';
 
 interface Category {
   _id: string;
@@ -498,7 +499,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                 </div>
                 <div className="flex items-center gap-2.5 flex-shrink-0 ml-3">
                   <span className="text-[13px] text-g-text-2">
-                    {product.defaultPrice ? new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(product.defaultPrice) + ' ' + currency : '—'}
+                    {product.defaultPrice ? formatMoney(product.defaultPrice, currency) : '—'}
                   </span>
                   <span className="text-[11px] text-g-text-3">{product.unit}</span>
                   <span className="text-[11px] text-g-text-3">{expandedId === product._id ? '▲' : '▼'}</span>
@@ -661,7 +662,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                             <div key={opt._id} className="flex items-center gap-2 py-1 border-b border-g-border">
                               <span className="text-[13px] text-g-text-2 flex-1">· {opt.name}</span>
                               <span className="text-[13px] font-medium text-g-text">
-                                + {new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(opt.price) || 0)} {currency}
+                                + {formatMoney(Number(opt.price), currency)}
                               </span>
                               <button onClick={() => stageRemoveOption(product._id, opt._id)}
                                 className="inline-flex items-center justify-center w-6 h-6 rounded-full border-none bg-transparent cursor-pointer text-google-red">

@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Warehouse } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ async function GET_(request: NextRequest) {
     const warehouses = await Warehouse.find(query).sort({ name: 1 });
     return NextResponse.json({ warehouses });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -43,7 +44,7 @@ async function POST_(request: NextRequest) {
     const warehouse = await Warehouse.create(body);
     return NextResponse.json({ warehouse }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

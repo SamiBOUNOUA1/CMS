@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useT, useCurrency } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
+import { formatMoney } from '@/lib/money';
+import { useRowLink } from '@/lib/useRowLink';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -27,6 +30,7 @@ const ACCENT = '#e37400';
 export default function KitchenStockPage() {
   const t = useT();
   const router = useRouter();
+  const rowLink = useRowLink();
   const currency = useCurrency();
   const tk = (t as any).kitchenPage.stock;
 
@@ -35,7 +39,7 @@ export default function KitchenStockPage() {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterLowStock, setFilterLowStock] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [isMobile, setIsMobile] = useState(false);
@@ -47,10 +51,7 @@ export default function KitchenStockPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
+  useEffect(() => {
   }, []);
 
   useEffect(() => {
@@ -88,8 +89,7 @@ export default function KitchenStockPage() {
     }
   }
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + currency;
+  const fmt = (n: number) => formatMoney(n, currency);
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px' }}>
@@ -174,10 +174,10 @@ export default function KitchenStockPage() {
               return (
                 <div
                   key={item._id}
-                  onClick={() => router.push(`/kitchen/stock/${item._id}`)}
+                  {...rowLink(`/kitchen/stock/${item._id}`)}
                   style={{
                     padding: '14px 16px',
-                    borderBottom: idx < items.length - 1 ? '1px solid #f1f3f4' : 'none',
+                    borderBottom: idx < items.length - 1 ? '1px solid var(--google-border)' : 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -242,12 +242,10 @@ export default function KitchenStockPage() {
               {items.map(item => {
                 const isLow = item.currentStock < item.minStock;
                 return (
-                  <tr
+                  <tr className="hover:bg-[var(--google-row-hover)]"
                     key={item._id}
-                    onClick={() => router.push(`/kitchen/stock/${item._id}`)}
+                    {...rowLink(`/kitchen/stock/${item._id}`)}
                     style={{ borderBottom: '1px solid var(--google-border)', cursor: 'pointer' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8f9fa')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--google-text-primary)' }}>{item.name}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--google-text-secondary)', fontSize: 13 }}>

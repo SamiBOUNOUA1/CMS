@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { FormInput, FormSelect, FormTextarea, Field } from '@/app/components/FormPrimitives';
+import { useUser } from '@/lib/UserContext';
+import { formatMoney } from '@/lib/money';
 
 const ACCENT = '#e37400';
 const CATEGORIES = ['starter', 'main', 'dessert', 'side', 'other'] as const;
@@ -39,12 +41,11 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
   const [loading, setLoading] = useState(!isNew);
   const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [toast, setToast] = useState('');
   const [deleteDialog, setDeleteDialog] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d && setUser(d.user));
+  useEffect(() => {
     fetch('/api/kitchen/stock')
       .then(r => r.ok ? r.json() : { items: [] })
       .then((d: any) => setAllStockItems(d.items ?? []));
@@ -71,8 +72,7 @@ export default function KitchenRecipeDetailPage({ params }: { params: { id: stri
     return { totalCost: total, costPerServing: recipe.servings > 0 ? total / recipe.servings : 0 };
   }, [recipe.ingredients, recipe.servings, allStockItems]);
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + currency;
+  const fmt = (n: number) => formatMoney(n, currency);
 
   function addIngredient() {
     setRecipe((p: any) => ({ ...p, ingredients: [...(p.ingredients ?? []), { stockItem: '', quantity: 1, unit: '' }] }));

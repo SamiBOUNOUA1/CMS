@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
 import { signPendingToken, cookieOptions, PLATFORM_MFA_PENDING_COOKIE, MFA_PENDING_TTL } from '@/lib/auth';
 import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
+import { logError, logWarn } from '@/lib/logger';
 import { issuePlatformSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
     const rlKey = `platform-login:${clientIp(request)}:${email.toLowerCase()}`;
     const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
+      logWarn('Too many attempts: rate limit reached', { route: '/api/platform/auth/login', method: 'POST', tenantId: null, status: 429 });
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },
         { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     return issuePlatformSession(admin);
   } catch (err: unknown) {
-    console.error('platform login error:', err);
+    await logError(err, { route: '/api/platform/auth/login', method: 'POST', tenantId: null, status: 500 });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

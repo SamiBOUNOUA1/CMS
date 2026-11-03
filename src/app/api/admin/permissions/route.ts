@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { RolePermissions, Role } from '@/lib/models';
 import { ALL_PERMISSIONS, buildPermissions } from '@/lib/permissions';
+import { serverError } from '@/lib/logger';
 
 // GET /api/admin/permissions — returns current permission matrix for all dynamic roles
 async function GET_() {
@@ -21,7 +22,7 @@ async function GET_() {
 
     return NextResponse.json({ matrix, permissions: ALL_PERMISSIONS, roles: roleDocs });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -53,7 +54,7 @@ async function PATCH_(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

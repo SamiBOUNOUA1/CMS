@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Plan, Tenant } from '@/lib/models';
 import { withPlatformAdmin } from '@/lib/requireAuth';
 import { cleanPlanInput } from '@/lib/planHelpers';
+import { serverError } from '@/lib/logger';
 
 export const GET = withPlatformAdmin(async () => {
   await connectDB();
@@ -24,6 +25,6 @@ export const POST = withPlatformAdmin(async (request) => {
     return NextResponse.json({ plan }, { status: 201 });
   } catch (err) {
     if (err.code === 11000) return NextResponse.json({ error: 'A plan with this name already exists' }, { status: 409 });
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return serverError(err);
   }
 });

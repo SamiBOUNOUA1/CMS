@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useT } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
+import { useRowLink } from '@/lib/useRowLink';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -47,21 +49,19 @@ const STATUS_FILTERS = ['', 'draft', 'sent', 'returned', 'completed'] as const;
 export default function LaundryPage() {
   const t = useT();
   const router = useRouter();
+  const rowLink = useRowLink();
   const tl = t.laundryPage;
 
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
   }, []);
 
   useEffect(() => {
@@ -257,7 +257,7 @@ export default function LaundryPage() {
             return (
               <div
                 key={batch._id}
-                onClick={() => router.push(`/laundry/${batch._id}`)}
+                {...rowLink(`/laundry/${batch._id}`)}
                 style={{
                   background: 'var(--google-surface)', borderRadius: 12, padding: '14px 16px',
                   border: '1px solid var(--google-border)',
@@ -343,14 +343,13 @@ export default function LaundryPage() {
                 return (
                   <tr
                     key={batch._id}
-                    onClick={() => router.push(`/laundry/${batch._id}`)}
+                    className="hover:bg-[var(--google-row-hover)]"
+                    {...rowLink(`/laundry/${batch._id}`)}
                     style={{
                       cursor: 'pointer',
                       borderBottom: idx < batches.length - 1 ? '1px solid var(--google-border)' : 'none',
                       transition: 'background 0.12s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--google-bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
                     <td style={{ padding: '14px 16px 14px 20px', fontWeight: 600, color: 'var(--google-text-primary)', fontFamily: 'monospace', fontSize: 13 }}>
                       {batch.batchNumber}

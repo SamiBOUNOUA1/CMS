@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client, Event } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // GET /api/clients/[id]/events
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -16,7 +17,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
       .lean();
     return NextResponse.json({ events });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

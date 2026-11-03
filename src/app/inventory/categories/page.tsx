@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useT } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
 
 const COLOR_PRESETS = ['#1a73e8', '#137333', '#e37400', '#d93025', '#6200ea', '#0288d1', '#5f6368'];
 
@@ -41,12 +42,11 @@ export default function InventoryCategoriesPage() {
   const [editForm, setEditForm] = useState<{ name: string; color: string }>({ name: '', color: '' });
   const [toast, setToast] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
-  useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then((d: any) => d && setUser(d.user));
+  useEffect(() => {
     loadCategories();
   }, []);
 

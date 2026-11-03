@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { signPendingToken, cookieOptions, MFA_PENDING_COOKIE, MFA_PENDING_TTL } from '@/lib/auth';
 import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
+import { logError, logWarn } from '@/lib/logger';
 import { runAsSystem } from '@/lib/tenantContext';
 import { getTenantLicense } from '@/lib/license';
 import { issueTenantSession } from '@/lib/session';
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
     const rlKey = `login:${clientIp(request)}:${email.toLowerCase()}`;
     const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
+      logWarn('Too many attempts: rate limit reached', { route: '/api/auth/login', method: 'POST', tenantId: null, status: 429 });
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },
         { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     return issueTenantSession(user);
   } catch (err: unknown) {
-    console.error('login error:', err);
+    await logError(err, { route: '/api/auth/login', method: 'POST', tenantId: null, status: 500 });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

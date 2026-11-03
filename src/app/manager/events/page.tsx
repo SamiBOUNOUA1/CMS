@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import Link from 'next/link';
-import { useIsMobile } from '@/lib/useIsMobile';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -35,7 +34,6 @@ function avatarColor(name = '') {
 }
 
 export default function ManagerEventsPage() {
-  const isMobile = useIsMobile();
   const [orders, setOrders] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [userId, setUserId] = useState('');
@@ -65,7 +63,7 @@ export default function ManagerEventsPage() {
   }
 
   return (
-    <div className="max-w-[900px] mx-auto" style={{ padding: isMobile ? '20px 16px' : '32px 24px' }}>
+    <div className="max-w-[900px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-normal text-g-text m-0">My Events</h1>
         <p className="mt-1 mb-0 text-sm text-g-text-2">
@@ -90,7 +88,7 @@ export default function ManagerEventsPage() {
                 href={`/manager/events/${order._id}`}
                 className="no-underline block"
               >
-                <div className="bg-g-surface rounded-xl border border-g-border shadow-google-1 py-4 px-5 flex items-center gap-4 flex-wrap transition-shadow hover:shadow-google-2" style={{ flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+                <div className="bg-g-surface rounded-xl border border-g-border shadow-google-1 py-4 px-5 flex items-center gap-4 flex-wrap sm:flex-nowrap transition-shadow hover:shadow-google-2">
                   <div
                     className="w-[42px] h-[42px] rounded-full flex items-center justify-center text-white font-medium text-[17px] flex-shrink-0"
                     style={{ background: avatarColor(order.clientName) }}

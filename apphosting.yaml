@@ -25,8 +25,26 @@ env:
   #     - BUILD
   #     - RUNTIME
 
-  # Grant access to secrets in Cloud Secret Manager.
-  # You can create secrets with the CLI command `firebase apphosting:secrets:set <secretName>`.
+  # Secrets from Cloud Secret Manager.
+  # Create each with `firebase apphosting:secrets:set <NAME>` before deploying.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET
-  #   secret: mySecretRef
+
+  # Needed at build time too: src/lib/mongodb.ts throws on import if it's missing.
+  - variable: MONGODB_URI
+    secret: MONGODB_URI
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: JWT_SECRET
+    secret: JWT_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Encrypts users' 2FA secrets in the DB. Keep it stable: changing it breaks
+  # existing 2FA enrollments. Lets JWT_SECRET be rotated independently.
+  - variable: MFA_ENCRYPTION_KEY
+    secret: MFA_ENCRYPTION_KEY
+    availability:
+      - RUNTIME

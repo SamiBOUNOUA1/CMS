@@ -7,6 +7,7 @@ import { User } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { userLimitError, getTenantLicense } from '@/lib/license';
 import { getTenantId } from '@/lib/tenantContext';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ async function GET_(request: NextRequest) {
     const { maxUsers } = await getTenantLicense(getTenantId());
     return NextResponse.json({ users, maxUsers });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -41,7 +42,7 @@ async function POST_(request: NextRequest) {
     );
   } catch (err: unknown) {
     if (err.code === 11000) return NextResponse.json({ error: 'Email already in use' }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

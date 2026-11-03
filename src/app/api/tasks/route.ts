@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Task } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   const auth = await getAuth(request);
@@ -33,7 +34,7 @@ async function GET_(request: NextRequest) {
     const tasks = await query.lean();
     return NextResponse.json({ tasks });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -73,7 +74,7 @@ async function POST_(request: NextRequest) {
 
     return NextResponse.json({ task: populated }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

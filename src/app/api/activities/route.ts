@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Activity } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   try {
@@ -33,10 +34,7 @@ async function GET_(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err) },
-      { status: 500 }
-    );
+    return serverError(err);
   }
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, CSSProperties } from 'react';
+import { formatMoney } from '@/lib/money';
 
 // Standard page wrapper — replaces isMobile-based inline padding
 export const formPageCls = 'mx-auto max-w-[700px] px-4 py-5 sm:px-6 sm:py-8';
@@ -135,7 +136,7 @@ export function TotalRow({ label, value, bold, large, color, currency }: TotalRo
 }
 
 export function fmt(n: number | undefined, cur = '€'): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0) + ' ' + cur;
+  return formatMoney(n, cur);
 }
 
 // Tailwind className strings for common button variants

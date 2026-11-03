@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { InventoryItem, Supplier, Warehouse } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ async function GET_(request: NextRequest) {
 
     return NextResponse.json({ items });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -58,7 +59,7 @@ async function POST_(request: NextRequest) {
     await item.populate('warehouse', 'name');
     return NextResponse.json({ item }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -4,10 +4,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { useIsMobile } from '@/lib/useIsMobile';
+import { format } from '@/lib/dateFormat';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { btnFilled as btnFilledCls, btnOutline as btnOutlineCls, Field, FormInput, FormSelect, FormTextarea, FormCard, FormSectionLabel, FormGrid } from '@/app/components/FormPrimitives';
+import { formatMoneyOrDash } from '@/lib/money';
+import { SkeletonDetail } from '@/app/components/Skeleton';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -16,10 +17,7 @@ function avatarColor(name = '') {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function formatCurrency(n, cur = '€') {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + cur;
-}
+const formatCurrency = (n: number | null | undefined, cur = '€') => formatMoneyOrDash(n, cur);
 
 function formatDate(d) {
   if (!d) return '—';
@@ -34,9 +32,7 @@ const EMPTY_FORM = {
 export default function CustomerDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const isMobile = useIsMobile();
   const t = useT();
-  // isMobile kept for table layout differences (orders/events tabs)
   const tp = t.customerDetail;
   const currency = useCurrency();
 
@@ -169,14 +165,7 @@ export default function CustomerDetailPage() {
   const fieldRow = 'text-sm text-g-text mb-2';
   const fieldLabel = 'text-[12px] text-g-text-3 mb-0.5';
 
-  if (loading) {
-    return (
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px', textAlign: 'center', color: 'var(--google-text-tertiary)' }}>
-        <div style={{ width: 32, height: 32, border: '3px solid #e8eaed', borderTopColor: '#1a73e8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-      </div>
-    );
-  }
+  if (loading) return <SkeletonDetail cards={3} className="max-w-[800px] mx-auto px-6 py-10" />;
 
   if (!client) {
     return (

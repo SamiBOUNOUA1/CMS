@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
 import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
+import { formatMoney } from '@/lib/money';
 
 export default function QuoteDetailPage() {
   const { id } = useParams();
@@ -381,5 +382,5 @@ function Spinner() {
 }
 
 function fmt(n, cur = '€') {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0) + ' ' + cur;
+  return formatMoney(n, cur);
 }

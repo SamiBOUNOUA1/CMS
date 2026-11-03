@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react';
 import './globals.css';
 import NavShell from './components/NavShell';
+import { ToastProvider } from './components/Toast';
+import ClientErrorReporter from './components/ClientErrorReporter';
+import { earlyErrorScript } from '@/lib/earlyErrorScript';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
+import { UserProvider } from '@/lib/UserContext';
 
 export const metadata = {
   title: 'Catero',
@@ -20,13 +24,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: earlyErrorScript }} />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
         <ThemeProvider>
-          <LanguageProvider>
-            <NavShell>{children}</NavShell>
-          </LanguageProvider>
+          <UserProvider>
+            <LanguageProvider>
+              <ClientErrorReporter />
+              <ToastProvider>
+                <NavShell>{children}</NavShell>
+              </ToastProvider>
+            </LanguageProvider>
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

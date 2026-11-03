@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // GET /api/manager/events/[id] — get a single order, only if assigned to the current manager
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -26,8 +27,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
 
     return NextResponse.json({ order });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return serverError(err);
   }
 }
 

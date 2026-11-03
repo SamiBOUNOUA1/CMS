@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { WhatsAppSettings } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // Sentinel returned to the client in place of the real access token. When the
 // client sends this value back unchanged on PATCH, the token is left untouched.
@@ -31,7 +32,7 @@ async function GET_(request: NextRequest) {
     ).lean();
     return NextResponse.json({ settings: maskSettings(settings) });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -67,7 +68,7 @@ async function PATCH_(request: NextRequest) {
 
     return NextResponse.json({ settings: maskSettings(settings) });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

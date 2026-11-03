@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Quote } from '@/lib/models';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -14,7 +15,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
     if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ quote });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -44,7 +45,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

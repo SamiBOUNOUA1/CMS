@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useT } from '@/lib/LanguageContext';
 import { FormInput, FormSelect, FormTextarea, Field } from '@/app/components/FormPrimitives';
+import { useUser } from '@/lib/UserContext';
 
 const ACCENT = '#e37400';
 const CATEGORIES = ['vegetables', 'dairy', 'meat', 'dry', 'spices', 'beverages', 'other'] as const;
@@ -32,15 +33,14 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
   const [loading, setLoading] = useState(!isNew);
   const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [toast, setToast] = useState('');
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [showAdjForm, setShowAdjForm] = useState(false);
   const [adjForm, setAdjForm] = useState({ adjustmentType: 'purchase', quantity: '', notes: '' });
   const [adjSaving, setAdjSaving] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d && setUser(d.user));
+  useEffect(() => {
   }, []);
 
   useEffect(() => {

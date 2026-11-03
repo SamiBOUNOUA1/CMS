@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -35,7 +36,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     const updatedOrder = await Order.findById(params.id).lean();
     return NextResponse.json({ success: true, order: updatedOrder });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

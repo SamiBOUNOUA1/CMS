@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // GET /api/orders/[id]/flow
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
@@ -13,7 +14,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ flowInstance: order.flowInstance, order });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -66,7 +67,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     await order.save();
     return NextResponse.json({ flowInstance: order.flowInstance });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

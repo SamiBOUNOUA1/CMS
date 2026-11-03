@@ -1,51 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
-
-interface SubRoute {
-  href: string;
-  label: string;
-  labelFr: string;
-  permission?: string;
-}
-
-interface Module {
-  id: string;
-  name: string;
-  nameFr: string;
-  color: string;
-  isEnabled: boolean;
-  permissions: string[];
-  routes: string[];
-  subRoutes: SubRoute[];
-}
-
-interface User {
-  permissions: Record<string, boolean>;
-}
+import { useUser } from '@/lib/UserContext';
 
 export default function SubNav() {
   const pathname = usePathname();
   const { lang } = useLanguage();
-  const [user, setUser] = useState<User | null>(null);
-  const [modules, setModules] = useState<Module[]>([]);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setUser(d.user));
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/settings/modules')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setModules(d.modules ?? []));
-  }, []);
-
-  const perms = user?.permissions ?? {};
+  const { modules, perms } = useUser();
 
   const activeModule = modules.find(mod =>
     mod.isEnabled &&
@@ -54,13 +17,15 @@ export default function SubNav() {
   );
 
   const visibleSubRoutes = (activeModule?.subRoutes ?? []).filter(
-    sr => !sr.permission || perms[sr.permission]
+    sr => (!sr.permission || perms[sr.permission]) &&
+      (!sr.anyPermission || sr.anyPermission.some(p => perms[p]))
   );
 
   return (
     <div
-      className="subnav-bar fixed top-16 left-0 right-0 h-10 z-[39] bg-g-surface flex items-stretch overflow-x-auto overflow-y-hidden"
+      className="subnav-bar fixed top-16 left-0 right-0 h-10 z-[39] flex items-stretch overflow-x-auto overflow-y-hidden"
       style={{
+        background: visibleSubRoutes.length > 0 ? 'var(--google-surface)' : 'var(--google-bg)',
         borderBottom: visibleSubRoutes.length > 0 ? '1px solid var(--google-border)' : 'none',
         scrollbarWidth: 'none',
       } as React.CSSProperties}

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Category } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -17,7 +18,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (!category) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ category });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -29,7 +30,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     await Category.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

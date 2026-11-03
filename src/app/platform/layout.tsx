@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import ThemeSwitch from '../components/ThemeSwitch';
 
 // Operator console for the SaaS owner. Separate session (cq_platform_token)
 // and no tenant navigation — see middleware.ts and lib/requireAuth.ts.
@@ -11,8 +12,19 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const [openErrors, setOpenErrors] = useState(0);
+
   // Close the mobile menu after navigating.
   useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  // Distinct open errors in the last 24h, shown as a badge on "Logs".
+  useEffect(() => {
+    if (pathname === '/platform/login') return;
+    fetch('/api/platform/logs?level=error&limit=1')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setOpenErrors(d?.summary?.errorGroups24h ?? 0))
+      .catch(() => {});
+  }, [pathname]);
 
   if (pathname === '/platform/login') return <>{children}</>;
 
@@ -25,8 +37,14 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
     { href: '/platform', label: 'Tenants', active: pathname === '/platform' || pathname.startsWith('/platform/tenants') },
     { href: '/platform/plans', label: 'Plans', active: pathname.startsWith('/platform/plans') },
     { href: '/platform/billing', label: 'Billing', active: pathname.startsWith('/platform/billing') },
+    { href: '/platform/logs', label: 'Logs', active: pathname.startsWith('/platform/logs'), badge: openErrors },
     { href: '/platform/security', label: 'Security', active: pathname.startsWith('/platform/security') },
   ];
+  const badge = (n?: number) => (n ? (
+    <span className="ml-1.5 inline-block min-w-[18px] px-1.5 rounded-full bg-google-red text-white text-[11px] leading-[18px] text-center">
+      {n > 99 ? '99+' : n}
+    </span>
+  ) : null);
 
   return (
     <div className="min-h-screen bg-g-bg font-[Roboto,Arial,sans-serif]">
@@ -42,10 +60,11 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               <Link key={n.href} href={n.href}
                 className={`px-3 py-1.5 rounded-full text-sm no-underline ${n.active ? 'bg-google-blue-light text-google-blue font-medium' : 'text-g-text-2'}`}
               >
-                {n.label}
+                {n.label}{badge(n.badge)}
               </Link>
             ))}
           </nav>
+          <div className="hidden sm:flex"><ThemeSwitch /></div>
           <button onClick={logout} className="hidden sm:block bg-transparent border-none text-sm text-g-text-2 cursor-pointer whitespace-nowrap">Sign out</button>
           <button
             onClick={() => setMenuOpen(o => !o)}
@@ -66,9 +85,13 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               <Link key={n.href} href={n.href}
                 className={`px-4 py-2.5 rounded-full text-sm no-underline ${n.active ? 'bg-google-blue-light text-google-blue font-medium' : 'text-g-text'}`}
               >
-                {n.label}
+                {n.label}{badge(n.badge)}
               </Link>
             ))}
+            <div className="px-4 py-2.5 mt-1 border-t border-g-border flex items-center justify-between">
+              <span className="text-sm text-g-text-2">Theme</span>
+              <ThemeSwitch />
+            </div>
             <button onClick={logout} className="text-left px-4 py-2.5 mt-1 border-t border-g-border rounded-none bg-transparent border-x-0 border-b-0 text-sm text-g-text-2 cursor-pointer">
               Sign out
             </button>

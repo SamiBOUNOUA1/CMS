@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Supplier, InventoryItem } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -12,7 +13,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
     if (!supplier) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ supplier });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -33,7 +34,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (!supplier) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ supplier });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -52,7 +53,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

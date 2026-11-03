@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   pending:     { bg: 'var(--google-bg)', text: '#5f6368' },

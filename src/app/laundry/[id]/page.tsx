@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useT } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
 
 const STATUS_ORDER = ['draft', 'sent', 'returned', 'completed'] as const;
 type BatchStatus = typeof STATUS_ORDER[number];
@@ -79,7 +80,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
   const [recordingReturns, setRecordingReturns] = useState(false);
   const [returnItems, setReturnItems] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [toast, setToast] = useState('');
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [completeDialog, setCompleteDialog] = useState(false);
@@ -89,8 +90,7 @@ export default function LaundryBatchPage({ params }: { params: { id: string } })
     setTimeout(() => setToast(''), 3500);
   }
 
-  useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d && setUser(d.user));
+  useEffect(() => {
     fetch('/api/inventory/items?laundryEligible=true').then(r => r.ok ? r.json() : { items: [] }).then((d: any) => setInventoryItems(d.items ?? []));
     fetch('/api/orders').then(r => r.ok ? r.json() : { orders: [] }).then((d: any) => setOrders(d.orders ?? []));
     fetch('/api/inventory/suppliers?supplierType=services&isActive=true').then(r => r.ok ? r.json() : { suppliers: [] }).then((d: any) => setSuppliers(d.suppliers ?? []));

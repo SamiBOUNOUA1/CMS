@@ -8,11 +8,9 @@ import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
 import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
 import { groupItemsTotal, lineGroupsTotal } from '@/lib/pricing';
+import { formatMoneyOrDash } from '@/lib/money';
 
-function formatCurrency(n: number | null | undefined, cur = '€') {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + cur;
-}
+const formatCurrency = (n: number | null | undefined, cur = '€') => formatMoneyOrDash(n, cur);
 
 function Spinner() {
   return (

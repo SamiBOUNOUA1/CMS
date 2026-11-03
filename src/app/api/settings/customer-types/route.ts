@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { CustomerTypeConfig } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // GET /api/settings/customer-types
 async function GET_() {
@@ -11,7 +12,7 @@ async function GET_() {
     const configs = await CustomerTypeConfig.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
     return NextResponse.json({ configs });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -38,7 +39,7 @@ async function POST_(request: NextRequest) {
     const config = await CustomerTypeConfig.create({ key, label: label.trim(), isActive, sortOrder });
     return NextResponse.json({ config }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

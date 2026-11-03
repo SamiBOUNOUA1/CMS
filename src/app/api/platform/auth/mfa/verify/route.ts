@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
 import { verifyPendingToken, cookieOptions, PLATFORM_MFA_PENDING_COOKIE } from '@/lib/auth';
 import { rateLimit, rateLimitReset } from '@/lib/rateLimit';
+import { logError, logWarn } from '@/lib/logger';
 import { loadWithMfa, checkSecondFactor } from '@/lib/mfaService';
 import { issuePlatformSession } from '@/lib/session';
 
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
     const rlKey = `platform-mfa:${pending.id}`;
     const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
+      logWarn('Too many attempts: rate limit reached', { route: '/api/platform/auth/mfa/verify', method: 'POST', tenantId: null, status: 429 });
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },
         { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
     res.cookies.set(PLATFORM_MFA_PENDING_COOKIE, '', cookieOptions(0));
     return res;
   } catch (err: unknown) {
-    console.error('platform mfa verify error:', err);
+    await logError(err, { route: '/api/platform/auth/mfa/verify', method: 'POST', tenantId: null, status: 500 });
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

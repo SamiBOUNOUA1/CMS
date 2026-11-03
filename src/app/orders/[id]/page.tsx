@@ -2,16 +2,22 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { btnFilled, btnOutline, fmt } from '@/app/components/FormPrimitives';
+import Modal, { ConfirmDialog } from '@/app/components/Modal';
+import { useToast } from '@/app/components/Toast';
 import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
 import { itemLineTotal, lineGroupsTotal } from '@/lib/pricing';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 import PackingChecklistModal from '@/app/components/PackingChecklistModal';
+import { useUser } from '@/lib/UserContext';
+import { formatMoneyOrDash } from '@/lib/money';
+import { SkeletonDetail } from '@/app/components/Skeleton';
+import { GroupIcon, PlaceIcon, RestaurantIcon, TagIcon } from '@/app/components/Icons';
 
 const EVENT_TYPE_ICONS = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -25,10 +31,7 @@ const ASSIGNEE_ROLE_LABELS = {
 };
 const ASSIGNEE_ROLES = Object.keys(ASSIGNEE_ROLE_LABELS);
 
-function formatCurrency(n, cur = '€') {
-  if (n == null) return '—';
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' ' + cur;
-}
+const formatCurrency = (n: number | null | undefined, cur = '€') => formatMoneyOrDash(n, cur);
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -37,9 +40,7 @@ function avatarColor(name = '') {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function Spinner() {
-  return <div className="w-10 h-10 rounded-full border-[3px] border-g-border border-t-google-blue animate-spin" />;
-}
+const ORDER_TABS = ['overview', 'menu', 'payments', 'quotes'];
 
 const btnOutlineSmall = 'inline-flex items-center justify-center bg-transparent text-google-blue border border-g-border rounded-full py-1.5 px-3.5 text-[13px] font-medium cursor-pointer';
 const iconBtn = 'inline-flex items-center justify-center w-8 h-8 rounded-lg bg-g-bg text-g-text-2 cursor-pointer border-none no-underline';
@@ -58,8 +59,7 @@ export default function OrderDetailPage() {
   const [products, setProducts] = useState([]);
   const [staffRolesConfig, setStaffRolesConfig] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [perms, setPerms] = useState({});
-  const [notification, setNotification] = useState(null);
+  const { perms } = useUser();
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
@@ -92,9 +92,17 @@ export default function OrderDetailPage() {
   const [kitchenEnabled, setKitchenEnabled] = useState(false);
   const [kitchenDishes, setKitchenDishes] = useState([]);
 
-  const showNotification = (msg, type = 'success') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3500);
+  const showNotification = useToast();
+
+  // Active section tab, kept in the URL hash so refresh/back returns to it.
+  const [tab, setTab] = useState('overview');
+  useEffect(() => {
+    const h = window.location.hash.slice(1);
+    if (ORDER_TABS.includes(h)) setTab(h);
+  }, []);
+  const selectTab = (key) => {
+    setTab(key);
+    window.history.replaceState(null, '', `#${key}`);
   };
 
   const loadData = useCallback(async () => {
@@ -130,7 +138,6 @@ export default function OrderDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => d?.user?.permissions && setPerms(d.user.permissions));
     fetch('/api/settings/order-statuses').then(r => r.json()).then(d => setStatuses(d.statuses || []));
     fetch('/api/event-type-configs').then(r => r.json()).then(d => setEventTypeConfigs((d.configs || []).filter(c => c.isActive)));
     fetch('/api/products').then(r => r.json()).then(d => setProducts((d.products || []).filter(p => p.isActive !== false)));
@@ -261,11 +268,11 @@ export default function OrderDetailPage() {
       const res = await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignees }) });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setOrder(data.order); setTeamModalOpen(false); showNotification('Team updated');
-    } catch { showNotification('Failed to update team', 'error'); } finally { setSavingTeam(false); }
+      setOrder(data.order); setTeamModalOpen(false); showNotification(td.team.updated);
+    } catch { showNotification(td.team.updateFailed, 'error'); } finally { setSavingTeam(false); }
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Spinner /></div>;
+  if (loading) return <SkeletonDetail cards={4} />;
   if (!order) return <div className="p-10 text-google-red">Order not found.</div>;
 
   const sc = statusMap[order.status];
@@ -291,75 +298,62 @@ export default function OrderDetailPage() {
 
   return (
     <div className="max-w-[900px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
-      {notification && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-white py-3 px-6 rounded-lg z-[1000] text-sm shadow-google-2 whitespace-nowrap"
-          style={{ background: notification.type === 'error' ? '#d93025' : '#202124' }}>
-          {notification.msg}
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteQuoteId}
+        title={td.deleteQuoteDialog.title}
+        body={td.deleteQuoteDialog.body}
+        cancelLabel={td.deleteQuoteDialog.cancel}
+        confirmLabel={td.deleteQuoteDialog.delete}
+        onCancel={() => setDeleteQuoteId(null)}
+        onConfirm={() => handleDeleteQuote(deleteQuoteId)}
+      />
 
-      {deleteQuoteId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
-            <h3 className="text-lg font-medium text-g-text mb-2.5">{td.deleteQuoteDialog.title}</h3>
-            <p className="text-sm text-g-text-2 mb-6">{td.deleteQuoteDialog.body}</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteQuoteId(null)} className={btnOutline}>{td.deleteQuoteDialog.cancel}</button>
-              <button onClick={() => handleDeleteQuote(deleteQuoteId)} className={`${btnFilled} bg-google-red`}>{td.deleteQuoteDialog.delete}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deletingPaymentId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[400px] shadow-google-2">
-            <h3 className="text-lg font-medium text-g-text mb-2.5">{td.deletePaymentDialog.title}</h3>
-            <p className="text-sm text-g-text-2 mb-6">{td.deletePaymentDialog.body}</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setDeletingPaymentId(null)} className={btnOutline}>{td.deletePaymentDialog.cancel}</button>
-              <button onClick={() => handleDeletePayment(deletingPaymentId)} className={`${btnFilled} bg-google-red`}>{td.deletePaymentDialog.delete}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deletingPaymentId}
+        title={td.deletePaymentDialog.title}
+        body={td.deletePaymentDialog.body}
+        cancelLabel={td.deletePaymentDialog.cancel}
+        confirmLabel={td.deletePaymentDialog.delete}
+        onCancel={() => setDeletingPaymentId(null)}
+        onConfirm={() => handleDeletePayment(deletingPaymentId)}
+      />
 
       {addPaymentOpen && (
         <AddPaymentModal t={t} onClose={() => setAddPaymentOpen(false)} onSave={handleAddPayment} currency={currency} maxAmount={remainingAmount} />
       )}
 
-      {teamModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4">
-          <div className="bg-g-surface rounded-2xl p-6 w-full max-w-[480px] shadow-google-2">
-            <h3 className="text-lg font-medium text-g-text mb-4">Assigned team</h3>
-            {teamRows.length === 0 && (
-              <p className="mb-4 text-sm text-g-text-3 italic">No one assigned yet.</p>
-            )}
-            <div className="flex flex-col gap-2.5 mb-4">
-              {teamRows.map((row, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <select value={row.user} onChange={e => updateTeamRow(idx, 'user', e.target.value)}
-                    className="flex-1 min-w-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
-                    <option value="">— Select user —</option>
-                    {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
-                  </select>
-                  <select value={row.role} onChange={e => updateTeamRow(idx, 'role', e.target.value)}
-                    className="w-[130px] flex-shrink-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
-                    {ASSIGNEE_ROLES.map(r => <option key={r} value={r}>{ASSIGNEE_ROLE_LABELS[r]}</option>)}
-                  </select>
-                  <button onClick={() => removeTeamRow(idx)} className={iconBtn} title="Remove">✕</button>
-                </div>
-              ))}
+      <Modal
+        open={teamModalOpen}
+        onClose={() => setTeamModalOpen(false)}
+        title={td.team.title}
+        widthCls="max-w-[480px]"
+        footer={<>
+          <button onClick={() => setTeamModalOpen(false)} className={btnOutline}>{td.team.cancel}</button>
+          <button onClick={handleSaveTeam} disabled={savingTeam} className={btnFilled}>{savingTeam ? '…' : td.team.save}</button>
+        </>}
+      >
+        {teamRows.length === 0 && (
+          <p className="mb-4 text-sm text-g-text-3 italic">{td.team.noneYet}</p>
+        )}
+        <div className="flex flex-col gap-2.5 mb-4">
+          {teamRows.map((row, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <select value={row.user} onChange={e => updateTeamRow(idx, 'user', e.target.value)}
+                className="flex-1 min-w-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
+                <option value="">{td.team.selectUser}</option>
+                {managers.map(m => <option key={m._id} value={m._id}>{m.name} ({m.email})</option>)}
+              </select>
+              <select value={row.role} onChange={e => updateTeamRow(idx, 'role', e.target.value)}
+                className="w-[130px] flex-shrink-0 py-2.5 px-3 border border-g-border rounded-lg text-sm text-g-text bg-g-surface outline-none focus:border-google-blue">
+                {ASSIGNEE_ROLES.map(r => <option key={r} value={r}>{td.team.roles[r] ?? ASSIGNEE_ROLE_LABELS[r]}</option>)}
+              </select>
+              <button onClick={() => removeTeamRow(idx)} className={iconBtn} title={td.team.remove} aria-label={td.team.remove}>✕</button>
             </div>
-            <button onClick={addTeamRow} className={btnOutlineSmall + ' mb-5'}>+ Add person</button>
-            {managers.length === 0 && <p className="mb-4 text-xs text-google-yellow">No user accounts found.</p>}
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setTeamModalOpen(false)} className={btnOutline}>Cancel</button>
-              <button onClick={handleSaveTeam} disabled={savingTeam} className={btnFilled} style={{ opacity: savingTeam ? 0.7 : 1 }}>{savingTeam ? '…' : 'Save'}</button>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+        <button onClick={addTeamRow} className={btnOutlineSmall + ' mb-2'}>{td.team.addPerson}</button>
+        {managers.length === 0 && <p className="m-0 text-xs text-google-yellow">{td.team.noUsers}</p>}
+      </Modal>
 
       {quoteModalOpen && (
         <GenerateQuoteModal t={t} order={order} itemsTotal={orderItemsTotal} staffTotal={orderStaffTotal} quotes={quotes}
@@ -379,9 +373,9 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      {/* Order card */}
-      <div className={cardCls}>
-        <div className="py-5 px-6 border-b border-g-border flex items-center justify-between gap-3 flex-wrap">
+      {/* Order header: always visible above the tabs */}
+      <div className={`${cardCls} !mb-4`}>
+        <div className="py-5 px-6 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-medium text-lg flex-shrink-0" style={{ background: avatarColor(order.clientName) }}>
               {(order.clientName || '?')[0].toUpperCase()}
@@ -401,10 +395,44 @@ export default function OrderDetailPage() {
             ) : (
               <span className="rounded-full py-1.5 px-3.5 text-[13px] font-medium" style={{ background: statusBg, color: statusFg }}>{sc?.label || order.status}</span>
             )}
-            {perms.edit_orders && !editing && (
-              <button onClick={() => setEditing(true)} className={btnOutlineSmall}>{td.editOrder}</button>
-            )}
+            <span className="rounded-full py-1.5 px-3.5 text-[13px] font-medium" style={{ background: psc.bg, color: psc.fg }}>
+              {remainingAmount > 0 ? `${td.balance}: ${formatCurrency(remainingAmount, currency)}` : (td.paymentStatus[order.paymentStatus] || order.paymentStatus)}
+            </span>
           </div>
+        </div>
+      </div>
+
+      {/* Section tabs */}
+      <div role="tablist" className="flex gap-1 mb-6 border-b border-g-border overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {[
+          { key: 'overview', label: td.tabs.overview },
+          { key: 'menu', label: td.tabs.menu },
+          { key: 'payments', label: td.tabs.payments, count: payments.length },
+          { key: 'quotes', label: td.tabs.quotes, count: quotes.length },
+        ].map(tb => (
+          <button
+            key={tb.key}
+            role="tab"
+            aria-selected={tab === tb.key}
+            onClick={() => selectTab(tb.key)}
+            className={`px-4 py-2.5 -mb-px text-sm font-medium whitespace-nowrap cursor-pointer border-b-2 transition-colors ${
+              tab === tb.key ? 'text-google-blue border-google-blue' : 'text-g-text-2 border-transparent hover:text-g-text'
+            }`}
+          >
+            {tb.label}
+            {tb.count > 0 && <span className="ml-1.5 text-xs rounded-full bg-g-bg text-g-text-2 px-1.5 py-px">{tb.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (<>
+      {/* Event details */}
+      <div className={cardCls}>
+        <div className="py-4 px-6 border-b border-g-border flex items-center justify-between">
+          <h2 className="text-base font-medium text-g-text m-0">{td.detailsSection}</h2>
+          {perms.edit_orders && !editing && (
+            <button onClick={() => setEditing(true)} className={btnOutlineSmall}>{td.editOrder}</button>
+          )}
         </div>
 
         <div className="py-5 px-6">
@@ -412,13 +440,13 @@ export default function OrderDetailPage() {
             <EditOrderForm form={editForm} setForm={setEditForm} eventTypeConfigs={eventTypeConfigs} isTableMode={isTableMode} tableCapacity={tableCapacity} t={t} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-              <FieldView label="Event type" value={`${EVENT_TYPE_ICONS[order.eventType] || ''} ${t.eventTypes[order.eventType] || order.eventType}`} />
-              <FieldView label="Event date" value={order.eventDate ? format(new Date(order.eventDate), 'dd MMM yyyy') : '—'} />
-              <FieldView label="Guests" value={order.tableCount ? `${order.tableCount} tables (~${order.guestCount} guests)` : `${order.guestCount} guests`} />
-              <FieldView label="Start time" value={order.startTime || '—'} />
-              <FieldView label="Location" value={order.eventLocation || '—'} />
-              {order.notes && <div className="sm:col-span-2"><FieldView label="Notes" value={order.notes} /></div>}
-              {order.externalNotes && <div className="sm:col-span-2"><FieldView label="External notes (shown on quote & receipt)" value={order.externalNotes} /></div>}
+              <FieldView label={td.fields.eventType} value={`${EVENT_TYPE_ICONS[order.eventType] || ''} ${t.eventTypes[order.eventType] || order.eventType}`} />
+              <FieldView label={td.fields.eventDate} value={order.eventDate ? format(new Date(order.eventDate), 'dd MMM yyyy') : '—'} />
+              <FieldView label={td.fields.guests} value={order.tableCount ? td.fields.tablesValue(order.tableCount, order.guestCount) : td.fields.guestsValue(order.guestCount)} />
+              <FieldView label={td.fields.startTime} value={order.startTime || '—'} />
+              <FieldView label={td.fields.location} value={order.eventLocation || '—'} />
+              {order.notes && <div className="sm:col-span-2"><FieldView label={td.fields.notes} value={order.notes} /></div>}
+              {order.externalNotes && <div className="sm:col-span-2"><FieldView label={td.fields.externalNotes} value={order.externalNotes} /></div>}
             </div>
           )}
           {editing && (
@@ -433,10 +461,10 @@ export default function OrderDetailPage() {
           <div className="py-4 px-6 border-t border-g-border bg-google-green-light">
             <div className="text-xs font-semibold text-google-green uppercase tracking-wide mb-1.5">{td.event}</div>
             <div className="text-sm text-g-text">
-              {t.eventTypes[order.event.eventType] || order.event.eventType} · {order.event.eventDate ? format(new Date(order.event.eventDate), 'dd MMM yyyy') : '—'} · {order.event.guestCount} guests
+              {t.eventTypes[order.event.eventType] || order.event.eventType} · {order.event.eventDate ? format(new Date(order.event.eventDate), 'dd MMM yyyy') : '—'} · {td.fields.guestsValue(order.event.guestCount)}
             </div>
             {order.event.eventLocation && (
-              <div className="text-[13px] text-g-text-2 mt-0.5">📍 {order.event.eventLocation}</div>
+              <div className="text-[13px] text-g-text-2 mt-0.5 flex items-center gap-1"><PlaceIcon size={14} /> {order.event.eventLocation}</div>
             )}
           </div>
         )}
@@ -451,32 +479,35 @@ export default function OrderDetailPage() {
       <div className={cardCls}>
         <div className="py-4 px-6 flex items-start justify-between gap-3">
           <div className="flex items-start gap-2.5 min-w-0">
-            <span className="text-xl">👥</span>
+            <span className="text-g-text-2 mt-0.5"><GroupIcon size={20} /></span>
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-g-text-2 uppercase tracking-wide mb-1.5">Assigned team</div>
+              <div className="text-xs font-semibold text-g-text-2 uppercase tracking-wide mb-1.5">{td.team.title}</div>
               {(order.assignees || []).length > 0 ? (
                 <div className="flex flex-col gap-1.5">
                   {order.assignees.map((a, i) => (
                     <div key={a.user?._id || i} className="text-[15px] font-medium text-g-text flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full py-0.5 px-2 text-[11px] font-semibold bg-google-blue-light text-google-blue">{ASSIGNEE_ROLE_LABELS[a.role] || a.role}</span>
+                      <span className="rounded-full py-0.5 px-2 text-[11px] font-semibold bg-google-blue-light text-google-blue">{td.team.roles[a.role] ?? ASSIGNEE_ROLE_LABELS[a.role] ?? a.role}</span>
                       {a.user?.name || '—'}
                       {a.user?.email && <span className="font-normal text-g-text-2 text-[13px]">{a.user.email}</span>}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-g-text-3 italic">No one assigned</div>
+                <div className="text-sm text-g-text-3 italic">{td.team.none}</div>
               )}
             </div>
           </div>
           {perms.edit_orders && (
             <button onClick={openTeamModal} className={btnOutlineSmall}>
-              {(order.assignees || []).length > 0 ? 'Manage' : 'Assign'}
+              {(order.assignees || []).length > 0 ? td.team.manage : td.team.assign}
             </button>
           )}
         </div>
       </div>
 
+      </>)}
+
+      {tab === 'menu' && (<>
       {/* Menu & Items */}
       <div className={cardCls}>
         <div className="py-4 px-6 border-b border-g-border flex items-center justify-between">
@@ -514,11 +545,11 @@ export default function OrderDetailPage() {
       {kitchenEnabled && kitchenDishes.length > 0 && (
         <div className={cardCls}>
           <div className="py-4 px-6 border-b border-g-border">
-            <h2 className="text-base font-medium text-g-text m-0">🍽 {td.kitchenRequirementsSection}</h2>
+            <h2 className="text-base font-medium text-g-text m-0 flex items-center gap-2"><span className="text-g-text-2 flex"><RestaurantIcon size={18} /></span>{td.kitchenRequirementsSection}</h2>
           </div>
           <div className="py-2">
             {kitchenDishes.map((dish, di) => (
-              <div key={dish.productId} style={{ borderTop: di > 0 ? '1px solid #f1f3f4' : undefined }}>
+              <div key={dish.productId} style={{ borderTop: di > 0 ? '1px solid var(--google-border)' : undefined }}>
                 {/* Dish header */}
                 <div className="flex items-center gap-2 px-6 py-3">
                   <span className="text-[13px] font-semibold text-g-text" style={{ fontFamily: "'Google Sans'" }}>{dish.productName}</span>
@@ -528,7 +559,7 @@ export default function OrderDetailPage() {
                 <div className="px-6 pb-3 overflow-x-auto">
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: "'Google Sans'" }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #f1f3f4' }}>
+                      <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
                         <th style={{ textAlign: 'left', padding: '4px 8px 4px 0', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqIngredient}</th>
                         <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqNeeded}</th>
                         <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqInStock}</th>
@@ -539,7 +570,7 @@ export default function OrderDetailPage() {
                       {dish.ingredients.map(ing => {
                         const sufficient = ing.currentStock >= ing.needed;
                         return (
-                          <tr key={ing.stockItemId} style={{ borderBottom: '1px solid #f8f9fa' }}>
+                          <tr key={ing.stockItemId} style={{ borderBottom: '1px solid var(--google-border)' }}>
                             <td style={{ padding: '7px 8px 7px 0', color: 'var(--google-text-primary)' }}>{ing.name}</td>
                             <td style={{ textAlign: 'right', padding: '7px 8px', color: 'var(--google-text-secondary)' }}>{ing.needed} {ing.unit}</td>
                             <td style={{ textAlign: 'right', padding: '7px 8px', color: sufficient ? 'var(--google-green)' : 'var(--google-yellow)', fontWeight: 500 }}>{ing.currentStock} {ing.unit}</td>
@@ -591,7 +622,7 @@ export default function OrderDetailPage() {
           </div>
           <div className="py-4 px-6 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2.5">
-              <span className="text-xl">📍</span>
+              <span className="text-g-text-2 flex"><PlaceIcon size={20} /></span>
               <span className="text-[15px] font-medium text-g-text">{order.travelRegion || '—'}</span>
             </div>
             <div className="flex flex-col items-end gap-0.5">
@@ -625,7 +656,7 @@ export default function OrderDetailPage() {
             </>
           ) : (
             <div className="flex items-center gap-2.5">
-              <span className="text-[22px]">🏷️</span>
+              <span className="text-g-text-2 flex"><TagIcon size={20} /></span>
               <span className="text-[15px] font-medium" style={{ color: order.discountAmount > 0 ? 'var(--google-red)' : 'var(--google-text-tertiary)' }}>
                 {order.discountAmount > 0 ? `– ${formatCurrency(order.discountAmount, currency)}` : td.noDiscount}
               </span>
@@ -634,6 +665,9 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
+      </>)}
+
+      {tab === 'payments' && (<>
       {/* Payment Summary */}
       <div className={cardCls}>
         <div className="py-4 px-6 border-b border-g-border flex items-center justify-between gap-3 flex-wrap">
@@ -675,7 +709,7 @@ export default function OrderDetailPage() {
         ) : (
           <div>
             {payments.map((payment, i) => (
-              <div key={payment._id} className="flex items-center py-3.5 px-6 gap-3" style={{ borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}>
+              <div key={payment._id} className="flex items-center py-3.5 px-6 gap-3" style={{ borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}>
                 <div className="flex-1">
                   <div className="text-sm font-medium text-g-text">
                     {td.addPaymentDialog.methods[payment.paymentMethod] || payment.paymentMethod}
@@ -701,7 +735,9 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      {/* Quotes */}
+      </>)}
+
+      {tab === 'quotes' && (
       <div className={`${cardCls} !mb-0`}>
         <div className="py-4 px-6 border-b border-g-border flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-base font-medium text-g-text m-0">{td.quotes}</h2>
@@ -719,7 +755,7 @@ export default function OrderDetailPage() {
         ) : (
           <div>
             {[...quotes].sort((a, b) => b.versionNumber - a.versionNumber).map((quote, i) => (
-              <div key={quote._id} className="flex items-center py-4 px-6 gap-3" style={{ borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}>
+              <div key={quote._id} className="flex items-center py-4 px-6 gap-3" style={{ borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-[15px] text-g-text">{td.version(quote.versionNumber)}</span>
@@ -727,12 +763,12 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="text-xs text-g-text-2 mt-0.5">
                     {format(new Date(quote.createdAt), 'dd MMM yyyy')}
-                    {quote.validUntil ? ` · valid until ${format(new Date(quote.validUntil), 'dd MMM yyyy')}` : ''}
+                    {quote.validUntil ? ` · ${td.validUntil(format(new Date(quote.validUntil), 'dd MMM yyyy'))}` : ''}
                   </div>
                 </div>
                 <div className="font-medium text-base text-g-text flex-shrink-0">{formatCurrency(order.totalAmount, currency)}</div>
                 <div className="flex gap-1 flex-shrink-0">
-                  <Link href={`/quotes/${quote._id}`} className={iconBtn} title="View quote">
+                  <Link href={`/quotes/${quote._id}`} className={iconBtn} title={td.viewQuote} aria-label={td.viewQuote}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>
                   </Link>
                   {perms.delete_quotes && (
@@ -746,6 +782,7 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -975,11 +1012,11 @@ function EditOrderForm({ form, setForm, eventTypeConfigs, isTableMode, tableCapa
 
   return (
     <div className="grid grid-cols-2 gap-x-6">
-      <div className={fieldCls}><label className={labelCls}>Full name</label><input value={form.clientName} onChange={e => set('clientName', e.target.value)} className={inputCls} /></div>
-      <div className={fieldCls}><label className={labelCls}>Email</label><input type="email" value={form.clientEmail} onChange={e => set('clientEmail', e.target.value)} className={inputCls} /></div>
-      <div className={fieldCls}><label className={labelCls}>Phone</label><input type="tel" value={form.clientPhone} onChange={e => set('clientPhone', e.target.value)} className={inputCls} /></div>
-      <div className={fieldCls}><label className={labelCls}>Event date</label><input type="date" value={form.eventDate} onChange={e => set('eventDate', e.target.value)} className={inputCls} /></div>
-      <div className={fieldCls}><label className={labelCls}>Event type</label>
+      <div className={fieldCls}><label className={labelCls}>{t.orderDetail.fields.fullName}</label><input value={form.clientName} onChange={e => set('clientName', e.target.value)} className={inputCls} /></div>
+      <div className={fieldCls}><label className={labelCls}>{t.orderDetail.fields.email}</label><input type="email" value={form.clientEmail} onChange={e => set('clientEmail', e.target.value)} className={inputCls} /></div>
+      <div className={fieldCls}><label className={labelCls}>{t.orderDetail.fields.phone}</label><input type="tel" value={form.clientPhone} onChange={e => set('clientPhone', e.target.value)} className={inputCls} /></div>
+      <div className={fieldCls}><label className={labelCls}>{t.orderDetail.fields.eventDate}</label><input type="date" value={form.eventDate} onChange={e => set('eventDate', e.target.value)} className={inputCls} /></div>
+      <div className={fieldCls}><label className={labelCls}>{t.orderDetail.fields.eventType}</label>
         <select value={form.eventType} onChange={e => set('eventType', e.target.value)} className={`${inputCls} appearance-none`}>
           {eventTypeConfigs.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
         </select>
@@ -991,10 +1028,10 @@ function EditOrderForm({ form, setForm, eventTypeConfigs, isTableMode, tableCapa
           <><label className={labelCls}>Guest count</label><input type="number" min="1" value={form.guestCount} onChange={e => set('guestCount', e.target.value)} className={inputCls} /></>
         )}
       </div>
-      <div className={fieldCls}><label className={labelCls}>Start time</label><input type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} className={inputCls} /></div>
-      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>Location</label><input value={form.eventLocation} onChange={e => set('eventLocation', e.target.value)} className={inputCls} placeholder="Address / venue" /></div>
-      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className={`${inputCls} resize-y`} /></div>
-      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>External notes <span className="text-g-text-3 font-normal">(shown on quote &amp; receipt)</span></label><textarea value={form.externalNotes} onChange={e => set('externalNotes', e.target.value)} rows={3} className={`${inputCls} resize-y`} placeholder="Notes visible to the client on the quote &amp; payment receipt…" /></div>
+      <div className={fieldCls}><label className={labelCls}>{t.orderDetail.fields.startTime}</label><input type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} className={inputCls} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>{t.orderDetail.fields.location}</label><input value={form.eventLocation} onChange={e => set('eventLocation', e.target.value)} className={inputCls} placeholder={t.orderDetail.fields.locationPlaceholder} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>{t.orderDetail.fields.notes}</label><textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} className={`${inputCls} resize-y`} /></div>
+      <div className={`${fieldCls} col-span-2`}><label className={labelCls}>{t.orderDetail.fields.externalNotes}</label><textarea value={form.externalNotes} onChange={e => set('externalNotes', e.target.value)} rows={3} className={`${inputCls} resize-y`} placeholder={t.orderDetail.fields.externalNotesPlaceholder} /></div>
     </div>
   );
 }

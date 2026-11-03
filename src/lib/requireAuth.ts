@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE, PLATFORM_COOKIE } from '@/lib/auth';
 import { getTenantLicense, getEnabledModules, moduleForApiPath } from '@/lib/license';
 import { runWithTenant } from '@/lib/tenantContext';
+import { getRequestMeta, logError, logWarn, runWithRequestMeta } from '@/lib/logger';
 
 export interface AuthContext {
   userId: string;
@@ -11,7 +12,7 @@ export interface AuthContext {
 }
 
 /** Verifies the `cq_token` cookie and returns its claims, without the license check. */
-async function readSession(request: NextRequest): Promise<AuthContext | null> {
+export async function readSession(request: NextRequest): Promise<AuthContext | null> {
   const token = request.cookies.get(COOKIE)?.value;
   if (!token) return null;
   const payload = await verifyToken(token);
@@ -77,17 +78,42 @@ export function withTenant(handler: RouteHandler): RouteHandler {
     const auth = await readSession(request);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const license = await getTenantLicense(auth.tenantId);
+    const where = { tenantId: auth.tenantId, role: auth.role, method: request.method, route: request.nextUrl.pathname, status: 403 };
     if (!license.active) {
+      logWarn(`Access blocked: license ${license.reason ?? 'inactive'}`, where);
       return NextResponse.json({ error: 'license_inactive', reason: license.reason }, { status: 403 });
     }
     // Module access is enforced here too (not only in middleware), so an API of
     // a module outside the plan / switched off can never be reached by URL.
     const moduleId = moduleForApiPath(request.nextUrl.pathname);
     if (moduleId && !(await getEnabledModules(auth.tenantId)).includes(moduleId)) {
+      logWarn(`Access blocked: module "${moduleId}" disabled`, where);
       return NextResponse.json({ error: 'module_disabled', module: moduleId }, { status: 403 });
     }
-    return runWithTenant(auth.tenantId, () => handler(request, ctx));
+    return runWithTenant(auth.tenantId, () =>
+      runWithRequestMeta(
+        { method: request.method, route: request.nextUrl.pathname, role: auth.role },
+        () => guardHandler(() => handler(request, ctx)),
+      ),
+    );
   };
+}
+
+/**
+ * Runs a handler, logging uncaught errors (→ generic 500) and any 5xx response
+ * the handler returned without logging anything itself.
+ */
+async function guardHandler(run: () => Promise<Response> | Response): Promise<Response> {
+  try {
+    const res = await run();
+    if (res.status >= 500 && !getRequestMeta()?.logged) {
+      await logError(new Error(`HTTP ${res.status} returned`), { status: res.status, name: 'ServerErrorResponse' });
+    }
+    return res;
+  } catch (err) {
+    await logError(err, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 // ── Platform (SaaS operator) auth ─────────────────────────────────────────────
@@ -112,6 +138,9 @@ export function withPlatformAdmin(
   return async (request, ctx) => {
     const admin = await getPlatformAuth(request);
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    return handler(request, ctx, admin);
+    return runWithRequestMeta(
+      { method: request.method, route: request.nextUrl.pathname, role: 'platform_admin' },
+      () => guardHandler(() => handler(request, ctx, admin)),
+    );
   };
 }

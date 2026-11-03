@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useT } from '@/lib/LanguageContext';
-import { format } from 'date-fns';
+import { format } from '@/lib/dateFormat';
+import { useUser } from '@/lib/UserContext';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   pending:     { bg: 'var(--google-bg)', text: '#5f6368', dot: '#9aa0a6' },
@@ -28,7 +29,7 @@ export default function EventFlowPage() {
   const [order, setOrder] = useState<any>(null);
   const [hasEvent, setHasEvent] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
-  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const { perms } = useUser();
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
 
   const [newStepLabel, setNewStepLabel] = useState('');
@@ -37,9 +38,6 @@ export default function EventFlowPage() {
   const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then((d: any) => d && setPerms(d.user?.permissions ?? {}));
     loadFlow();
   }, [id]);
 

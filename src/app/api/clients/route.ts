@@ -6,6 +6,7 @@ import { Client } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { serverError } from '@/lib/logger';
 
 // GET /api/clients?search=&customerType=
 async function GET_(request: NextRequest) {
@@ -33,7 +34,7 @@ async function GET_(request: NextRequest) {
       .lean();
     return NextResponse.json({ clients });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -81,7 +82,7 @@ async function POST_(request: NextRequest) {
 
     return NextResponse.json({ client }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

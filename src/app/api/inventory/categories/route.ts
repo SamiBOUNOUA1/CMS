@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryCategory } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 async function GET_() {
   try {
@@ -11,7 +12,7 @@ async function GET_() {
     const categories = await InventoryCategory.find({}).sort({ name: 1 });
     return NextResponse.json({ categories });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -25,7 +26,7 @@ async function POST_(request: NextRequest) {
     const category = await InventoryCategory.create({ name: body.name, color: body.color });
     return NextResponse.json({ category }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

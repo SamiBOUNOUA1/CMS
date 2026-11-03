@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // PATCH /api/orders/[id]/packing-items — toggle a single packing-item checkbox
 // on one of the order's line items. Body: { groupIndex, itemIndex, packingItemId, checked }.
@@ -33,7 +34,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
       packingItems: item.packingItems,
     });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

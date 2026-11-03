@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { User, CompanySettings } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 import { getTenantLicense } from '@/lib/license';
+import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ async function GET_(request: NextRequest) {
     const company = { name: settings?.companyName || license.name || '', logoUrl: settings?.logoUrl || '' };
     return NextResponse.json({ user: { ...user, permissions: auth.permissions }, company });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { InventoryItem, InventoryAdjustment, Supplier } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 // Fields a client is allowed to set via PATCH. currentStock is handled
 // separately (direct edit + correction adjustment, or relative stockDelta) and
@@ -22,7 +23,7 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ item });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -107,7 +108,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     await item.populate('warehouse', 'name');
     return NextResponse.json({ item });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -125,7 +126,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Product } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -26,7 +27,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     return NextResponse.json({ product });
   } catch (err: unknown) {
     if (err.code === 11000) return NextResponse.json({ error: 'Product name already exists' }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -36,7 +37,7 @@ async function DELETE_(_, { params }) {
     await Product.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

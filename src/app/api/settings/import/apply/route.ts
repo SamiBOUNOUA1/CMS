@@ -13,6 +13,7 @@ import {
   Role, RolePermissions,
 } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
+import { serverError } from '@/lib/logger';
 
 const COLLECTION_MODELS: Record<string, unknown> = {
   companySettings:     CompanySettings,
@@ -145,7 +146,7 @@ async function POST_(request: NextRequest) {
 
     return NextResponse.json({ inserted: totalInserted, updated: totalUpdated, skipped: totalSkipped, errors });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

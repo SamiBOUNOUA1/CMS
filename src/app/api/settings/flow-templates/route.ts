@@ -3,6 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { FlowTemplate } from '@/lib/models';
+import { serverError } from '@/lib/logger';
 
 // GET /api/settings/flow-templates
 async function GET_() {
@@ -13,7 +14,7 @@ async function GET_() {
       .lean();
     return NextResponse.json({ templates });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 
@@ -43,7 +44,7 @@ async function POST_(request: NextRequest) {
     });
     return NextResponse.json({ template }, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return serverError(err);
   }
 }
 

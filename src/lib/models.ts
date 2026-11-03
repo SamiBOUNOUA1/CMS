@@ -623,6 +623,27 @@ inventoryItemSchema.index({ category: 1 });
 inventoryItemSchema.plugin(tenantPlugin);
 export const InventoryItem = models.InventoryItem || model('InventoryItem', inventoryItemSchema);
 
+// ── MATERIAL TEMPLATE (reusable set of inventory items for event materials lists) ─
+// `mode: 'per_guest'` means quantity is per guest — or per table for table-mode event
+// types — and is scaled by the order's guestCount / tableCount.
+const materialTemplateItemSchema = new Schema({
+  inventoryItem: { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
+  mode:          { type: String, enum: ['fixed', 'per_guest'], default: 'fixed' },
+  quantity:      { type: Number, default: 1, min: 0 },
+}, { _id: false });
+
+const materialTemplateSchema = new Schema(
+  {
+    name:        { type: String, required: true, trim: true },
+    description: { type: String, default: '', trim: true },
+    items:       [materialTemplateItemSchema],
+  },
+  { timestamps: true }
+);
+materialTemplateSchema.plugin(tenantPlugin);
+materialTemplateSchema.index({ tenantId: 1, name: 1 });
+export const MaterialTemplate = models.MaterialTemplate || model('MaterialTemplate', materialTemplateSchema);
+
 // ── INVENTORY ADJUSTMENT ──────────────────────────────────────────────────────
 const inventoryAdjustmentSchema = new Schema(
   {
@@ -915,3 +936,37 @@ export const TenantPayment = models.TenantPayment || model('TenantPayment', tena
 // ── PLATFORM COUNTER (monotonic sequences, e.g. invoice numbers per year) ──────
 const platformCounterSchema = new Schema({ _id: String, seq: { type: Number, default: 0 } });
 export const PlatformCounter = models.PlatformCounter || model('PlatformCounter', platformCounterSchema);
+
+// ── SYSTEM LOG (errors / warnings, read in the platform console) ──────────────
+// Platform model (no tenantPlugin). Content is sanitized by lib/logSanitizer.ts
+// before it gets here: no request bodies, user identity, IPs or personal data.
+// Repeats of the same open error are grouped (count + lastSeen).
+const LOG_RETENTION_DAYS = Math.max(1, Number(process.env.LOG_RETENTION_DAYS) || 30);
+const systemLogSchema = new Schema(
+  {
+    level:       { type: String, enum: ['error', 'warn'], required: true },
+    source:      { type: String, enum: ['server', 'client'], default: 'server' },
+    fingerprint: { type: String, required: true },
+    tenant:      { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
+    tenantName:  { type: String, default: '' },
+    role:        { type: String, default: '' },
+    method:      { type: String, default: '' },
+    route:       { type: String, default: '' },
+    status:      { type: Number, default: null },
+    name:        { type: String, default: '' },
+    code:        { type: String, default: '' },
+    message:     { type: String, default: '' },
+    stack:       { type: String, default: '' },
+    browser:     { type: String, default: '' },
+    count:       { type: Number, default: 1 },
+    firstSeen:   { type: Date, default: Date.now },
+    lastSeen:    { type: Date, default: Date.now },
+    resolved:    { type: Boolean, default: false },
+    resolvedAt:  { type: Date, default: null },
+  },
+  { timestamps: false }
+);
+systemLogSchema.index({ fingerprint: 1, tenant: 1, resolved: 1 });
+systemLogSchema.index({ level: 1, lastSeen: -1 });
+systemLogSchema.index({ lastSeen: 1 }, { expireAfterSeconds: LOG_RETENTION_DAYS * 24 * 3600 });
+export const SystemLog = models.SystemLog || model('SystemLog', systemLogSchema);
