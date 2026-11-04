@@ -5,9 +5,13 @@ import { connectDB } from '@/lib/mongodb';
 import { Order, Product } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 
+const isObjectIdHex = (v: unknown): v is string => typeof v === 'string' && /^[a-f0-9]{24}$/i.test(v);
+
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   const { error } = await requirePermission(request, 'view_kitchen');
   if (error) return error;
+
+  if (!isObjectIdHex(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await connectDB();
 
@@ -19,7 +23,8 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
   for (const group of order.lineGroups ?? []) {
     const groupCount = Number(group.count) || 1;
     for (const item of group.items ?? []) {
-      if (!item._productId) continue;
+      // Skip custom items ('__custom__') and anything else that isn't a catalog product id
+      if (!isObjectIdHex(item._productId)) continue;
       productCountMap.set(item._productId, (productCountMap.get(item._productId) ?? 0) + groupCount);
     }
   }
