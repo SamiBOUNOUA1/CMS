@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeSwitch from '../components/ThemeSwitch';
+import PlatformLogo from '../components/PlatformLogo';
 
 // Operator console for the SaaS owner. Separate session (cq_platform_token)
 // and no tenant navigation — see middleware.ts and lib/requireAuth.ts.
@@ -50,10 +51,13 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-g-bg font-[Roboto,Arial,sans-serif]">
       <header className="sticky top-0 z-40 bg-g-surface border-b border-g-border print:hidden">
         <div className="mx-auto max-w-[1100px] px-4 h-14 flex items-center gap-6">
-          <span className="font-sans text-[17px] text-g-text whitespace-nowrap">
-            Cat<span className="text-google-blue font-medium">ero</span>
-            <span className="ml-2 text-[11px] uppercase tracking-wider text-g-text-2">Platform</span>
-          </span>
+          <Link href="/platform" className="flex items-center gap-2 no-underline flex-shrink-0">
+            <PlatformLogo />
+            <span className="font-sans text-[17px] text-g-text whitespace-nowrap">
+              Cat<span className="font-medium">ero</span>
+              <span className="ml-2 text-[11px] uppercase tracking-wider text-g-text-2">Platform</span>
+            </span>
+          </Link>
           {/* sm+: inline nav. Below sm it moves into the burger menu. */}
           <nav className="hidden sm:flex gap-1 flex-1 min-w-0">
             {nav.map(n => (

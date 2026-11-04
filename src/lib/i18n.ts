@@ -166,7 +166,7 @@ export const translations: Record<string, any> = {
     // Order detail
     orderDetail: {
       back: 'Back to orders',
-      tabs: { overview: 'Overview', menu: 'Menu & staff', payments: 'Payments', quotes: 'Quotes' },
+      tabs: { overview: 'Overview', menu: 'Menu & staff', kitchen: 'Kitchen', payments: 'Payments', quotes: 'Quotes' },
       detailsSection: 'Event details',
       balance: 'Balance',
       validUntil: (d) => `valid until ${d}`,
@@ -232,6 +232,7 @@ export const translations: Record<string, any> = {
       loadFailed: 'Failed to load order',
       menuSection: 'Menu & Items',
       kitchenRequirementsSection: 'Kitchen Requirements',
+      kitchenReqEmpty: 'No dishes in this order have a linked recipe yet.',
       kitchenReqIngredient: 'Ingredient',
       kitchenReqNeeded: 'Needed',
       kitchenReqInStock: 'In Stock',
@@ -2091,6 +2092,7 @@ export const translations: Record<string, any> = {
           newTitle: 'New Kitchen Item',
           fields: {
             name: 'Item name',
+            nameAr: 'Arabic name',
             category: 'Category',
             unit: 'Unit',
             currentStock: 'Current stock',
@@ -2406,7 +2408,7 @@ export const translations: Record<string, any> = {
     // Order detail
     orderDetail: {
       back: 'Retour aux commandes',
-      tabs: { overview: 'Aperçu', menu: 'Menu & personnel', payments: 'Paiements', quotes: 'Devis' },
+      tabs: { overview: 'Aperçu', menu: 'Menu & personnel', kitchen: 'Cuisine', payments: 'Paiements', quotes: 'Devis' },
       detailsSection: "Détails de l'événement",
       balance: 'Solde',
       validUntil: (d) => `valable jusqu'au ${d}`,
@@ -2472,6 +2474,7 @@ export const translations: Record<string, any> = {
       loadFailed: 'Impossible de charger la commande',
       menuSection: 'Prestations & menu',
       kitchenRequirementsSection: 'Besoins cuisine',
+      kitchenReqEmpty: "Aucun plat de cette commande n'a encore de recette liée.",
       kitchenReqIngredient: 'Ingrédient',
       kitchenReqNeeded: 'Requis',
       kitchenReqInStock: 'En stock',
@@ -4331,6 +4334,7 @@ export const translations: Record<string, any> = {
           newTitle: 'Nouvel article cuisine',
           fields: {
             name: 'Nom de l\'article',
+            nameAr: 'Nom en arabe',
             category: 'Catégorie',
             unit: 'Unité',
             currentStock: 'Stock actuel',

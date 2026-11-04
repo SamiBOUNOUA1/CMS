@@ -51,7 +51,7 @@ export default function KitchenStockPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  useEffect(() => {
+  useEffect(() => {
   }, []);
 
   useEffect(() => {
@@ -188,7 +188,10 @@ export default function KitchenStockPage() {
                 >
                   {/* Row 1: name + delete */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--google-text-primary)', fontSize: 15 }}>{item.name}</div>
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--google-text-primary)', fontSize: 15 }}>{item.name}</div>
+                      {item.nameAr && <div dir="rtl" lang="ar" style={{ fontSize: 13, color: 'var(--google-text-secondary)', textAlign: 'start' }}>{item.nameAr}</div>}
+                    </div>
                     {canManage && (
                       <button
                         onClick={e => { e.stopPropagation(); setDeleteId(item._id); }}
@@ -247,7 +250,10 @@ export default function KitchenStockPage() {
                     {...rowLink(`/kitchen/stock/${item._id}`)}
                     style={{ borderBottom: '1px solid var(--google-border)', cursor: 'pointer' }}
                   >
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--google-text-primary)' }}>{item.name}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--google-text-primary)' }}>
+                      {item.name}
+                      {item.nameAr && <div dir="rtl" lang="ar" style={{ fontSize: 13, fontWeight: 400, color: 'var(--google-text-secondary)', textAlign: 'left' }}>{item.nameAr}</div>}
+                    </td>
                     <td style={{ padding: '12px 16px', color: 'var(--google-text-secondary)', fontSize: 13 }}>
                       <span style={{ background: 'var(--google-bg)', borderRadius: 12, padding: '3px 10px', fontSize: 12 }}>
                         {tk.categories[item.category as keyof typeof tk.categories] || item.category}

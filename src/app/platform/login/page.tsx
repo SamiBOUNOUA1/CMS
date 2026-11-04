@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FormInput, Field } from '@/app/components/FormPrimitives';
+import PlatformLogo from '@/app/components/PlatformLogo';
 
 export default function PlatformLoginPage() {
   const router = useRouter();
@@ -51,8 +52,9 @@ export default function PlatformLoginPage() {
         style={{ boxShadow: '0 4px 20px rgba(60,64,67,.12)' }}
       >
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-3"><PlatformLogo size={40} /></div>
           <h1 className="font-sans text-[22px] font-normal text-g-text m-0">
-            Cat<span className="text-google-blue font-medium">ero</span> Platform
+            Cat<span className="font-medium">ero</span> Platform
           </h1>
           <p className="text-sm text-g-text-2 mt-1.5 mb-0">{mfaStep ? 'Two-factor authentication' : 'Operator console'}</p>
         </div>

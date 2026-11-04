@@ -322,5 +322,6 @@ function forbidden(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // icon.svg files (app + platform) are favicons and must load on login pages.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon\\.svg|platform/icon\\.svg).*)'],
 };

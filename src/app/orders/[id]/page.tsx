@@ -40,7 +40,7 @@ function avatarColor(name = '') {
   return colors[Math.abs(hash) % colors.length];
 }
 
-const ORDER_TABS = ['overview', 'menu', 'payments', 'quotes'];
+const ORDER_TABS = ['overview', 'menu', 'kitchen', 'payments', 'quotes'];
 
 const btnOutlineSmall = 'inline-flex items-center justify-center bg-transparent text-google-blue border border-g-border rounded-full py-1.5 px-3.5 text-[13px] font-medium cursor-pointer';
 const iconBtn = 'inline-flex items-center justify-center w-8 h-8 rounded-lg bg-g-bg text-g-text-2 cursor-pointer border-none no-underline';
@@ -407,6 +407,7 @@ export default function OrderDetailPage() {
         {[
           { key: 'overview', label: td.tabs.overview },
           { key: 'menu', label: td.tabs.menu },
+          ...(kitchenEnabled ? [{ key: 'kitchen', label: td.tabs.kitchen, count: kitchenDishes.length }] : []),
           { key: 'payments', label: td.tabs.payments, count: payments.length },
           { key: 'quotes', label: td.tabs.quotes, count: quotes.length },
         ].map(tb => (
@@ -541,54 +542,6 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Kitchen Requirements */}
-      {kitchenEnabled && kitchenDishes.length > 0 && (
-        <div className={cardCls}>
-          <div className="py-4 px-6 border-b border-g-border">
-            <h2 className="text-base font-medium text-g-text m-0 flex items-center gap-2"><span className="text-g-text-2 flex"><RestaurantIcon size={18} /></span>{td.kitchenRequirementsSection}</h2>
-          </div>
-          <div className="py-2">
-            {kitchenDishes.map((dish, di) => (
-              <div key={dish.productId} style={{ borderTop: di > 0 ? '1px solid var(--google-border)' : undefined }}>
-                {/* Dish header */}
-                <div className="flex items-center gap-2 px-6 py-3">
-                  <span className="text-[13px] font-semibold text-g-text" style={{ fontFamily: "'Google Sans'" }}>{dish.productName}</span>
-                  <span className="text-[11px] text-g-text-3 bg-g-bg rounded-full px-2 py-px">× {dish.count}</span>
-                </div>
-                {/* Ingredients table */}
-                <div className="px-6 pb-3 overflow-x-auto">
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: "'Google Sans'" }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
-                        <th style={{ textAlign: 'left', padding: '4px 8px 4px 0', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqIngredient}</th>
-                        <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqNeeded}</th>
-                        <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqInStock}</th>
-                        <th style={{ textAlign: 'right', padding: '4px 0 4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqToAdd}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dish.ingredients.map(ing => {
-                        const sufficient = ing.currentStock >= ing.needed;
-                        return (
-                          <tr key={ing.stockItemId} style={{ borderBottom: '1px solid var(--google-border)' }}>
-                            <td style={{ padding: '7px 8px 7px 0', color: 'var(--google-text-primary)' }}>{ing.name}</td>
-                            <td style={{ textAlign: 'right', padding: '7px 8px', color: 'var(--google-text-secondary)' }}>{ing.needed} {ing.unit}</td>
-                            <td style={{ textAlign: 'right', padding: '7px 8px', color: sufficient ? 'var(--google-green)' : 'var(--google-yellow)', fontWeight: 500 }}>{ing.currentStock} {ing.unit}</td>
-                            <td style={{ textAlign: 'right', padding: '7px 0 7px 8px', color: ing.toAdd > 0 ? 'var(--google-red)' : 'var(--google-green)', fontWeight: 600 }}>
-                              {ing.toAdd > 0 ? `+ ${ing.toAdd} ${ing.unit}` : '—'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Staff */}
       <div className={cardCls}>
         <div className="py-4 px-6 border-b border-g-border flex items-center justify-between">
@@ -665,6 +618,60 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
+      </>)}
+
+      {tab === 'kitchen' && kitchenEnabled && (<>
+      {/* Kitchen Requirements */}
+      {kitchenDishes.length > 0 ? (
+        <div className={cardCls}>
+          <div className="py-4 px-6 border-b border-g-border">
+            <h2 className="text-base font-medium text-g-text m-0 flex items-center gap-2"><span className="text-g-text-2 flex"><RestaurantIcon size={18} /></span>{td.kitchenRequirementsSection}</h2>
+          </div>
+          <div className="py-2">
+            {kitchenDishes.map((dish, di) => (
+              <div key={dish.productId} style={{ borderTop: di > 0 ? '1px solid var(--google-border)' : undefined }}>
+                {/* Dish header */}
+                <div className="flex items-center gap-2 px-6 py-3">
+                  <span className="text-[13px] font-semibold text-g-text" style={{ fontFamily: "'Google Sans'" }}>{dish.productName}</span>
+                  <span className="text-[11px] text-g-text-3 bg-g-bg rounded-full px-2 py-px">× {dish.count}</span>
+                </div>
+                {/* Ingredients table */}
+                <div className="px-6 pb-3 overflow-x-auto">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: "'Google Sans'" }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--google-border)' }}>
+                        <th style={{ textAlign: 'left', padding: '4px 8px 4px 0', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqIngredient}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqNeeded}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqInStock}</th>
+                        <th style={{ textAlign: 'right', padding: '4px 0 4px 8px', color: 'var(--google-text-tertiary)', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{td.kitchenReqToAdd}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dish.ingredients.map(ing => {
+                        const sufficient = ing.currentStock >= ing.needed;
+                        return (
+                          <tr key={ing.stockItemId} style={{ borderBottom: '1px solid var(--google-border)' }}>
+                            <td style={{ padding: '7px 8px 7px 0', color: 'var(--google-text-primary)' }}>{ing.name}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 8px', color: 'var(--google-text-secondary)' }}>{ing.needed} {ing.unit}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 8px', color: sufficient ? 'var(--google-green)' : 'var(--google-yellow)', fontWeight: 500 }}>{ing.currentStock} {ing.unit}</td>
+                            <td style={{ textAlign: 'right', padding: '7px 0 7px 8px', color: ing.toAdd > 0 ? 'var(--google-red)' : 'var(--google-green)', fontWeight: 600 }}>
+                              {ing.toAdd > 0 ? `+ ${ing.toAdd} ${ing.unit}` : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className={cardCls}>
+          <div className="py-10 px-6 text-center text-sm text-g-text-3">{td.kitchenReqEmpty}</div>
+        </div>
+      )}
       </>)}
 
       {tab === 'payments' && (<>
