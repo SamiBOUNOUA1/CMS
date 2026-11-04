@@ -794,6 +794,7 @@ export const Activity = models.Activity || model('Activity', activitySchema);
 const kitchenStockItemSchema = new Schema(
   {
     name:         { type: String, required: true, trim: true },
+    nameAr:       { type: String, default: '', trim: true },
     category:     { type: String, default: 'other', trim: true, enum: ['vegetables', 'dairy', 'meat', 'dry', 'spices', 'beverages', 'other'] },
     unit:         { type: String, default: 'kg', trim: true },
     currentStock: { type: Number, default: 0, min: 0 },

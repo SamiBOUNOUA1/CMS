@@ -19,7 +19,7 @@ async function GET_(request: NextRequest) {
   const filter: Record<string, unknown> = { isActive: true };
   if (category) filter.category = category;
   if (search) {
-    filter.$or = [{ name: safeRegex(search) }];
+    filter.$or = [{ name: safeRegex(search) }, { nameAr: safeRegex(search) }];
   }
   if (lowStock) {
     filter.$expr = { $lt: ['$currentStock', '$minStock'] };
@@ -37,7 +37,7 @@ async function POST_(request: NextRequest) {
   await connectDB();
 
   const body = await request.json();
-  const { name, category, unit, currentStock, minStock, unitCost, notes } = body;
+  const { name, nameAr, category, unit, currentStock, minStock, unitCost, notes } = body;
 
   if (!name || !name.trim()) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -48,6 +48,7 @@ async function POST_(request: NextRequest) {
 
   const item = await KitchenStockItem.create({
     name: name.trim(),
+    nameAr: typeof nameAr === 'string' ? nameAr.trim() : '',
     category: category || 'other',
     unit: unit.trim(),
     currentStock: Math.max(0, Number(currentStock) || 0),

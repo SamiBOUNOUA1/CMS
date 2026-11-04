@@ -64,7 +64,7 @@ async function PATCH_(
       metadata: { adjustmentType: adjustmentType || 'purchase', stockDelta: delta },
     });
   } else {
-    const allowed = ['name', 'category', 'unit', 'minStock', 'unitCost', 'notes', 'isActive'];
+    const allowed = ['name', 'nameAr', 'category', 'unit', 'minStock', 'unitCost', 'notes', 'isActive'];
     for (const key of allowed) {
       if (key in fields) (item as any)[key] = fields[key];
     }

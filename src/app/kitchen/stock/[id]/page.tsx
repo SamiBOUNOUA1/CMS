@@ -27,7 +27,7 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
   const isNew = params.id === 'new';
 
   const [item, setItem] = useState<any>({
-    name: '', category: 'other', unit: 'kg', currentStock: 0, minStock: 0, unitCost: 0, notes: '', isActive: true,
+    name: '', nameAr: '', category: 'other', unit: 'kg', currentStock: 0, minStock: 0, unitCost: 0, notes: '', isActive: true,
   });
   const [adjustments, setAdjustments] = useState<any[]>([]);
   const [loading, setLoading] = useState(!isNew);
@@ -40,7 +40,7 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
   const [adjForm, setAdjForm] = useState({ adjustmentType: 'purchase', quantity: '', notes: '' });
   const [adjSaving, setAdjSaving] = useState(false);
 
-  useEffect(() => {
+  useEffect(() => {
   }, []);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: item.name, category: item.category, unit: item.unit, currentStock: isNew ? item.currentStock : undefined, minStock: item.minStock, unitCost: item.unitCost, notes: item.notes, isActive: item.isActive }),
+        body: JSON.stringify({ name: item.name, nameAr: item.nameAr ?? '', category: item.category, unit: item.unit, currentStock: isNew ? item.currentStock : undefined, minStock: item.minStock, unitCost: item.unitCost, notes: item.notes, isActive: item.isActive }),
       });
       if (res.ok) {
         const d = await res.json();
@@ -139,6 +139,9 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--google-text-primary)', margin: 0 }}>
           {isNew ? tk.newTitle : item.name}
+          {!isNew && item.nameAr && (
+            <span dir="rtl" lang="ar" style={{ marginInlineStart: 10, fontSize: 18, fontWeight: 500, color: 'var(--google-text-secondary)' }}>{item.nameAr}</span>
+          )}
         </h1>
         {canManage && !isNew && (
           <div style={{ display: 'flex', gap: 10 }}>
@@ -172,6 +175,9 @@ export default function KitchenStockItemPage({ params }: { params: { id: string 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px 24px' }}>
           <Field label={tk.fields.name}>
             <FormInput value={item.name} onChange={e => setItem((p: any) => ({ ...p, name: e.target.value }))} disabled={!editing} />
+          </Field>
+          <Field label={tk.fields.nameAr}>
+            <FormInput dir="rtl" lang="ar" value={item.nameAr ?? ''} onChange={e => setItem((p: any) => ({ ...p, nameAr: e.target.value }))} disabled={!editing} />
           </Field>
           <Field label={tk.fields.category}>
             <FormSelect value={item.category} onChange={e => setItem((p: any) => ({ ...p, category: e.target.value }))} disabled={!editing}>

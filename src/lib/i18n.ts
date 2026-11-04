@@ -2092,6 +2092,7 @@ export const translations: Record<string, any> = {
           newTitle: 'New Kitchen Item',
           fields: {
             name: 'Item name',
+            nameAr: 'Arabic name',
             category: 'Category',
             unit: 'Unit',
             currentStock: 'Current stock',
@@ -4333,6 +4334,7 @@ export const translations: Record<string, any> = {
           newTitle: 'Nouvel article cuisine',
           fields: {
             name: 'Nom de l\'article',
+            nameAr: 'Nom en arabe',
             category: 'Catégorie',
             unit: 'Unité',
             currentStock: 'Stock actuel',
