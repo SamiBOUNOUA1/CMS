@@ -61,7 +61,13 @@ async function mintInternalToken(): Promise<string> {
  * an internal auth cookie. The buffer is never written to disk — the caller is
  * responsible for using it and letting it be garbage-collected.
  */
-export async function renderPagePdf(origin: string, path: string): Promise<Buffer> {
+export async function renderPagePdf(requestOrigin: string, path: string): Promise<Buffer> {
+  // In production (Cloud Run) the request origin is the container's internal
+  // address with the proxy's https scheme (e.g. https://0.0.0.0:8080), which
+  // doesn't work. Load the page straight from this server over plain http.
+  const origin = process.env.NODE_ENV === 'production'
+    ? `http://127.0.0.1:${process.env.PORT || 8080}`
+    : requestOrigin;
   const token = await mintInternalToken();
   let browser: Browser | null = null;
   try {
