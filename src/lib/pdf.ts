@@ -23,12 +23,18 @@ async function launchBrowser(): Promise<Browser> {
     // Must be set before the import: the package reads it at load time.
     process.env.AWS_LAMBDA_JS_RUNTIME ??= 'nodejs22.x';
     const chromium = (await import('@sparticuz/chromium')).default;
+    // PDFs don't need WebGL; skips the software GPU stack, a common crash source.
+    chromium.setGraphicsMode = false;
     return puppeteer.launch({
       // --single-process is meant for AWS Lambda; on Cloud Run it crashes the
       // tab mid-navigation ("Navigating frame was detached").
       args: chromium.args.filter(a => a !== '--single-process'),
+      defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
-      headless: true,
+      // The bundled binary is chrome-headless-shell, so use its headless mode.
+      headless: chromium.headless,
+      // Pipe Chromium's own stderr into the server logs so crashes are diagnosable.
+      dumpio: true,
     });
   }
 
@@ -76,7 +82,7 @@ export async function renderPagePdf(requestOrigin: string, path: string): Promis
     browser = await launchBrowser();
     // Reuse the tab Chromium opens on launch instead of creating a second one.
     const page = (await browser.pages())[0] ?? await browser.newPage();
-    await page.setCookie({ name: 'cq_token', value: token, url: origin });
+    page.on('error', err => console.error('[pdf] Chromium tab crashed:', err));    await page.setCookie({ name: 'cq_token', value: token, url: origin });
     await page.goto(`${origin}${path}`, { waitUntil: 'networkidle0', timeout: 60_000 });
     await page.emulateMediaType('print');
     const pdf = await page.pdf({
