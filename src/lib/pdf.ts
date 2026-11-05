@@ -16,22 +16,59 @@ const LOCAL_CHROME_PATHS = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ].filter(Boolean) as string[];
 
-async function launchBrowser(): Promise<Browser> {
-  // In production / serverless (Cloud Run), use the bundled serverless Chromium.
-  if (process.env.NODE_ENV === 'production' || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    // @sparticuz/chromium only unpacks its bundled system libraries (libnss3 etc.)
-    // when it thinks it's on AWS Lambda. Cloud Run lacks them, so opt in here.
-    // Must be set before the import: the package reads it at load time.
-    process.env.AWS_LAMBDA_JS_RUNTIME ??= 'nodejs22.x';
+/**
+ * Unpacks @sparticuz/chromium into /tmp and returns the binary path.
+ *
+ * The package only unpacks the system libraries Chromium needs when it detects
+ * AWS Lambda, and Cloud Run has none of them. It has two library bundles, and
+ * we need both: "al2023" has the current NSS libraries (libnss3, libnspr4...),
+ * "al2" has libsqlite3 and libuuid, which NSS also loads. So we pose as both
+ * Lambda runtimes while unpacking, then put both folders on the library path
+ * (al2023 first, so its newer NSS wins).
+ */
+async function unpackServerlessChromium(): Promise<string> {
+  const saved = {
+    AWS_EXECUTION_ENV: process.env.AWS_EXECUTION_ENV,
+    AWS_LAMBDA_JS_RUNTIME: process.env.AWS_LAMBDA_JS_RUNTIME,
+  };
+  process.env.AWS_EXECUTION_ENV = 'AWS_Lambda_nodejs18.x'; // → unpacks al2
+  process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x';        // → unpacks al2023
+  try {
+    // The package skips all unpacking once /tmp/chromium exists, so an instance
+    // that unpacked before (without al2) would never get libsqlite3. Redo it.
+    const fs = await import('fs');
+    if (fs.existsSync('/tmp/chromium') && !fs.existsSync('/tmp/al2/lib/libsqlite3.so.0')) {
+      fs.rmSync('/tmp/chromium', { force: true });
+    }
     const chromium = (await import('@sparticuz/chromium')).default;
     // PDFs don't need WebGL; skips the software GPU stack, a common crash source.
     chromium.setGraphicsMode = false;
+    const executablePath = await chromium.executablePath();
+    const libDirs = ['/tmp/al2023/lib', '/tmp/al2/lib'];
+    const rest = (process.env.LD_LIBRARY_PATH ?? '').split(':').filter(p => p && !libDirs.includes(p));
+    process.env.LD_LIBRARY_PATH = [...libDirs, ...rest].join(':');
+    process.env.FONTCONFIG_PATH ??= '/tmp/fonts';
+    return executablePath;
+  } finally {
+    // Don't leave the fake Lambda markers set: other libraries read them.
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
+async function launchBrowser(): Promise<Browser> {
+  // In production / serverless (Cloud Run), use the bundled serverless Chromium.
+  if (process.env.NODE_ENV === 'production' || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const executablePath = await unpackServerlessChromium();
+    const chromium = (await import('@sparticuz/chromium')).default;
     return puppeteer.launch({
       // --single-process is meant for AWS Lambda; on Cloud Run it crashes the
       // tab mid-navigation ("Navigating frame was detached").
       args: chromium.args.filter(a => a !== '--single-process'),
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath,
       // The bundled binary is chrome-headless-shell, so use its headless mode.
       headless: chromium.headless,
       // Pipe Chromium's own stderr into the server logs so crashes are diagnosable.
