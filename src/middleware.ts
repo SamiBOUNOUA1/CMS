@@ -4,7 +4,7 @@ import { MODULE_REGISTRY } from '@/lib/modules';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const PUBLIC = ['/login', '/license-expired'];
-const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state', '/api/logs/client'];
+const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state', '/api/logs/client', '/api/cron/'];
 const PLATFORM_PUBLIC = ['/platform/login', '/api/platform/auth/login', '/api/platform/auth/logout', '/api/platform/auth/mfa/verify'];
 
 async function getEnabledModuleIds(request: NextRequest, tenantId: string): Promise<string[] | null> {
@@ -123,7 +123,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (!permissions.manage_event_materials) return forbidden(request);
     }
 
-    if (pathname.startsWith('/settings/whatsapp')) {
+    if (pathname.startsWith('/settings/whatsapp') || pathname.startsWith('/settings/email')) {
       if (!permissions.manage_integrations) return forbidden(request);
     }
 
@@ -135,7 +135,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     if (pathname.startsWith('/api/') && isMutating) {
       // WhatsApp send endpoints (under /api/orders and /api/quotes) — require
       // edit_orders and bypass the create_* guards below.
-      const isSendWhatsapp = /\/send-whatsapp$/.test(pathname);
+      // Same for the email send endpoints (/send-email).
+      const isSendWhatsapp = /\/send-(whatsapp|email)$/.test(pathname);
       if (isSendWhatsapp && !permissions.edit_orders) return forbidden(request);
 
       if (pathname.startsWith('/api/orders') && !isSendWhatsapp) {
@@ -167,7 +168,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         if (method === 'DELETE' && !permissions.delete_quotes) return forbidden(request);
       }
 
-      if (pathname.startsWith('/api/settings/whatsapp') && !permissions.manage_integrations) {
+      if ((pathname.startsWith('/api/settings/whatsapp') || pathname.startsWith('/api/settings/email')) && !permissions.manage_integrations) {
         return forbidden(request);
       }
 

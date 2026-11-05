@@ -10,6 +10,8 @@ export const ACTION_LABELS: Record<string, string> = {
   laundry_received:     'Laundry batch received',
   quote_sent:           'Quote sent on WhatsApp',
   receipt_sent:         'Receipt sent on WhatsApp',
+  email_sent:           'Email sent',
+  reminder_sent:        'Reminder email sent',
   mfa_enabled:          'Two-factor auth enabled',
   mfa_disabled:         'Two-factor auth disabled',
   mfa_reset:            'Two-factor auth reset',
@@ -95,6 +97,14 @@ export function ActivityIcon({ action }: { action: string }) {
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      );
+    case 'email_sent':
+    case 'reminder_sent':
+      return (
+        <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="m22 7-10 6L2 7"/>
         </svg>
       );
     default:

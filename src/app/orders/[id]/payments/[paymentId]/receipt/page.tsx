@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
+import SendEmailButton from '@/app/components/SendEmailButton';
 import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
 import { groupItemsTotal, lineGroupsTotal } from '@/lib/pricing';
 import { formatMoneyOrDash } from '@/lib/money';
@@ -96,7 +97,7 @@ export default function PaymentReceiptPage() {
   const sectionTitle: React.CSSProperties = { fontFamily: docFont, fontSize: '9pt', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' };
 
   return (
-    <div className="max-w-[860px] mx-auto px-6 py-8 receipt-root" style={{ fontFamily: docFont, color: '#1a1a1a', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
+    <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 receipt-root" style={{ fontFamily: docFont, color: '#1a1a1a', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @media print {
@@ -114,11 +115,13 @@ export default function PaymentReceiptPage() {
       `}</style>
 
       {/* Screen nav */}
-      <div className="no-print flex justify-between items-center mb-7">
+      {/* On mobile: back link on its own line, buttons wrap and share the width */}
+      <div className="no-print flex flex-col items-stretch gap-3 mb-7 sm:flex-row sm:justify-between sm:items-center">
         <Link href={`/orders/${orderId}`} className="text-sm text-google-blue no-underline" style={{ fontFamily: "'Google Sans', Arial" }}>
           {tr.backToOrder}
         </Link>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 [&>button]:flex-1 [&>button]:justify-center [&>button]:whitespace-nowrap sm:[&>button]:flex-none">
+          <SendEmailButton endpoint={`/api/orders/${orderId}/payments/${paymentId}/send-email`} />
           <SendWhatsAppButton endpoint={`/api/orders/${orderId}/payments/${paymentId}/send-whatsapp`} defaultPhone={clientPhone} />
           <button
             onClick={() => window.print()}

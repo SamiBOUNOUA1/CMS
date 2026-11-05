@@ -727,6 +727,68 @@ const whatsappSettingsSchema = new Schema(
 whatsappSettingsSchema.plugin(tenantPlugin);
 export const WhatsAppSettings = models.WhatsAppSettings || model('WhatsAppSettings', whatsappSettingsSchema);
 
+// ── EMAIL SETTINGS ────────────────────────────────────────────────────────────
+// mode 'platform' = the operator's shared SMTP service (PLATFORM_SMTP_* env vars);
+// mode 'smtp' = the tenant's own SMTP account. smtpPassword is stored encrypted.
+const emailTemplateSchema = new Schema(
+  { subject: { type: String, default: '' }, body: { type: String, default: '' } },
+  { _id: false }
+);
+const emailSettingsSchema = new Schema(
+  {
+    enabled:      { type: Boolean, default: false },
+    mode:         { type: String, enum: ['platform', 'smtp'], default: 'platform' },
+    language:     { type: String, enum: ['en', 'fr'], default: 'fr' }, // language of the default templates
+    smtpHost:     { type: String, default: '', trim: true },
+    smtpPort:     { type: Number, default: 587 },
+    smtpSecure:   { type: Boolean, default: false },
+    smtpUser:     { type: String, default: '', trim: true },
+    smtpPassword: { type: String, default: '' },
+    fromName:     { type: String, default: '', trim: true },
+    fromEmail:    { type: String, default: '', trim: true, lowercase: true }, // smtp mode only
+    replyTo:      { type: String, default: '', trim: true, lowercase: true },
+    reminders: {
+      deposit:    { enabled: { type: Boolean, default: false }, days: { type: Number, default: 14, min: 0 } },
+      guestCount: { enabled: { type: Boolean, default: false }, days: { type: Number, default: 7,  min: 0 } },
+      thankYou:   { enabled: { type: Boolean, default: false }, days: { type: Number, default: 1,  min: 0 } },
+    },
+    // Empty subject/body = use the built-in default for that type.
+    templates: {
+      quote:      { type: emailTemplateSchema, default: () => ({}) },
+      receipt:    { type: emailTemplateSchema, default: () => ({}) },
+      deposit:    { type: emailTemplateSchema, default: () => ({}) },
+      guestCount: { type: emailTemplateSchema, default: () => ({}) },
+      thankYou:   { type: emailTemplateSchema, default: () => ({}) },
+    },
+  },
+  { timestamps: true }
+);
+emailSettingsSchema.plugin(tenantPlugin);
+export const EmailSettings = models.EmailSettings || model('EmailSettings', emailSettingsSchema);
+
+// ── EMAIL LOG ─────────────────────────────────────────────────────────────────
+const emailLogSchema = new Schema(
+  {
+    order:   { type: Schema.Types.ObjectId, ref: 'Order', default: null },
+    type:    { type: String, enum: ['quote', 'receipt', 'deposit', 'guestCount', 'thankYou', 'test'], required: true },
+    to:      { type: String, required: true },
+    subject: { type: String, default: '' },
+    status:  { type: String, enum: ['sent', 'failed'], required: true },
+    error:   { type: String, default: '' },
+    trigger: { type: String, enum: ['manual', 'auto'], default: 'manual' },
+    sentBy:  { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  },
+  { timestamps: true }
+);
+emailLogSchema.index({ order: 1, createdAt: -1 });
+// An automatic reminder is sent at most once per order and type.
+emailLogSchema.index(
+  { tenantId: 1, order: 1, type: 1 },
+  { unique: true, partialFilterExpression: { trigger: 'auto', status: 'sent' } }
+);
+emailLogSchema.plugin(tenantPlugin);
+export const EmailLog = models.EmailLog || model('EmailLog', emailLogSchema);
+
 // ── DOCUMENT LAYOUT SETTINGS ──────────────────────────────────────────────────
 // Shared printable-layout config for quote (devis) and payment receipt PDFs.
 const documentLayoutSettingsSchema = new Schema(
@@ -775,7 +837,7 @@ const activitySchema = new Schema(
       'order_status_changed', 'payment_created', 'quote_generated',
       'inventory_adjusted', 'laundry_sent', 'laundry_received',
       'kitchen_stock_adjusted', 'kitchen_recipe_saved',
-      'quote_sent', 'receipt_sent',
+      'quote_sent', 'receipt_sent', 'email_sent', 'reminder_sent',
       'mfa_enabled', 'mfa_disabled', 'mfa_reset',
     ]},
     entityType:  { type: String, required: true },
