@@ -63,7 +63,7 @@ Tenants turn on email in **Settings → Email**. From there they can email quote
    ```
    firebase apphosting:secrets:set CRON_SECRET          # any long random string
    firebase apphosting:secrets:set PLATFORM_SMTP_PASS   # your Resend API key
-   firebase apphosting:secrets:grantaccess CRON_SECRET,PLATFORM_SMTP_PASS --backend my-web-app
+   firebase apphosting:secrets:grantaccess CRON_SECRET,PLATFORM_SMTP_PASS --backend catering-management
    ```
    Never put these values in `apphosting.yaml` or any committed file.
 2. Create a Cloud Scheduler job that runs once a day (e.g. `0 8 * * *`, Europe/Paris):
