@@ -24,7 +24,9 @@ async function launchBrowser(): Promise<Browser> {
     process.env.AWS_LAMBDA_JS_RUNTIME ??= 'nodejs22.x';
     const chromium = (await import('@sparticuz/chromium')).default;
     return puppeteer.launch({
-      args: chromium.args,
+      // --single-process is meant for AWS Lambda; on Cloud Run it crashes the
+      // tab mid-navigation ("Navigating frame was detached").
+      args: chromium.args.filter(a => a !== '--single-process'),
       executablePath: await chromium.executablePath(),
       headless: true,
     });
@@ -72,7 +74,8 @@ export async function renderPagePdf(requestOrigin: string, path: string): Promis
   let browser: Browser | null = null;
   try {
     browser = await launchBrowser();
-    const page = await browser.newPage();
+    // Reuse the tab Chromium opens on launch instead of creating a second one.
+    const page = (await browser.pages())[0] ?? await browser.newPage();
     await page.setCookie({ name: 'cq_token', value: token, url: origin });
     await page.goto(`${origin}${path}`, { waitUntil: 'networkidle0', timeout: 60_000 });
     await page.emulateMediaType('print');
