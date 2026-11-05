@@ -115,6 +115,12 @@ async function buildTransportAndFrom(settings) {
     return { transport, from: name ? `"${name}" <${settings.fromEmail}>` : settings.fromEmail, replyTo };
   }
 
+  const { transport, fromAddr } = platformTransport();
+  return { transport, from: name ? `"${name}" <${fromAddr}>` : fromAddr, replyTo };
+}
+
+/** The operator's SMTP service (PLATFORM_SMTP_* env vars). */
+export function platformTransport() {
   const port = Number(process.env.PLATFORM_SMTP_PORT) || 587;
   const transport = nodemailer.createTransport({
     host: process.env.PLATFORM_SMTP_HOST,
@@ -124,8 +130,29 @@ async function buildTransportAndFrom(settings) {
       ? { user: process.env.PLATFORM_SMTP_USER, pass: process.env.PLATFORM_SMTP_PASS }
       : undefined,
   });
-  const fromAddr = process.env.PLATFORM_SMTP_FROM;
-  return { transport, from: name ? `"${name}" <${fromAddr}>` : fromAddr, replyTo };
+  return { transport, fromAddr: process.env.PLATFORM_SMTP_FROM };
+}
+
+/**
+ * Transport for system emails (e.g. password reset). Prefers the platform
+ * service; inside a tenant context it falls back to the tenant's own SMTP.
+ * Returns null when nothing is set up.
+ */
+export async function systemTransport(tenantSettings?) {
+  if (isPlatformEmailConfigured()) {
+    const { transport, fromAddr } = platformTransport();
+    return { transport, from: fromAddr };
+  }
+  if (tenantSettings && tenantSettings.mode === 'smtp' && !configProblem(tenantSettings)) {
+    const { transport, from } = await buildTransportAndFrom(tenantSettings);
+    return { transport, from };
+  }
+  return null;
+}
+
+/** Sends a plain email with no EmailLog/activity record (system messages). */
+export async function sendRawEmail({ transport, from, to, subject, text }) {
+  await transport.sendMail({ from, to, subject, text, html: textToHtml(text) });
 }
 
 interface SendParams {

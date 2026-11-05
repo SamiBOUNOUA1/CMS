@@ -60,7 +60,7 @@ const UserContext = createContext<UserContextValue | null>(null);
 
 // Pages that don't belong to a signed-in tenant user.
 const isPublicPath = (p: string | null) =>
-  !p || p.startsWith('/login') || p.startsWith('/license-expired') || p.startsWith('/platform');
+  !p || p.startsWith('/login') || p.startsWith('/license-expired') || p.startsWith('/reset-password') || p.startsWith('/platform');
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();

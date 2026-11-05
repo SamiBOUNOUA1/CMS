@@ -37,7 +37,7 @@ function useLicenseGuard(enabled: boolean) {
 export default function NavShell({ children }: NavShellProps) {
   const pathname = usePathname();
   // Pages that render without the tenant app chrome.
-  const isBare = pathname === '/login' || pathname === '/license-expired' || pathname.startsWith('/platform');
+  const isBare = pathname === '/login' || pathname === '/license-expired' || pathname === '/reset-password' || pathname.startsWith('/platform');
 
   useLicenseGuard(!isBare);
 

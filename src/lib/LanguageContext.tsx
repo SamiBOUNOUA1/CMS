@@ -43,7 +43,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (pathname?.startsWith('/login')) {
+    if (pathname?.startsWith('/login') || pathname?.startsWith('/reset-password')) {
       loadedRef.current = false;
       return;
     }

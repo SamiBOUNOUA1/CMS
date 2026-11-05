@@ -85,3 +85,10 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Public URL used in password reset emails (e.g. https://app.your-domain.com).
+  # Optional: without it, links are built from the request's host header.
+  # - variable: APP_BASE_URL
+  #   value: https://app.your-domain.com
+  #   availability:
+  #     - RUNTIME

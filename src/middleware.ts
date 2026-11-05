@@ -3,8 +3,8 @@ import { jwtVerify } from 'jose';
 import { MODULE_REGISTRY } from '@/lib/modules';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-const PUBLIC = ['/login', '/license-expired'];
-const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state', '/api/logs/client', '/api/cron/'];
+const PUBLIC = ['/login', '/license-expired', '/reset-password'];
+const PUBLIC_API = ['/api/auth/login', '/api/auth/password-reset','/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state', '/api/logs/client', '/api/cron/'];
 const PLATFORM_PUBLIC = ['/platform/login', '/api/platform/auth/login', '/api/platform/auth/logout', '/api/platform/auth/mfa/verify'];
 
 async function getEnabledModuleIds(request: NextRequest, tenantId: string): Promise<string[] | null> {

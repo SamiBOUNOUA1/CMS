@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useT } from '@/lib/LanguageContext';
+import { useUser } from '@/lib/UserContext';
 
 interface User {
   _id: string;
@@ -45,6 +46,9 @@ function roleColor(name: string) {
 export default function UsersPage() {
   const t = useT();
   const tu = t.users;
+  const { user: me } = useUser();
+  const isAdmin = me?.role === 'admin';
+  const myId = String(me?._id ?? me?.id ?? '');
   const [users, setUsers] = useState<User[]>([]);
   const [maxUsers, setMaxUsers] = useState(0); // plan limit on active users, 0 = unlimited
   const [roles, setRoles] = useState<Role[]>([]);
@@ -132,6 +136,15 @@ export default function UsersPage() {
     notify(patch.resetMfa ? tu.notifications.mfaReset : tu.notifications.updated);
   };
 
+  const sendReset = async (u: User) => {
+    if (!confirm(tu.sendResetConfirm.replace('{email}', u.email))) return;
+    const res = await fetch(`/api/admin/users/${u._id}/send-reset`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { notify(data.error || 'Error', 'error'); return; }
+    setEditUser(null);
+    notify(tu.resetSent.replace('{email}', u.email));
+  };
+
   const resetMfa = (id: string) => {
     if (confirm(tu.resetMfaConfirm)) updateUser(id, { resetMfa: true });
   };
@@ -178,7 +191,7 @@ export default function UsersPage() {
       {editUser && (
         <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 z-[200]">
           <div className="bg-g-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] p-5 sm:p-6 shadow-google-3">
-            <EditForm user={users.find(u => u._id === editUser)!} roles={roles} onSave={patch => updateUser(editUser, patch)} onResetMfa={() => resetMfa(editUser)} onCancel={() => setEditUser(null)} tu={tu} />
+            <EditForm user={users.find(u => u._id === editUser)!} roles={roles} onSave={patch => updateUser(editUser, patch)} onResetMfa={() => resetMfa(editUser)} onSendReset={isAdmin && editUser !== myId ? () => sendReset(users.find(u => u._id === editUser)!) : undefined} canSetPassword={isAdmin} onCancel={() => setEditUser(null)} tu={tu} />
           </div>
         </div>
       )}
@@ -295,7 +308,7 @@ export default function UsersPage() {
             <div key={u._id} className="flex items-center" style={{ padding: '14px 20px', gap: 12, borderTop: i > 0 ? '1px solid #f1f3f4' : 'none' }}>
               {editUser === u._id ? (
                 <div className="flex-1">
-                  <EditForm user={u} roles={roles} onSave={patch => updateUser(u._id, patch)} onResetMfa={() => resetMfa(u._id)} onCancel={() => setEditUser(null)} inline tu={tu} />
+                  <EditForm user={u} roles={roles} onSave={patch => updateUser(u._id, patch)} onResetMfa={() => resetMfa(u._id)} onSendReset={isAdmin && u._id !== myId ? () => sendReset(u) : undefined} canSetPassword={isAdmin} onCancel={() => setEditUser(null)} inline tu={tu} />
                 </div>
               ) : (
                 <>
@@ -338,11 +351,14 @@ export default function UsersPage() {
   );
 }
 
-function EditForm({ user, roles, onSave, onResetMfa, onCancel, inline, tu }: {
+function EditForm({ user, roles, onSave, onResetMfa, onSendReset, canSetPassword, onCancel, inline, tu }: {
   user: User;
   roles: Role[];
   onSave: (patch: Partial<User & { password?: string }>) => void;
   onResetMfa: () => void;
+  /** Only set for admins editing someone else. */
+  onSendReset?: () => void;
+  canSetPassword: boolean;
   onCancel: () => void;
   inline?: boolean;
   tu: ReturnType<typeof useT>['users'];
@@ -368,10 +384,12 @@ function EditForm({ user, roles, onSave, onResetMfa, onCancel, inline, tu }: {
           {roles.map(r => <option key={r._id} value={r.name}>{r.label}</option>)}
         </select>
       </div>
-      <div style={{ flex: inline ? '1 1 150px' : '1 1 100%' }}>
-        {!inline && <label className={labelCls}>{tu.newPassword}</label>}
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} placeholder={tu.newPasswordPlaceholder} />
-      </div>
+      {canSetPassword && (
+        <div style={{ flex: inline ? '1 1 150px' : '1 1 100%' }}>
+          {!inline && <label className={labelCls}>{tu.newPassword}</label>}
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} placeholder={tu.newPasswordPlaceholder} />
+        </div>
+      )}
       <div className="flex gap-2" style={{ marginTop: inline ? 0 : 4 }}>
         <button onClick={save}
           className="bg-google-blue text-white border-none rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer"
@@ -383,6 +401,11 @@ function EditForm({ user, roles, onSave, onResetMfa, onCancel, inline, tu }: {
           <button onClick={onResetMfa}
             className="bg-transparent text-google-red border border-g-border rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer whitespace-nowrap"
            >{tu.resetMfa}</button>
+        )}
+        {onSendReset && user.isActive && (
+          <button onClick={onSendReset}
+            className="bg-transparent text-google-blue border border-g-border rounded-lg py-[9px] px-4 text-[13px] font-medium cursor-pointer whitespace-nowrap"
+           >{tu.sendReset}</button>
         )}
       </div>
     </div>

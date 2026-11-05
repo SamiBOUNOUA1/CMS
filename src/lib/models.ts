@@ -839,6 +839,7 @@ const activitySchema = new Schema(
       'kitchen_stock_adjusted', 'kitchen_recipe_saved',
       'quote_sent', 'receipt_sent', 'email_sent', 'reminder_sent',
       'mfa_enabled', 'mfa_disabled', 'mfa_reset',
+      'password_reset_sent', 'password_reset',
     ]},
     entityType:  { type: String, required: true },
     entityId:    { type: Schema.Types.ObjectId, required: true },
@@ -851,6 +852,28 @@ const activitySchema = new Schema(
 activitySchema.index({ createdAt: -1 });
 activitySchema.plugin(tenantPlugin);
 export const Activity = models.Activity || model('Activity', activitySchema);
+
+// ── PASSWORD RESET TOKEN ──────────────────────────────────────────────────────
+// One-time links emailed by a tenant admin or the platform operator. No
+// tenantPlugin: the public reset page looks tokens up across all tenants.
+// Only the sha256 hash of the token is stored.
+const passwordResetTokenSchema = new Schema(
+  {
+    user:      { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    tenantId:  { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
+    tokenHash: { type: String, required: true, unique: true },
+    expiresAt: { type: Date, required: true },
+    usedAt:    { type: Date, default: null },
+    requestedBy: {
+      kind: { type: String, enum: ['tenant_admin', 'platform'], required: true },
+      id:   { type: Schema.Types.ObjectId, default: null },
+      name: { type: String, default: '' },
+    },
+  },
+  { timestamps: true }
+);
+passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+export const PasswordResetToken = models.PasswordResetToken || model('PasswordResetToken', passwordResetTokenSchema);
 
 // ── KITCHEN STOCK ─────────────────────────────────────────────────────────────
 const kitchenStockItemSchema = new Schema(
