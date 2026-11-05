@@ -50,12 +50,13 @@ env:
       - RUNTIME
 
   # ── Email (see README "Email reminders") ──────────────────────────────────
-  # Both secrets must exist in Secret Manager before deploying (see README).
-  # CRON_SECRET protects /api/cron/reminders (Cloud Scheduler sends it as a Bearer token).
-  - variable: CRON_SECRET
-    secret: CRON_SECRET
-    availability:
-      - RUNTIME
+  # Daily reminders are turned off for now. To turn them on: create the secret
+  # (see README "Daily reminder job"), uncomment this block, and add the
+  # Cloud Scheduler job. While it's off, /api/cron/reminders always answers 401.
+  # - variable: CRON_SECRET
+  #   secret: CRON_SECRET
+  #   availability:
+  #     - RUNTIME
 
   # Platform email service (Resend over SMTP), used by tenants who pick
   # "platform" mode. Tenants can also use their own SMTP.
