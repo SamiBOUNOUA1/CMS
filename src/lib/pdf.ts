@@ -2,6 +2,7 @@ import puppeteer, { type Browser } from 'puppeteer-core';
 import { signToken } from '@/lib/auth';
 import { buildPermissions } from '@/lib/permissions';
 import { getTenantId } from '@/lib/tenantContext';
+import { logError } from '@/lib/logger';
 
 // Common local Chrome/Edge install locations, used as a dev fallback when no
 // PUPPETEER_EXECUTABLE_PATH is set and we are not in a serverless environment.
@@ -77,12 +78,24 @@ export async function renderPagePdf(requestOrigin: string, path: string): Promis
     ? `http://127.0.0.1:${process.env.PORT || 8080}`
     : requestOrigin;
   const token = await mintInternalToken();
+  // Recent Chromium events, attached to the error log if rendering fails.
+  const trail: string[] = [];
+  const note = (s: string) => { trail.push(s.slice(0, 300)); if (trail.length > 40) trail.shift(); };
   let browser: Browser | null = null;
   try {
     browser = await launchBrowser();
+    browser.process()?.stderr?.on('data', (d: Buffer) => {
+      for (const line of d.toString().split('\n')) if (line.trim()) note(`stderr: ${line.trim()}`);
+    });
+    browser.process()?.on('exit', (code, signal) => note(`chromium exited code=${code} signal=${signal}`));
     // Reuse the tab Chromium opens on launch instead of creating a second one.
     const page = (await browser.pages())[0] ?? await browser.newPage();
-    page.on('error', err => console.error('[pdf] Chromium tab crashed:', err));    await page.setCookie({ name: 'cq_token', value: token, url: origin });
+    page.on('error', err => note(`tab crashed: ${err.message}`));
+    page.on('pageerror', err => note(`page js error: ${(err as Error).message}`));
+    page.on('requestfailed', r => note(`request failed: ${r.url()} ${r.failure()?.errorText ?? ''}`));
+    page.on('response', r => { if (r.status() >= 300) note(`HTTP ${r.status()} ${r.url()}`); });
+    page.on('framenavigated', f => { if (f === page.mainFrame()) note(`navigated: ${f.url()}`); });
+    await page.setCookie({ name: 'cq_token', value: token, url: origin });
     await page.goto(`${origin}${path}`, { waitUntil: 'networkidle0', timeout: 60_000 });
     await page.emulateMediaType('print');
     const pdf = await page.pdf({
@@ -91,7 +104,12 @@ export async function renderPagePdf(requestOrigin: string, path: string): Promis
       preferCSSPageSize: true,
     });
     return Buffer.from(pdf);
+  } catch (err) {
+    const e = err as Error;
+    const detail = `PDF render failed (${path}): ${e?.message}\n--- Chromium trail ---\n${trail.join('\n') || '(nothing recorded)'}`;
+    await logError(Object.assign(new Error(detail), { name: 'PdfRenderError' }), { stack: detail });
+    throw err;
   } finally {
-    if (browser) await browser.close();
+    if (browser) await browser.close().catch(() => {});
   }
 }
