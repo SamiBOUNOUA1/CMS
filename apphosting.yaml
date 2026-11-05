@@ -48,3 +48,38 @@ env:
     secret: MFA_ENCRYPTION_KEY
     availability:
       - RUNTIME
+
+  # ── Email (see README "Email reminders") ──────────────────────────────────
+  # Both secrets must exist in Secret Manager before deploying (see README).
+  # CRON_SECRET protects /api/cron/reminders (Cloud Scheduler sends it as a Bearer token).
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
+    availability:
+      - RUNTIME
+
+  # Platform email service (Resend over SMTP), used by tenants who pick
+  # "platform" mode. Tenants can also use their own SMTP.
+  - variable: PLATFORM_SMTP_HOST
+    value: smtp.resend.com
+    availability:
+      - RUNTIME
+  - variable: PLATFORM_SMTP_PORT
+    value: "465"
+    availability:
+      - RUNTIME
+  # TODO: @resend.dev only delivers to your own Resend account address.
+  # Verify your domain in Resend → Domains and change this to e.g. no-reply@your-domain.com.
+  - variable: PLATFORM_SMTP_FROM
+    value: catero@resend.dev
+    availability:
+      - RUNTIME
+  # Resend's SMTP username is always "resend".
+  - variable: PLATFORM_SMTP_USER
+    value: resend
+    availability:
+      - RUNTIME
+  # Your Resend API key (re_...). Never put it in this file.
+  - variable: PLATFORM_SMTP_PASS
+    secret: PLATFORM_SMTP_PASS
+    availability:
+      - RUNTIME

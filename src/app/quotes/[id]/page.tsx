@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import SendWhatsAppButton from '@/app/components/SendWhatsAppButton';
+import SendEmailButton from '@/app/components/SendEmailButton';
 import { DEFAULT_LAYOUT, resolveLayout, docFontFamily } from '@/lib/documentLayout';
 import { formatMoney } from '@/lib/money';
 
@@ -60,7 +61,7 @@ export default function QuoteDetailPage() {
   return (
     <div className="quote-page" style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px', ['--pdf-accent' as any]: layout.accentColor, ['--pdf-font' as any]: docFont }}>
       {/* Back breadcrumb + Print */}
-      <div className="no-print quote-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="no-print quote-toolbar flex flex-col items-stretch gap-3 mb-6 sm:flex-row sm:justify-between sm:items-center">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--google-text-secondary)', fontFamily: "'Google Sans'" }}>
           <Link href="/orders" style={{ color: '#1a73e8', textDecoration: 'none' }}>Orders</Link>
           <span>›</span>
@@ -75,7 +76,8 @@ export default function QuoteDetailPage() {
             <span style={{ background: 'var(--google-green-light)', color: '#137333', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>Active</span>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="flex flex-wrap items-center gap-2.5 [&>button]:flex-1 [&>button]:justify-center [&>button]:whitespace-nowrap sm:[&>button]:flex-none">
+          <SendEmailButton endpoint={`/api/quotes/${id}/send-email`} />
           <SendWhatsAppButton endpoint={`/api/quotes/${id}/send-whatsapp`} defaultPhone={clientPhone} />
           <button
             onClick={() => window.print()}

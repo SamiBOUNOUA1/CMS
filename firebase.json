@@ -1,6 +1,6 @@
 {
   "apphosting": {
-    "backendId": "my-web-app",
+    "backendId": "catering-management",
     "rootDir": "/",
     "ignore": [
       "node_modules",
@@ -9,7 +9,11 @@
       "firebase-debug.*.log",
       "functions",
       ".env",
-      ".env.*"
+      ".env.*",
+      ".next",
+      ".next-dev",
+      ".claude",
+      "*.tsbuildinfo"
     ]
   }
 }

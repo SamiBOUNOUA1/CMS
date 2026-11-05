@@ -14,6 +14,7 @@ import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/compone
 import { itemLineTotal, lineGroupsTotal } from '@/lib/pricing';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 import PackingChecklistModal from '@/app/components/PackingChecklistModal';
+import OrderEmailsPanel from '@/app/components/OrderEmailsPanel';
 import { useUser } from '@/lib/UserContext';
 import { formatMoneyOrDash } from '@/lib/money';
 import { SkeletonDetail } from '@/app/components/Skeleton';
@@ -505,6 +506,8 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      <OrderEmailsPanel orderId={String(id)} className={cardCls} />
 
       </>)}
 
