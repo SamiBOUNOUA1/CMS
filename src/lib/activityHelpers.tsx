@@ -15,6 +15,8 @@ export const ACTION_LABELS: Record<string, string> = {
   mfa_enabled:          'Two-factor auth enabled',
   mfa_disabled:         'Two-factor auth disabled',
   mfa_reset:            'Two-factor auth reset',
+  password_reset_sent:  'Password reset link sent',
+  password_reset:       'Password reset',
 };
 
 export function ActivityIcon({ action }: { action: string }) {
@@ -93,6 +95,8 @@ export function ActivityIcon({ action }: { action: string }) {
     case 'mfa_enabled':
     case 'mfa_disabled':
     case 'mfa_reset':
+    case 'password_reset_sent':
+    case 'password_reset':
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>

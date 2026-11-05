@@ -21,7 +21,13 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (body.name) update.name = body.name;
     if (body.role) update.role = body.role;
     if (typeof body.isActive === 'boolean') update.isActive = body.isActive;
-    if (body.password) update.passwordHash = await hash(body.password, 12);
+    // Only admins may set another user's password.
+    if (body.password) {
+      if (auth.role !== 'admin') return NextResponse.json({ error: 'Only admins can change passwords' }, { status: 403 });
+      if (String(body.password).length < 8)
+        return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+      update.passwordHash = await hash(body.password, 12);
+    }
 
     // Re-activating a user counts against the plan's user limit.
     if (body.isActive === true) {

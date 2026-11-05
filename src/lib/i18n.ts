@@ -105,6 +105,23 @@ export const translations: Record<string, any> = {
       mfaExpired: 'Your sign-in session expired. Please sign in again.',
     },
 
+    // Public page opened from the emailed reset link
+    resetPassword: {
+      title: 'Choose a new password',
+      forAccount: 'For the account {email}',
+      newPassword: 'New password',
+      confirmPassword: 'Confirm new password',
+      minLength: 'At least 8 characters',
+      mismatch: 'The passwords do not match.',
+      save: 'Save new password',
+      saving: 'Saving…',
+      checking: 'Checking the link…',
+      invalid: 'This link is invalid or has expired. Ask your administrator to send a new one.',
+      success: 'Your password has been changed. You can now sign in with it.',
+      failed: 'The password could not be changed.',
+      goToLogin: 'Go to sign in',
+    },
+
     // License blocked page
     license: {
       title: 'Access unavailable',
@@ -980,6 +997,9 @@ export const translations: Record<string, any> = {
       mfaOn: 'Two-factor authentication is on',
       resetMfa: 'Reset 2FA',
       resetMfaConfirm: 'Turn off two-factor authentication for this user? They will sign in with their password only and can set it up again from their profile.',
+      sendReset: 'Send reset link',
+      sendResetConfirm: 'Email a password reset link to {email}? The link works once and expires in 1 hour. Their current password keeps working until they choose a new one.',
+      resetSent: 'Reset link sent to {email}',
     },
 
     // Settings
@@ -1901,6 +1921,8 @@ export const translations: Record<string, any> = {
         mfa_enabled: 'Two-factor auth enabled',
         mfa_disabled: 'Two-factor auth disabled',
         mfa_reset: 'Two-factor auth reset',
+        password_reset_sent: 'Password reset link sent',
+        password_reset: 'Password reset',
       },
     },
 
@@ -2432,6 +2454,23 @@ export const translations: Record<string, any> = {
       back: 'Retour à la connexion',
       invalidCode: 'Code invalide',
       mfaExpired: 'Votre session de connexion a expiré. Veuillez vous reconnecter.',
+    },
+
+    // Page publique ouverte depuis le lien de réinitialisation
+    resetPassword: {
+      title: 'Choisissez un nouveau mot de passe',
+      forAccount: 'Pour le compte {email}',
+      newPassword: 'Nouveau mot de passe',
+      confirmPassword: 'Confirmez le nouveau mot de passe',
+      minLength: 'Au moins 8 caractères',
+      mismatch: 'Les mots de passe ne correspondent pas.',
+      save: 'Enregistrer le mot de passe',
+      saving: 'Enregistrement…',
+      checking: 'Vérification du lien…',
+      invalid: 'Ce lien est invalide ou a expiré. Demandez à votre administrateur de vous en envoyer un nouveau.',
+      success: 'Votre mot de passe a été modifié. Vous pouvez maintenant vous connecter.',
+      failed: 'Le mot de passe n\'a pas pu être modifié.',
+      goToLogin: 'Aller à la connexion',
     },
 
     // License blocked page
@@ -3309,6 +3348,9 @@ export const translations: Record<string, any> = {
       mfaOn: 'L\'authentification à deux facteurs est activée',
       resetMfa: 'Réinitialiser la 2FA',
       resetMfaConfirm: 'Désactiver l\'authentification à deux facteurs pour cet utilisateur ? Il se connectera avec son mot de passe uniquement et pourra la réactiver depuis son profil.',
+      sendReset: 'Envoyer un lien de réinitialisation',
+      sendResetConfirm: 'Envoyer un lien de réinitialisation du mot de passe à {email} ? Le lien n\'est utilisable qu\'une fois et expire dans 1 heure. Le mot de passe actuel reste valable jusqu\'à ce qu\'un nouveau soit choisi.',
+      resetSent: 'Lien de réinitialisation envoyé à {email}',
     },
 
     // Settings
@@ -4230,6 +4272,8 @@ export const translations: Record<string, any> = {
         mfa_enabled: 'Double authentification activée',
         mfa_disabled: 'Double authentification désactivée',
         mfa_reset: 'Double authentification réinitialisée',
+        password_reset_sent: 'Lien de réinitialisation du mot de passe envoyé',
+        password_reset: 'Mot de passe réinitialisé',
       },
     },
 

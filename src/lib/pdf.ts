@@ -18,6 +18,10 @@ const LOCAL_CHROME_PATHS = [
 async function launchBrowser(): Promise<Browser> {
   // In production / serverless (Cloud Run), use the bundled serverless Chromium.
   if (process.env.NODE_ENV === 'production' || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    // @sparticuz/chromium only unpacks its bundled system libraries (libnss3 etc.)
+    // when it thinks it's on AWS Lambda. Cloud Run lacks them, so opt in here.
+    // Must be set before the import: the package reads it at load time.
+    process.env.AWS_LAMBDA_JS_RUNTIME ??= 'nodejs22.x';
     const chromium = (await import('@sparticuz/chromium')).default;
     return puppeteer.launch({
       args: chromium.args,

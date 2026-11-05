@@ -118,6 +118,17 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
     }
   };
 
+  const sendResetLink = async (userId: string, email: string) => {
+    if (!confirm(`Email a password reset link to ${email}? It works once and expires in 1 hour.`)) return;
+    setError(''); setNotice('');
+    try {
+      await api(`/api/platform/tenants/${params.id}/send-reset`, { method: 'POST', body: JSON.stringify({ userId }) });
+      setNotice(`Reset link sent to ${email}.`);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const deleteTenant = async () => {
     if (!data || confirmName !== data.tenant.name) return;
     setDeleting(true); setError('');
@@ -261,7 +272,9 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
               <div className="text-sm text-g-text">{a.name}{!a.isActive && <span className="text-g-text-2"> (inactive)</span>}</div>
               <div className="text-xs text-g-text-2">{a.email}</div>
             </div>
-            <button className={btnOutline} onClick={() => resetPassword(a._id, a.email)}>Reset password</button>
+            {a.isActive && <button className={btnFilled} onClick={() => sendResetLink(a._id, a.email)}>Send reset link</button>}
+            <button className={btnOutline} onClick={() => resetPassword(a._id, a.email)}
+              title="Fallback when the admin can't receive email or lost their phone. Also turns off two-factor auth.">Set temporary password</button>
           </div>
         ))}
       </FormCard>
