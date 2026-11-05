@@ -4,9 +4,11 @@ runConfig:
   minInstances: 0
   # maxInstances: 100
   # concurrency: 80
-  # Chromium (used for WhatsApp PDF generation) needs more CPU/memory than the default.
+  # Chromium (PDFs for email/WhatsApp) needs more CPU/memory than the default.
+  # /tmp is in-memory on Cloud Run, and the unpacked Chromium lives there too;
+  # 1024 MiB is likely too tight (tab crashed mid-render: "frame was detached").
   cpu: 1
-  memoryMiB: 1024
+  memoryMiB: 2048
 
 # Environment variables and secrets.
 env:
