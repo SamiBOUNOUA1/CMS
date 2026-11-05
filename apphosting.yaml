@@ -83,4 +83,5 @@ env:
   - variable: PLATFORM_SMTP_PASS
     secret: PLATFORM_SMTP_PASS
     availability:
+      - BUILD
       - RUNTIME
