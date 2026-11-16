@@ -15,6 +15,8 @@ interface WhatsAppForm {
   quoteTemplateLang: string;
   receiptTemplateName: string;
   receiptTemplateLang: string;
+  invoiceTemplateName: string;
+  invoiceTemplateLang: string;
 }
 
 const EMPTY: WhatsAppForm = {
@@ -28,6 +30,8 @@ const EMPTY: WhatsAppForm = {
   quoteTemplateLang: 'fr',
   receiptTemplateName: '',
   receiptTemplateLang: 'fr',
+  invoiceTemplateName: '',
+  invoiceTemplateLang: 'fr',
 };
 
 export default function WhatsAppSettingsPage() {
@@ -55,6 +59,8 @@ export default function WhatsAppSettingsPage() {
           quoteTemplateLang:   s.quoteTemplateLang || 'fr',
           receiptTemplateName: s.receiptTemplateName || '',
           receiptTemplateLang: s.receiptTemplateLang || 'fr',
+          invoiceTemplateName: s.invoiceTemplateName || '',
+          invoiceTemplateLang: s.invoiceTemplateLang || 'fr',
         });
       })
       .catch(() => showNotif(ts.loadFailed, 'error'))
@@ -147,12 +153,20 @@ export default function WhatsAppSettingsPage() {
           <FormInput value={form.quoteTemplateLang} onChange={e => set('quoteTemplateLang', e.target.value)} placeholder={ts.langPlaceholder} maxLength={8} />
         </Field>
       </FormGrid>
-      <FormGrid className="mb-8">
+      <FormGrid className="mb-3">
         <Field label={ts.receiptTemplateName}>
           <FormInput value={form.receiptTemplateName} onChange={e => set('receiptTemplateName', e.target.value)} placeholder={ts.receiptTemplateNamePlaceholder} />
         </Field>
         <Field label={ts.receiptTemplateLang} className="max-w-[160px]">
           <FormInput value={form.receiptTemplateLang} onChange={e => set('receiptTemplateLang', e.target.value)} placeholder={ts.langPlaceholder} maxLength={8} />
+        </Field>
+      </FormGrid>
+      <FormGrid className="mb-8">
+        <Field label={ts.invoiceTemplateName}>
+          <FormInput value={form.invoiceTemplateName} onChange={e => set('invoiceTemplateName', e.target.value)} placeholder={ts.invoiceTemplateNamePlaceholder} />
+        </Field>
+        <Field label={ts.invoiceTemplateLang} className="max-w-[160px]">
+          <FormInput value={form.invoiceTemplateLang} onChange={e => set('invoiceTemplateLang', e.target.value)} placeholder={ts.langPlaceholder} maxLength={8} />
         </Field>
       </FormGrid>
 

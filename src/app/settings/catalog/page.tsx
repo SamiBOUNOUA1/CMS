@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useT, useCurrency } from '@/lib/LanguageContext';
 import { formatMoney } from '@/lib/money';
+import { packPrice, packMarginAmount, packItemsTotal } from '@/lib/pricing';
 
 interface Category {
   _id: string;
@@ -31,14 +32,24 @@ interface Product {
   _id: string;
   name: string;
   shortDescription?: string;
-  productType: 'simple' | 'bundle';
+  productType: 'simple' | 'bundle' | 'pack';
   defaultPrice?: number;
   unit?: string;
   category?: { _id: string; name: string };
   subItems?: SubItem[];
   packingItems?: SubItem[];
   options?: ProductOption[];
+  packItems?: PackItem[];
+  marginType?: 'fixed' | 'percent';
+  marginValue?: number;
   linkedRecipe?: { _id: string; name: string; nameFr?: string } | null;
+}
+
+/** A priced component of a pack product. Pack price = sum of these + margin. */
+interface PackItem {
+  _id: string;
+  name: string;
+  price: number | string;
 }
 
 interface EditFields {
@@ -53,7 +64,32 @@ interface EditFields {
   options: ProductOption[];
   newOptionName: string;
   newOptionPrice: string;
+  packItems: PackItem[];
+  newPackItemName: string;
+  newPackItemPrice: string;
+  marginType: 'fixed' | 'percent';
+  marginValue: number | string;
 }
+
+// `linkedRecipe` is populated on GET but a bare id on the PATCH response.
+const toEditFields = (p: Product): EditFields => ({
+  defaultPrice: p.defaultPrice ?? '',
+  shortDescription: p.shortDescription ?? '',
+  category: p.category?._id ?? '',
+  linkedRecipe: p.linkedRecipe?._id ?? (p.linkedRecipe as unknown as string) ?? '',
+  subItems: p.subItems ?? [],
+  newSubItemInput: '',
+  packingItems: p.packingItems ?? [],
+  newPackingItemInput: '',
+  options: p.options ?? [],
+  newOptionName: '',
+  newOptionPrice: '',
+  packItems: p.packItems ?? [],
+  newPackItemName: '',
+  newPackItemPrice: '',
+  marginType: p.marginType === 'percent' ? 'percent' : 'fixed',
+  marginValue: p.marginValue ?? 0,
+});
 
 interface Notification {
   msg: string;
@@ -108,7 +144,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
 
-  const [typeFilter, setTypeFilter] = useState<'all' | 'simple' | 'bundle'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'simple' | 'bundle' | 'pack'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const [form, setForm] = useState({ name: '', shortDescription: '', productType: 'simple', defaultPrice: '', unit: '', category: '' });
@@ -194,43 +230,13 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
     if (!res.ok) { notify(tp.notifications.saveFailed, 'error'); return null; }
     const { product: updated } = await res.json();
     setProducts(ps => ps.map(p => p._id === product._id ? updated : p));
-    setEditFields(prev => ({
-      ...prev,
-      [product._id]: {
-        defaultPrice: updated.defaultPrice ?? '',
-        shortDescription: updated.shortDescription ?? '',
-        category: updated.category?._id ?? '',
-        linkedRecipe: updated.linkedRecipe?._id ?? updated.linkedRecipe ?? '',
-        subItems: updated.subItems ?? [],
-        newSubItemInput: '',
-        packingItems: updated.packingItems ?? [],
-        newPackingItemInput: '',
-        options: updated.options ?? [],
-        newOptionName: '',
-        newOptionPrice: ''
-      }
-    }));
+    setEditFields(prev => ({ ...prev, [product._id]: toEditFields(updated) }));
     if (successMsg) notify(successMsg);
     return updated;
   };
 
   const initEditFields = (product: Product) => {
-    setEditFields(prev => ({
-      ...prev,
-      [product._id]: prev[product._id] ?? {
-        defaultPrice: product.defaultPrice ?? '',
-        shortDescription: product.shortDescription ?? '',
-        category: product.category?._id ?? '',
-        linkedRecipe: product.linkedRecipe?._id ?? '',
-        subItems: product.subItems ?? [],
-        newSubItemInput: '',
-        packingItems: product.packingItems ?? [],
-        newPackingItemInput: '',
-        options: product.options ?? [],
-        newOptionName: '',
-        newOptionPrice: ''
-      }
-    }));
+    setEditFields(prev => ({ ...prev, [product._id]: prev[product._id] ?? toEditFields(product) }));
   };
 
   const setEdit = (id: string, patch: Partial<EditFields>) =>
@@ -293,10 +299,44 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
     setEdit(id, { options: ef.options.filter(o => o._id !== optId) });
   };
 
+  const stageAddPackItem = (id: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    const name = ef.newPackItemName.trim();
+    if (!name) return;
+    setEdit(id, {
+      packItems: [...ef.packItems, { _id: `new-${Date.now()}`, name, price: Math.max(0, Number(ef.newPackItemPrice) || 0) }],
+      newPackItemName: '',
+      newPackItemPrice: ''
+    });
+  };
+
+  const stageSetPackItemPrice = (id: string, itemId: string, price: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    setEdit(id, { packItems: ef.packItems.map(i => i._id === itemId ? { ...i, price } : i) });
+  };
+
+  const stageRemovePackItem = (id: string, itemId: string) => {
+    const ef = editFields[id];
+    if (!ef) return;
+    setEdit(id, { packItems: ef.packItems.filter(i => i._id !== itemId) });
+  };
+
   const saveAll = async (product: Product) => {
     const ef = editFields[product._id];
     if (!ef) return;
     await patchProduct(product, {
+      // Pack only — the server derives defaultPrice from these and ignores the one below.
+      ...(product.productType === 'pack' ? {
+        packItems: ef.packItems.map(i => ({
+          ...(i._id?.startsWith('new-') ? {} : { _id: i._id }),
+          name: i.name,
+          price: Math.max(0, Number(i.price) || 0)
+        })),
+        marginType: ef.marginType,
+        marginValue: Math.max(0, Number(ef.marginValue) || 0)
+      } : {}),
       defaultPrice: Number(ef.defaultPrice) || 0,
       shortDescription: (ef.shortDescription as string).trim(),
       category: ef.category || null,
@@ -356,6 +396,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
               <select value={form.productType} onChange={e => setField('productType', e.target.value)} className={inputCls}>
                 <option value="simple">{tp.simple}</option>
                 <option value="bundle">{tp.bundle}</option>
+                <option value="pack">{tp.pack}</option>
               </select>
             </div>
             <div className="sm:col-span-2">
@@ -364,7 +405,11 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
             </div>
             <div>
               <label className={labelCls}>{tp.price}</label>
-              <input type="number" min="0" step="0.01" value={form.defaultPrice} onChange={e => setField('defaultPrice', e.target.value)} placeholder="0.00" className={inputCls} />
+              {form.productType === 'pack' ? (
+                <p className="text-xs text-g-text-3 m-0 py-2.5">{tp.packPriceHint}</p>
+              ) : (
+                <input type="number" min="0" step="0.01" value={form.defaultPrice} onChange={e => setField('defaultPrice', e.target.value)} placeholder="0.00" className={inputCls} />
+              )}
             </div>
             <div>
               <label className={labelCls}>{tp.unit}</label>
@@ -401,7 +446,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
             <span className="text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em] flex-shrink-0">
               {tp.productType}
             </span>
-            {(['all', 'simple', 'bundle'] as const).map(type => (
+            {(['all', 'simple', 'bundle', 'pack'] as const).map(type => (
               <button
                 key={type}
                 onClick={() => setTypeFilter(type)}
@@ -413,7 +458,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
 
                 }}
               >
-                {type === 'all' ? tp.allTypes : type === 'simple' ? tp.simple : tp.bundle}
+                {type === 'all' ? tp.allTypes : type === 'simple' ? tp.simple : type === 'pack' ? tp.pack : tp.bundle}
               </button>
             ))}
           </div>
@@ -474,8 +519,8 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-g-text">{product.name}</span>
                     <span className="rounded-[10px] px-2 py-px text-[11px] font-medium" style={{
-                      background: product.productType === 'bundle' ? 'var(--google-red-light)' : 'var(--google-blue-light)',
-                      color: product.productType === 'bundle' ? 'var(--google-red-accent)' : 'var(--google-blue-accent)' }}>
+                      background: product.productType === 'bundle' ? 'var(--google-red-light)' : product.productType === 'pack' ? 'var(--google-green-light)' : 'var(--google-blue-light)',
+                      color: product.productType === 'bundle' ? 'var(--google-red-accent)' : product.productType === 'pack' ? 'var(--google-green-accent)' : 'var(--google-blue-accent)' }}>
                       {product.productType}
                     </span>
                     {product.category?.name && (
@@ -516,6 +561,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
               {expandedId === product._id && (() => {
                 const ef = editFields[product._id];
                 if (!ef) return null;
+                const isPack = product.productType === 'pack';
                 return (
                   <div className="border-t border-g-border p-3.5 sm:p-[18px]">
 
@@ -525,9 +571,11 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                         <label className={labelCls}>{tp.price}</label>
                         <input
                           type="number" min="0" step="0.01"
-                          value={ef.defaultPrice as string}
+                          value={isPack ? packPrice(ef.packItems, ef.marginType, ef.marginValue) : ef.defaultPrice as string}
                           onChange={e => setEdit(product._id, { defaultPrice: e.target.value })}
-                          className={inputCls}
+                          readOnly={isPack}
+                          title={isPack ? tp.packPriceHint : undefined}
+                          className={`${inputCls} ${isPack ? 'opacity-70 cursor-not-allowed' : ''}`}
                         />
                       </div>
                       <div>
@@ -570,8 +618,103 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                       </div>
                     )}
 
-                    {/* Sub-items */}
-                    <div className="mb-5">
+                    {/* Pack items + margin (pack products only) */}
+                    {isPack && (
+                      <div className="mb-5">
+                        <p className="m-0 mb-1 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em]">
+                          {tp.packItems}
+                        </p>
+                        <p className="m-0 mb-2.5 text-[12px] text-g-text-3">{tp.packItemsHint}</p>
+                        {ef.packItems.length === 0 ? (
+                          <p className="text-[13px] text-g-text-3 mb-2.5">{tp.noPackItems}</p>
+                        ) : (
+                          <div className="mb-2.5">
+                            {ef.packItems.map(pi => (
+                              <div key={pi._id} className="flex items-center gap-2 py-1 border-b border-g-border">
+                                <span className="text-[13px] text-g-text-2 flex-1">· {pi.name}</span>
+                                <input
+                                  type="number" min="0" step="0.01"
+                                  value={pi.price}
+                                  onChange={e => stageSetPackItemPrice(product._id, pi._id, e.target.value)}
+                                  className={inputCls}
+                                  style={{ maxWidth: 110 }}
+                                />
+                                <button onClick={() => stageRemovePackItem(product._id, pi._id)}
+                                  className="inline-flex items-center justify-center w-6 h-6 rounded-full border-none bg-transparent cursor-pointer text-google-red">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <input
+                            value={ef.newPackItemName}
+                            onChange={e => setEdit(product._id, { newPackItemName: e.target.value })}
+                            onKeyDown={e => e.key === 'Enter' && stageAddPackItem(product._id)}
+                            placeholder={tp.packItemNamePlaceholder}
+                            className={`${inputCls} flex-1`}
+                          />
+                          <input
+                            type="number" min="0" step="0.01"
+                            value={ef.newPackItemPrice}
+                            onChange={e => setEdit(product._id, { newPackItemPrice: e.target.value })}
+                            onKeyDown={e => e.key === 'Enter' && stageAddPackItem(product._id)}
+                            placeholder={tp.packItemPricePlaceholder}
+                            className={inputCls}
+                            style={{ maxWidth: 110 }}
+                          />
+                          <button
+                            onClick={() => stageAddPackItem(product._id)}
+                            disabled={!ef.newPackItemName.trim()}
+                            className="bg-transparent text-google-blue border border-g-border rounded-lg py-2 px-3.5 text-[13px] font-medium cursor-pointer"
+                          >
+                            {tp.addPackItem}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4" style={{ maxWidth: 420 }}>
+                          <div>
+                            <label className={labelCls}>{tp.marginType}</label>
+                            <select
+                              value={ef.marginType}
+                              onChange={e => setEdit(product._id, { marginType: e.target.value === 'percent' ? 'percent' : 'fixed' })}
+                              className={inputCls}
+                            >
+                              <option value="fixed">{tp.marginFixed}</option>
+                              <option value="percent">{tp.marginPercent}</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelCls}>{tp.marginValue}{ef.marginType === 'percent' ? ' (%)' : ''}</label>
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={ef.marginValue}
+                              onChange={e => setEdit(product._id, { marginValue: e.target.value })}
+                              className={inputCls}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-3 text-[13px] text-g-text-2" style={{ maxWidth: 420 }}>
+                          <div className="flex justify-between py-0.5">
+                            <span>{tp.itemsTotal}</span>
+                            <span>{formatMoney(packItemsTotal(ef.packItems), currency)}</span>
+                          </div>
+                          <div className="flex justify-between py-0.5">
+                            <span>{tp.margin}</span>
+                            <span>+ {formatMoney(packMarginAmount(ef.packItems, ef.marginType, ef.marginValue), currency)}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-t border-g-border font-medium text-g-text">
+                            <span>{tp.packPrice}</span>
+                            <span>{formatMoney(packPrice(ef.packItems, ef.marginType, ef.marginValue), currency)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-items (a pack lists its priced items above instead) */}
+                    {!isPack && <div className="mb-5">
                       <p className="m-0 mb-2.5 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em]">
                         {tp.subItems}
                       </p>
@@ -607,7 +750,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                           {tp.addSubItem}
                         </button>
                       </div>
-                    </div>
+                    </div>}
 
                     {/* Packing checklist */}
                     <div className="mb-5">

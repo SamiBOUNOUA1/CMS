@@ -13,6 +13,7 @@ import {
   btnFilled,
 } from '@/app/components/FormPrimitives';
 import MfaSettings from '@/app/components/MfaSettings';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 type Lang = 'en' | 'fr';
 
@@ -30,6 +31,7 @@ export default function ProfilePage() {
 
   const [form, setForm] = useState<ProfileForm>({ name: '', email: '', preferredLanguage: 'en' });
   const [role, setRole] = useState('');
+  const [loadedEmail, setLoadedEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -49,6 +51,7 @@ export default function ProfilePage() {
           email: u.email || '',
           preferredLanguage: (u.preferredLanguage === 'fr' ? 'fr' : 'en'),
         });
+        setLoadedEmail((u.email || '').toLowerCase());
         setRole(u.role || '');
       })
       .catch(() => showNotif(tp.loadFailed, 'error'))
@@ -65,6 +68,11 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setError('');
 
+    // Changing the login email needs the current password too.
+    if (form.email.trim().toLowerCase() !== loadedEmail && !currentPassword) {
+      setError(tp.currentPasswordRequired);
+      return;
+    }
     if (newPassword || confirmPassword || currentPassword) {
       if (!currentPassword) { setError(tp.currentPasswordRequired); return; }
       if (newPassword !== confirmPassword) { setError(tp.passwordMismatch); return; }
@@ -77,8 +85,8 @@ export default function ProfilePage() {
         email: form.email,
         preferredLanguage: form.preferredLanguage,
       };
+      if (currentPassword) payload.currentPassword = currentPassword;
       if (newPassword) {
-        payload.currentPassword = currentPassword;
         payload.newPassword = newPassword;
       }
 
@@ -90,6 +98,7 @@ export default function ProfilePage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || tp.saveFailed); return; }
 
+      setLoadedEmail(form.email.trim().toLowerCase());
       switchLanguage(form.preferredLanguage);
       refreshUser();
       setCurrentPassword('');
@@ -147,7 +156,7 @@ export default function ProfilePage() {
         </Field>
         <FormGrid>
           <Field label={tp.newPassword}>
-            <FormInput type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={tp.newPasswordPlaceholder} minLength={8} autoComplete="new-password" />
+            <FormInput type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={tp.newPasswordPlaceholder} minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
           </Field>
           <Field label={tp.confirmPassword}>
             <FormInput type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />

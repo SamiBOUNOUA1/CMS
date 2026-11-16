@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
 import { mfaStatus, startSetup, confirmSetup, disableMfa, regenerateRecoveryCodes } from '@/lib/mfaService';
 import { serverError } from '@/lib/logger';
+import { rateLimitShared } from '@/lib/rateLimit';
 
 // Two-factor status of the signed-in platform operator.
 export const GET = withPlatformAdmin(async (_request: NextRequest, _ctx, admin) => {
@@ -29,7 +30,11 @@ export const POST = withPlatformAdmin(async (request: NextRequest, _ctx, admin) 
     switch (body.action) {
       case 'setup':      result = await startSetup(PlatformAdmin, id); break;
       case 'enable':     result = await confirmSetup(PlatformAdmin, id, body.code); break;
-      case 'disable':    result = await disableMfa(PlatformAdmin, id, body); break;
+      case 'disable':
+        if (!(await rateLimitShared(`platform-mfa-disable:${id}`, 5, 15 * 60 * 1000)).allowed)
+          return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
+        result = await disableMfa(PlatformAdmin, id, body);
+        break;
       case 'regenerate': result = await regenerateRecoveryCodes(PlatformAdmin, id, body.code); break;
       default: return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }

@@ -40,7 +40,7 @@ const COLLECTION_MODELS: Record<string, unknown> = {
 
 async function POST_(request: NextRequest) {
   try {
-    const { error } = await requirePermission(request, 'manage_data');
+    const { auth, error } = await requirePermission(request, 'manage_data');
     if (error) return error;
 
     const body = await request.json();
@@ -48,6 +48,19 @@ async function POST_(request: NextRequest) {
 
     if (!data?.collections || typeof data.collections !== 'object') {
       return NextResponse.json({ error: 'Invalid export file format' }, { status: 400 });
+    }
+
+    // Importing roles rewrites who can do what, so it needs the same right as
+    // editing them by hand; "manage_data" alone is not enough.
+    const touchesRoles = ['roles', 'rolePermissions'].some(k => {
+      const v = data.collections[k];
+      return Array.isArray(v) && v.length > 0;
+    });
+    if (touchesRoles && !auth.permissions.manage_users) {
+      return NextResponse.json(
+        { error: 'Importing roles and permissions requires the "manage users" permission.' },
+        { status: 403 },
+      );
     }
 
     const conflictMode: 'skip' | 'overwrite' = mode === 'overwrite' ? 'overwrite' : 'skip';

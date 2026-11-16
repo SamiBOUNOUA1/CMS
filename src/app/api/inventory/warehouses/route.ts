@@ -6,6 +6,7 @@ import { Warehouse } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
 import { serverError } from '@/lib/logger';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   try {
@@ -23,8 +24,13 @@ async function GET_(request: NextRequest) {
       ];
     }
 
-    const warehouses = await Warehouse.find(query).sort({ name: 1 });
-    return NextResponse.json({ warehouses });
+    const sort = searchParams.get('sort') === 'newest' ? { createdAt: -1 } : { name: 1 };
+    const pg = parsePagination(searchParams);
+    let find = Warehouse.find(query).sort(sort);
+    if (pg) find = find.skip(pg.skip).limit(pg.limit);
+    const [warehouses, total] = await Promise.all([find, pg ? Warehouse.countDocuments(query) : null]);
+    if (!pg) return NextResponse.json({ warehouses });
+    return NextResponse.json({ warehouses, ...pageMeta(total, pg) });
   } catch (err: unknown) {
     return serverError(err);
   }

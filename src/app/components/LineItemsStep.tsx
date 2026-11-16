@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { SectionTitle, Field, FormInput, FormSelect, fmt, btnOutline, removeBtn } from './FormPrimitives';
-import { itemLineTotal, itemUnitPrice, optionsTotal } from '@/lib/pricing';
+import { itemLineTotal, itemUnitPrice, optionsTotal, normalizePackItem, packMarginAmount, packItemsTotal } from '@/lib/pricing';
 
 interface SubItem {
   name: string;
@@ -50,9 +50,25 @@ interface Product {
   packingItems?: ProductPackingItem[];
   options?: ProductOption[];
   category?: Category;
+  productType?: string;
+  packItems?: { _id?: string; name: string; price?: number }[];
+  marginType?: string;
+  marginValue?: number;
+}
+
+/** A priced component of a pack line; `removed` takes it out of this order only. */
+interface OrderPackItem {
+  _packItemId?: string;
+  name: string;
+  price: number;
+  removed?: boolean;
 }
 
 interface GroupItem {
+  /** Pack lines: unitPrice and subItems are derived from packItems + packMargin. */
+  isPack?: boolean;
+  packMargin?: number;
+  packItems?: OrderPackItem[];
   name: string;
   category: string;
   /** BASE price per unit — selected options are added on top, never folded in here. */
@@ -89,7 +105,10 @@ interface StepLineItemsProps {
   defaultCount?: number;
 }
 
-export const defaultGroupItem = (): GroupItem => ({ name: '', category: '', unitPrice: 0, notes: '', subItems: [], packingItems: [], selectedOptions: [], _productId: '' });
+export const defaultGroupItem = (): GroupItem => ({ name: '', category: '', unitPrice: 0, notes: '', subItems: [], packingItems: [], selectedOptions: [], _productId: '', isPack: false, packMargin: 0, packItems: [] });
+
+/** Clears pack state when a line stops being a pack (product switched or cleared). */
+const noPack = { isPack: false, packMargin: 0, packItems: [] as OrderPackItem[] };
 export const defaultLineGroup = (): LineGroup => ({ label: '', count: 1, items: [defaultGroupItem()] });
 
 export function StepLineItems({ form, setForm, errors, products, isMobile, tn, isTableMode, currency, defaultCount = 1 }: StepLineItemsProps) {
@@ -133,10 +152,12 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
       // Options are per-product, so switching or clearing the product always drops them —
       // a supplement chosen for one dish is meaningless on another.
       if (productId === '__custom__') {
-        items[ii] = { ...items[ii], _productId: '__custom__', name: '', unitPrice: 0, subItems: [], packingItems: [], selectedOptions: [], category: '' };
+        items[ii] = { ...items[ii], ...noPack, _productId: '__custom__', name: '', unitPrice: 0, subItems: [], packingItems: [], selectedOptions: [], category: '' };
       } else if (found) {
+        const isPack = found.productType === 'pack';
         items[ii] = {
           ...items[ii],
+          ...noPack,
           _productId: productId,
           name: found.name,
           unitPrice: found.defaultPrice ?? 0,
@@ -147,8 +168,18 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
           selectedOptions: [],
           category: found.category?.name ?? '',
         };
+        if (isPack) {
+          // Snapshot the pack's items and fix the margin as an AMOUNT now, so removing
+          // an item later lowers the price by exactly that item's price.
+          items[ii] = normalizePackItem({
+            ...items[ii],
+            isPack: true,
+            packMargin: packMarginAmount(found.packItems, found.marginType, found.marginValue),
+            packItems: (found.packItems ?? []).map(p => ({ _packItemId: p._id, name: p.name, price: Number(p.price) || 0, removed: false })),
+          });
+        }
       } else if (!productId) {
-        items[ii] = { ...items[ii], _productId: '', name: '', unitPrice: 0, subItems: [], packingItems: [], selectedOptions: [], category: '' };
+        items[ii] = { ...items[ii], ...noPack, _productId: '', name: '', unitPrice: 0, subItems: [], packingItems: [], selectedOptions: [], category: '' };
       } else {
         return f;
       }
@@ -169,6 +200,16 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
         ? current.filter(o => !sameOption(o, opt))
         : [...current, { _optionId: opt._id, name: opt.name, price: Number(opt.price) || 0 }],
     };
+    groups[gi] = { ...groups[gi], items };
+    return { ...f, lineGroups: groups };
+  });
+
+  /** Takes an included item out of (or back into) a pack line and reprices the line. */
+  const togglePackItem = (gi: number, ii: number, pi: number) => setForm(f => {
+    const groups = [...f.lineGroups];
+    const items = [...groups[gi].items];
+    const packItems = (items[ii].packItems || []).map((p, idx) => idx === pi ? { ...p, removed: !p.removed } : p);
+    items[ii] = normalizePackItem({ ...items[ii], packItems });
     groups[gi] = { ...groups[gi], items };
     return { ...f, lineGroups: groups };
   });
@@ -318,7 +359,31 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                   </Field>
                 )}
 
-                {item.subItems?.length > 0 && item._productId !== '__custom__' && (
+                {item.isPack && (item.packItems?.length ?? 0) > 0 && (
+                  <div className="border border-g-border rounded-lg py-2 px-3">
+                    <p className="m-0 mb-1.5 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em] font-sans">{String(tli.packIncludes)}</p>
+                    {(item.packItems || []).map((p, pi) => (
+                      <label key={pi} className="flex items-center gap-2 py-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!p.removed}
+                          onChange={() => togglePackItem(gi, ii, pi)}
+                          className="accent-google-blue cursor-pointer"
+                        />
+                        <span className={`text-[13px] flex-1 ${p.removed ? 'line-through text-g-text-3' : 'text-g-text'}`}>{p.name}</span>
+                        <span className={`text-[13px] font-medium whitespace-nowrap ${p.removed ? 'line-through text-g-text-3' : 'text-g-text-2'}`}>
+                          {fmt(Number(p.price) || 0, currency)}
+                        </span>
+                      </label>
+                    ))}
+                    <div className="flex justify-between pt-1.5 mt-1 border-t border-g-border text-[12px] text-g-text-2">
+                      <span>{String(tli.packMargin)}</span>
+                      <span>+ {fmt(Number(item.packMargin) || 0, currency)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {!item.isPack && item.subItems?.length > 0 && item._productId !== '__custom__' && (
                   <div className="bg-google-gray-100 dark:bg-google-gray-800 rounded-lg py-2 px-3">
                     <p className="m-0 mb-1 text-[11px] font-medium text-g-text-2 uppercase tracking-[0.04em] font-sans">{String(tli.includes)}</p>
                     {item.subItems.map((s, si) => (
@@ -372,7 +437,13 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                       type="number" min="0" step="0.01"
                       value={item.unitPrice}
                       onChange={e => setItemField(gi, ii, 'unitPrice', e.target.value)}
+                      readOnly={!!item.isPack}
                     />
+                    {item.isPack && (
+                      <span className="block mt-1 text-[11px] text-g-text-2">
+                        {fmt(packItemsTotal(item.packItems), currency)} + {fmt(Number(item.packMargin) || 0, currency)} {String(tli.packPriceHint)}
+                      </span>
+                    )}
                     {itemOptionsTotal > 0 && (
                       <span className="block mt-1 text-[11px] text-g-text-2">
                         + {fmt(itemOptionsTotal, currency)} {String(tli.inOptions)} = {fmt(itemUnitPrice(item), currency)}

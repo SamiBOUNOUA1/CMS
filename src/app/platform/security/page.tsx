@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { translations } from '@/lib/i18n';
 import { FormSectionLabel, FormGrid, Field, FormInput, btnFilled } from '@/app/components/FormPrimitives';
 import MfaSettings from '@/app/components/MfaSettings';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 // Operator account security (the platform console is English-only).
 export default function PlatformSecurityPage() {
@@ -24,7 +25,7 @@ export default function PlatformSecurityPage() {
   const handlePasswordChange = async () => {
     setPwError('');
     if (!currentPassword) { setPwError(tp.currentPasswordRequired); return; }
-    if (newPassword.length < 8) { setPwError('Password must be at least 8 characters'); return; }
+    if (newPassword.length < MIN_PASSWORD_LENGTH) { setPwError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`); return; }
     if (newPassword !== confirmPassword) { setPwError(tp.passwordMismatch); return; }
 
     setPwSaving(true);
@@ -61,7 +62,7 @@ export default function PlatformSecurityPage() {
         </Field>
         <FormGrid>
           <Field label={tp.newPassword}>
-            <FormInput type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={tp.newPasswordPlaceholder} minLength={8} autoComplete="new-password" />
+            <FormInput type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={tp.newPasswordPlaceholder} minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
           </Field>
           <Field label={tp.confirmPassword}>
             <FormInput type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />

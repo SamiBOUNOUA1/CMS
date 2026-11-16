@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { LaundryBatch } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   const { error } = await requirePermission(request, 'view_laundry');
@@ -24,15 +25,30 @@ async function GET_(request: NextRequest) {
     ];
   }
 
-  const batches = await LaundryBatch.find(filter)
+  const pg = parsePagination(searchParams);
+  let find = LaundryBatch.find(filter)
     .populate('items.inventoryItem', 'name unit')
     .populate('order', 'clientName eventDate')
     .populate('cleaningSupplier', 'name')
     .populate('createdBy', 'name')
-    .sort({ date: -1 })
-    .lean();
+    .sort({ date: -1 });
+  if (pg) find = find.skip(pg.skip).limit(pg.limit);
+  const batches = await find.lean();
 
-  return NextResponse.json({ batches });
+  if (!pg) return NextResponse.json({ batches });
+
+  // Per-status counts for the stat cards, over every matching batch.
+  const byStatus = await LaundryBatch.aggregate([
+    { $match: filter },
+    { $group: { _id: '$status', n: { $sum: 1 } } },
+  ]);
+  const counts: Record<string, number> = Object.fromEntries(byStatus.map(s => [s._id, s.n]));
+  const total = byStatus.reduce((s, x) => s + x.n, 0);
+  return NextResponse.json({
+    batches,
+    ...pageMeta(total, pg),
+    stats: { total, sent: counts.sent ?? 0, returned: counts.returned ?? 0, completed: counts.completed ?? 0 },
+  });
 }
 
 async function POST_(request: NextRequest) {

@@ -1,6 +1,8 @@
 // @ts-nocheck
 import mongoose, { Schema, models, model } from 'mongoose';
 import { tenantPlugin } from '@/lib/tenantPlugin';
+import { computeVatBreakdown, totalsFromBreakdown } from '@/lib/vat';
+import { getTenantStore } from '@/lib/tenantContext';
 
 // ── TRAVEL REGION CONFIG ──────────────────────────────────────────────────────
 const travelRegionConfigSchema = new Schema(
@@ -111,6 +113,8 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true },
     role: { type: String, required: true, default: 'viewer' },
     isActive: { type: Boolean, default: true },
+    // Bumped to end every open session of this user (see lib/sessionGuard.ts).
+    sessionVersion: { type: Number, default: 0 },
     preferredLanguage: { type: String, enum: ['en', 'fr'], default: 'en' },
     // Two-factor auth (TOTP). Secrets are encrypted (lib/mfa.ts); never selected by default.
     mfaEnabled:       { type: Boolean, default: false },
@@ -147,17 +151,28 @@ const productOptionSchema = new Schema({
   price: { type: Number, default: 0, min: 0 },
 });
 
+// Priced component of a `pack` product. The pack's defaultPrice is derived by the
+// products API: sum of packItems prices + margin (see packPrice in lib/pricing.ts).
+const productPackItemSchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  price: { type: Number, default: 0, min: 0 },
+});
+
 const productSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     shortDescription: { type: String, trim: true, default: '' },
-    productType: { type: String, enum: ['simple', 'bundle'], default: 'simple' },
+    productType: { type: String, enum: ['simple', 'bundle', 'pack'], default: 'simple' },
     defaultPrice: { type: Number, default: 0, min: 0 },
     unit: { type: String, default: 'item', trim: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
     subItems: [subItemSchema],
     packingItems: [subItemSchema],
     options: [productOptionSchema],
+    // Pack products only.
+    packItems: [productPackItemSchema],
+    marginType: { type: String, enum: ['fixed', 'percent'], default: 'fixed' },
+    marginValue: { type: Number, default: 0, min: 0 },
     linkedRecipe: { type: Schema.Types.ObjectId, ref: 'KitchenRecipe', default: null },
     isActive: { type: Boolean, default: true },
   },
@@ -183,9 +198,15 @@ const clientSchema = new Schema(
     notes: String,
     customerType: { type: String, trim: true, default: '' },
     leadSource: { type: String, trim: true, default: '' },
+    // Legal identity used on invoices (Moroccan CGI art. 145: a business buyer's ICE is mandatory).
+    clientKind: { type: String, enum: ['individual', 'company'], default: 'individual' },
+    legalName:  { type: String, trim: true, default: '' },
+    ice:        { type: String, trim: true, default: '' },
   },
   { timestamps: true }
 );
+clientSchema.index({ tenantId: 1, name: 1 });
+clientSchema.index({ tenantId: 1, customerType: 1, name: 1 });
 clientSchema.plugin(tenantPlugin);
 export const Client = models.Client || model('Client', clientSchema);
 
@@ -277,7 +298,7 @@ const eventSchema = new Schema(
   },
   { timestamps: true }
 );
-eventSchema.index({ eventDate: 1 });
+eventSchema.index({ tenantId: 1, eventDate: 1 });
 eventSchema.index({ client: 1 });
 eventSchema.plugin(tenantPlugin);
 export const Event = models.Event || model('Event', eventSchema);
@@ -290,6 +311,7 @@ const staffAssignmentSchema = new Schema({
   ratePerHour: { type: Number, required: true, min: 0 },
   lineTotal: { type: Number, required: true, min: 0 },
   notes: String,
+  vatRate: { type: Number, default: null }, // per-line VAT override (quotes); null = quote default
 });
 
 // ── FLOW TEMPLATE ─────────────────────────────────────────────────────────────
@@ -336,6 +358,19 @@ const orderLineGroupItemSchema = new Schema({
     _optionId: { type: String, default: '' },
     name: { type: String, required: true },
     price: { type: Number, default: 0 },
+  }],
+  // Pack lines: included items snapshotted by value from Product.packItems. An item
+  // taken out for this order keeps its row with removed: true so it can be restored.
+  // `packMargin` is the margin AMOUNT fixed when the pack was added; unitPrice and
+  // subItems are re-derived from these by normalizePackItem (lib/pricing.ts).
+  isPack: { type: Boolean, default: false },
+  packMargin: { type: Number, default: 0 },
+  packItems: [{
+    _id: false,
+    _packItemId: { type: String, default: '' },
+    name: { type: String, required: true },
+    price: { type: Number, default: 0 },
+    removed: { type: Boolean, default: false },
   }],
 }, { _id: false });
 
@@ -418,12 +453,15 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
-orderSchema.index({ status: 1 });
-orderSchema.index({ eventDate: 1 });
-orderSchema.index({ createdAt: -1 });
+// Every query is scoped by tenantId (tenantPlugin), so list/range indexes lead with it.
+orderSchema.index({ tenantId: 1, createdAt: -1 });
+orderSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+orderSchema.index({ tenantId: 1, eventDate: 1 });
+orderSchema.index({ tenantId: 1, paymentStatus: 1, eventDate: 1 });
+orderSchema.index({ tenantId: 1, clientPhone: 1 });
 orderSchema.index({ event: 1 });
-orderSchema.index({ clientPhone: 1 });
-orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ 'assignees.user': 1 });
+orderSchema.index({ assignedManager: 1 }, { sparse: true });
 orderSchema.plugin(tenantPlugin);
 export const Order = models.Order || model('Order', orderSchema);
 
@@ -446,6 +484,7 @@ const lineItemSchema = new Schema({
     name: { type: String, required: true },
     price: { type: Number, default: 0 },
   }],
+  vatRate: { type: Number, default: null }, // per-line VAT override; null = quote taxRate
 });
 
 const quoteSchema = new Schema(
@@ -461,6 +500,7 @@ const quoteSchema = new Schema(
     subtotal:      { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },
     taxRate:       { type: Number, default: 0.2 },
+    travelVatRate: { type: Number, default: null }, // null = quote taxRate
     taxAmount:     { type: Number, default: 0 },
     total:         { type: Number, default: 0 },
     internalNotes: String,
@@ -469,12 +509,25 @@ const quoteSchema = new Schema(
   { timestamps: true }
 );
 
+/** Lines of a quote as {totalHT, vatRate}, resolving per-line overrides against the quote rate. */
+export function quoteVatLines(q) {
+  const rateOf = (r) => (r === null || r === undefined ? Number(q.taxRate) || 0 : Number(r));
+  return [
+    ...(q.lineItems || []).map(li => ({ totalHT: li.lineTotal || 0, vatRate: rateOf(li.vatRate) })),
+    ...(q.staffAssignments || []).map(sa => ({ totalHT: sa.lineTotal || 0, vatRate: rateOf(sa.vatRate) })),
+    ...((q.travelFee || 0) > 0 ? [{ totalHT: q.travelFee, vatRate: rateOf(q.travelVatRate) }] : []),
+  ];
+}
+
 quoteSchema.pre('save', function (next) {
   const itemsTotal = this.lineItems.reduce((s, li) => s + li.lineTotal, 0);
   const staffTotal = this.staffAssignments.reduce((s, sa) => s + sa.lineTotal, 0);
   const travelTotal = this.travelFee || 0;
   this.subtotal = +(itemsTotal + staffTotal + travelTotal - this.discountAmount).toFixed(2);
-  this.taxAmount = +(this.subtotal * this.taxRate).toFixed(2);
+  // VAT per rate (the discount is spread proportionally) — identical to subtotal × taxRate
+  // when every line uses the quote rate.
+  const { totalVAT } = totalsFromBreakdown(computeVatBreakdown(quoteVatLines(this), this.discountAmount));
+  this.taxAmount = totalVAT;
   this.total = +(this.subtotal + this.taxAmount).toFixed(2);
   next();
 });
@@ -483,30 +536,130 @@ quoteSchema.index({ order: 1, isActive: 1 });
 quoteSchema.plugin(tenantPlugin);
 export const Quote = models.Quote || model('Quote', quoteSchema);
 
-// ── INVOICE ───────────────────────────────────────────────────────────────────
+// ── INVOICE (facture / avoir) ─────────────────────────────────────────────────
+// Legally binding, IMMUTABLE snapshot (Moroccan CGI art. 145). Once issued only
+// `status`, `amountPaid`, `balanceDue` and `creditedAmount` may change; corrections
+// are made by issuing a credit note (type 'credit_note') that references the invoice.
+// Never deleted (10-year retention, CGI art. 211) — there is no DELETE route.
+const invoicePartySchema = new Schema({
+  name:       { type: String, default: '' },  // trade / display name
+  legalName:  { type: String, default: '' },
+  legalForm:  { type: String, default: '' },
+  shareCapital: { type: String, default: '' },
+  kind:       { type: String, default: 'company' }, // buyer: individual | company
+  address:    { type: String, default: '' },
+  phone:      { type: String, default: '' },
+  email:      { type: String, default: '' },
+  ice:        { type: String, default: '' },
+  identifiantFiscal:   { type: String, default: '' },
+  taxeProfessionnelle: { type: String, default: '' },
+  rcNumber:   { type: String, default: '' },
+  rcCourt:    { type: String, default: '' },
+  cnss:       { type: String, default: '' },
+  bankName:   { type: String, default: '' },
+  rib:        { type: String, default: '' },
+  vatRegime:  { type: String, default: 'standard' },
+  autoEntrepreneurId: { type: String, default: '' },
+  logoUrl:    { type: String, default: '' },
+}, { _id: false });
+
+const invoiceLineSchema = new Schema({
+  label:       { type: String, required: true },
+  detail:      { type: String, default: '' },
+  quantity:    { type: Number, default: 1 },
+  unitPriceHT: { type: Number, default: 0 },
+  totalHT:     { type: Number, default: 0 },
+  vatRate:     { type: Number, default: 0 },
+}, { _id: false });
+
 const invoiceSchema = new Schema(
   {
-    quote: { type: Schema.Types.ObjectId, ref: 'Quote', required: true },
+    type:          { type: String, enum: ['invoice', 'credit_note'], default: 'invoice' },
     invoiceNumber: { type: String, required: true },
-    issuedDate: { type: Date, default: Date.now },
-    dueDate: { type: Date, required: true },
+    order:         { type: Schema.Types.ObjectId, ref: 'Order', required: true },
+    quote:         { type: Schema.Types.ObjectId, ref: 'Quote', default: null },
+    creditedInvoice: { type: Schema.Types.ObjectId, ref: 'Invoice', default: null }, // credit notes only
+    creditedInvoiceNumber: { type: String, default: '' },
+    creditReason:  { type: String, default: '' },
+    issuedDate:    { type: Date, required: true },
+    serviceDate:   { type: Date, default: null },
+    dueDate:       { type: Date, default: null },
+    seller:        { type: invoicePartySchema, required: true },
+    buyer:         { type: invoicePartySchema, required: true },
+    currency:      { type: String, default: 'MAD' },
+    lines:         [invoiceLineSchema],
+    discountHT:    { type: Number, default: 0 },
+    vatBreakdown:  [{ _id: false, rate: Number, base: Number, amount: Number }],
+    totalHT:       { type: Number, default: 0 },
+    totalVAT:      { type: Number, default: 0 },
+    stampDuty:     { type: Number, default: 0 },
+    totalTTC:      { type: Number, default: 0 },
+    amountInWords: { type: String, default: '' },
+    deposits:      [{ _id: false, payment: { type: Schema.Types.ObjectId, ref: 'Payment' }, date: Date, method: String, amount: Number }],
+    amountPaid:    { type: Number, default: 0 },
+    balanceDue:    { type: Number, default: 0 },
+    creditedAmount: { type: Number, default: 0 }, // sum of credit notes issued against this invoice
+    paymentMethod: { type: String, default: '' },
+    paymentTerms:  { type: String, default: '' },
+    latePenaltyText: { type: String, default: '' },
+    legalMentions: [{ type: String }],
+    footerText:    { type: String, default: '' },
     status: {
       type: String,
-      enum: ['pending', 'partially-paid', 'paid', 'overdue', 'cancelled'],
-      default: 'pending',
+      enum: ['issued', 'partially_paid', 'paid', 'cancelled'],
+      default: 'issued',
     },
-    subtotal: Number,
-    taxAmount: Number,
-    total: Number,
-    amountPaid: { type: Number, default: 0 },
-    amountDue: Number,
-    notes: String,
+    contentHash:   { type: String, default: '' },
+    issuedBy:      { type: Schema.Types.ObjectId, ref: 'User', default: null },
   },
   { timestamps: true }
 );
+
+// Fields that may still change after issue; everything else is frozen.
+export const INVOICE_MUTABLE_FIELDS = ['status', 'amountPaid', 'balanceDue', 'creditedAmount', 'updatedAt'];
+
+invoiceSchema.pre('save', function (next) {
+  if (this.isNew) return next();
+  const illegal = this.modifiedPaths().filter(
+    p => !INVOICE_MUTABLE_FIELDS.some(f => p === f || p.startsWith(f + '.'))
+  );
+  if (illegal.length) return next(new Error(`Issued invoices are immutable (attempted: ${illegal.join(', ')})`));
+  next();
+});
+
+function guardInvoiceUpdate(this: mongoose.Query<unknown, unknown>) {
+  const update = this.getUpdate() || {};
+  const keys = new Set<string>();
+  for (const [k, v] of Object.entries(update)) {
+    if (k.startsWith('$')) Object.keys(v || {}).forEach(x => keys.add(x));
+    else keys.add(k);
+  }
+  const illegal = [...keys].filter(k => !INVOICE_MUTABLE_FIELDS.includes(k) && k !== 'createdAt');
+  if (illegal.length) throw new Error(`Issued invoices are immutable (attempted: ${illegal.join(', ')})`);
+}
+invoiceSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], guardInvoiceUpdate);
+// Tenant requests can never delete invoices. Only the platform operator, in system
+// context, can (when permanently deleting a whole tenant — tenantProvisioning.ts).
+invoiceSchema.pre(['deleteOne', 'deleteMany', 'findOneAndDelete', 'replaceOne', 'findOneAndReplace'], function () {
+  const store = getTenantStore();
+  if (store && 'system' in store) return;
+  throw new Error('Invoices cannot be deleted or replaced');
+});
+
 invoiceSchema.plugin(tenantPlugin);
 invoiceSchema.index({ tenantId: 1, invoiceNumber: 1 }, { unique: true });
+invoiceSchema.index({ tenantId: 1, issuedDate: -1 });
+invoiceSchema.index({ tenantId: 1, order: 1 });
 export const Invoice = models.Invoice || model('Invoice', invoiceSchema);
+
+// ── TENANT COUNTER (gap-free document numbering per tenant) ───────────────────
+const tenantCounterSchema = new Schema({
+  key: { type: String, required: true }, // e.g. 'invoice-2026', 'credit_note-2026'
+  seq: { type: Number, default: 0 },
+});
+tenantCounterSchema.plugin(tenantPlugin);
+tenantCounterSchema.index({ tenantId: 1, key: 1 }, { unique: true });
+export const TenantCounter = models.TenantCounter || model('TenantCounter', tenantCounterSchema);
 
 // ── PAYMENT ───────────────────────────────────────────────────────────────────
 const paymentSchema = new Schema(
@@ -525,6 +678,7 @@ const paymentSchema = new Schema(
   { timestamps: true }
 );
 paymentSchema.index({ order: 1 });
+paymentSchema.index({ tenantId: 1, paymentDate: -1 });
 paymentSchema.plugin(tenantPlugin);
 export const Payment = models.Payment || model('Payment', paymentSchema);
 
@@ -617,7 +771,7 @@ const inventoryItemSchema = new Schema(
   },
   { timestamps: true }
 );
-inventoryItemSchema.index({ isActive: 1, name: 1 });
+inventoryItemSchema.index({ tenantId: 1, isActive: 1, name: 1 });
 inventoryItemSchema.index({ warehouse: 1 });
 inventoryItemSchema.index({ category: 1 });
 inventoryItemSchema.plugin(tenantPlugin);
@@ -703,6 +857,29 @@ const companySettingsSchema = new Schema(
     },
     currency:  { type: String, default: '€', trim: true },
     vatNumber: { type: String, default: '', trim: true },
+    // ── Moroccan legal & tax mentions (CGI art. 145) — printed on invoices ──
+    legalName:           { type: String, default: '', trim: true },
+    legalForm:           { type: String, default: '', trim: true }, // SARL, SA, SARL AU, personne physique…
+    shareCapital:        { type: String, default: '', trim: true },
+    ice:                 { type: String, default: '', trim: true }, // Identifiant Commun de l'Entreprise (15 digits)
+    identifiantFiscal:   { type: String, default: '', trim: true }, // IF
+    taxeProfessionnelle: { type: String, default: '', trim: true }, // TP (ex-patente)
+    rcNumber:            { type: String, default: '', trim: true }, // Registre de commerce
+    rcCourt:             { type: String, default: '', trim: true }, // Tribunal / ville du RC
+    cnss:                { type: String, default: '', trim: true },
+    bankName:            { type: String, default: '', trim: true },
+    rib:                 { type: String, default: '', trim: true },
+    vatRegime:           { type: String, enum: ['standard', 'auto_entrepreneur'], default: 'standard' },
+    autoEntrepreneurId:  { type: String, default: '', trim: true },
+    defaultVatRate:      { type: Number, default: 0.2 },
+    paymentTermsDays:    { type: Number, default: 60, min: 0, max: 120 },
+    latePenaltyText:     { type: String, default: '' },
+    applyCashStampDuty:  { type: Boolean, default: false },
+    invoiceFooterText:   { type: String, default: '' },
+    // Document numbering: free format (CGI art. 145 only requires unique, continuous numbers).
+    invoicePrefix:       { type: String, default: 'FA', trim: true },
+    creditNotePrefix:    { type: String, default: 'AV', trim: true },
+    numberIncludesYear:  { type: Boolean, default: true },
   },
   { timestamps: true }
 );
@@ -721,6 +898,8 @@ const whatsappSettingsSchema = new Schema(
     quoteTemplateLang:   { type: String, default: 'fr', trim: true },
     receiptTemplateName: { type: String, default: '', trim: true },
     receiptTemplateLang: { type: String, default: 'fr', trim: true },
+    invoiceTemplateName: { type: String, default: '', trim: true },
+    invoiceTemplateLang: { type: String, default: 'fr', trim: true },
   },
   { timestamps: true }
 );
@@ -756,6 +935,7 @@ const emailSettingsSchema = new Schema(
     templates: {
       quote:      { type: emailTemplateSchema, default: () => ({}) },
       receipt:    { type: emailTemplateSchema, default: () => ({}) },
+      invoice:    { type: emailTemplateSchema, default: () => ({}) },
       deposit:    { type: emailTemplateSchema, default: () => ({}) },
       guestCount: { type: emailTemplateSchema, default: () => ({}) },
       thankYou:   { type: emailTemplateSchema, default: () => ({}) },
@@ -770,7 +950,7 @@ export const EmailSettings = models.EmailSettings || model('EmailSettings', emai
 const emailLogSchema = new Schema(
   {
     order:   { type: Schema.Types.ObjectId, ref: 'Order', default: null },
-    type:    { type: String, enum: ['quote', 'receipt', 'deposit', 'guestCount', 'thankYou', 'test'], required: true },
+    type:    { type: String, enum: ['quote', 'receipt', 'invoice', 'deposit', 'guestCount', 'thankYou', 'test'], required: true },
     to:      { type: String, required: true },
     subject: { type: String, default: '' },
     status:  { type: String, enum: ['sent', 'failed'], required: true },
@@ -840,6 +1020,7 @@ const activitySchema = new Schema(
       'quote_sent', 'receipt_sent', 'email_sent', 'reminder_sent',
       'mfa_enabled', 'mfa_disabled', 'mfa_reset',
       'password_reset_sent', 'password_reset',
+      'invoice_issued', 'credit_note_issued', 'invoice_sent',
     ]},
     entityType:  { type: String, required: true },
     entityId:    { type: Schema.Types.ObjectId, required: true },
@@ -849,7 +1030,7 @@ const activitySchema = new Schema(
   },
   { timestamps: true }
 );
-activitySchema.index({ createdAt: -1 });
+activitySchema.index({ tenantId: 1, createdAt: -1 });
 activitySchema.plugin(tenantPlugin);
 export const Activity = models.Activity || model('Activity', activitySchema);
 
@@ -874,6 +1055,17 @@ const passwordResetTokenSchema = new Schema(
 );
 passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const PasswordResetToken = models.PasswordResetToken || model('PasswordResetToken', passwordResetTokenSchema);
+
+// Attempt counters for login / code / password checks, shared by all server
+// instances (see lib/rateLimit.ts). No tenantPlugin: used before login. The key
+// is a hash, so no email or IP address is stored. Rows delete themselves.
+const rateLimitHitSchema = new Schema({
+  key:       { type: String, required: true, unique: true },
+  count:     { type: Number, default: 0 },
+  expiresAt: { type: Date, required: true },
+});
+rateLimitHitSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+export const RateLimitHit = models.RateLimitHit || model('RateLimitHit', rateLimitHitSchema);
 
 // ── KITCHEN STOCK ─────────────────────────────────────────────────────────────
 const kitchenStockItemSchema = new Schema(
@@ -988,6 +1180,7 @@ const platformAdminSchema = new Schema(
     email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     isActive:     { type: Boolean, default: true },
+    sessionVersion: { type: Number, default: 0 },
     mfaEnabled:       { type: Boolean, default: false },
     mfaSecret:        { type: String, select: false },
     mfaPendingSecret: { type: String, select: false },

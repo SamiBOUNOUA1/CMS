@@ -17,6 +17,9 @@ export const ACTION_LABELS: Record<string, string> = {
   mfa_reset:            'Two-factor auth reset',
   password_reset_sent:  'Password reset link sent',
   password_reset:       'Password reset',
+  invoice_issued:       'Invoice issued',
+  credit_note_issued:   'Credit note issued',
+  invoice_sent:         'Invoice sent',
 };
 
 export function ActivityIcon({ action }: { action: string }) {
@@ -63,6 +66,8 @@ export function ActivityIcon({ action }: { action: string }) {
         </svg>
       );
     case 'quote_generated':
+    case 'invoice_issued':
+    case 'credit_note_issued':
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -105,6 +110,7 @@ export function ActivityIcon({ action }: { action: string }) {
       );
     case 'email_sent':
     case 'reminder_sent':
+    case 'invoice_sent':
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="2"/>

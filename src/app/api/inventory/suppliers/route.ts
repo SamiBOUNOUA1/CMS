@@ -6,6 +6,7 @@ import { Supplier } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
 import { serverError } from '@/lib/logger';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   try {
@@ -26,8 +27,13 @@ async function GET_(request: NextRequest) {
       ];
     }
 
-    const suppliers = await Supplier.find(query).sort({ name: 1 });
-    return NextResponse.json({ suppliers });
+    const sort = searchParams.get('sort') === 'newest' ? { createdAt: -1 } : { name: 1 };
+    const pg = parsePagination(searchParams);
+    let find = Supplier.find(query).sort(sort);
+    if (pg) find = find.skip(pg.skip).limit(pg.limit);
+    const [suppliers, total] = await Promise.all([find, pg ? Supplier.countDocuments(query) : null]);
+    if (!pg) return NextResponse.json({ suppliers });
+    return NextResponse.json({ suppliers, ...pageMeta(total, pg) });
   } catch (err: unknown) {
     return serverError(err);
   }

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useT } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
 import { useRowLink } from '@/lib/useRowLink';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -60,9 +62,9 @@ export default function LaundryPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-  }, []);
+  const [stats, setStats] = useState({ total: 0, sent: 0, returned: 0, completed: 0 });
+  const [reloadKey, setReloadKey] = useState(0);
+  const pg = usePagination('laundry', [search, filterStatus]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)');
@@ -77,19 +79,17 @@ export default function LaundryPage() {
     if (search) params.set('search', search);
     if (filterStatus) params.set('status', filterStatus);
     setLoading(true);
-    fetch(`/api/laundry/batches?${params}`)
+    fetch(`/api/laundry/batches?${params}&${pg.query}`)
       .then(r => r.ok ? r.json() : { batches: [] })
-      .then((d: any) => { setBatches(d.batches ?? []); setLoading(false); });
-  }, [search, filterStatus]);
+      .then((d: any) => {
+        if (pg.page > (d.totalPages ?? 1)) { pg.setPage(d.totalPages ?? 1); return; }
+        setBatches(d.batches ?? []);
+        if (d.stats) setStats(d.stats);
+        setLoading(false);
+      });
+  }, [search, filterStatus, pg.query, reloadKey]);
 
   const canManage = user?.permissions?.manage_laundry;
-
-  const stats = {
-    total:     batches.length,
-    sent:      batches.filter(b => b.status === 'sent').length,
-    returned:  batches.filter(b => b.status === 'returned').length,
-    completed: batches.filter(b => b.status === 'completed').length,
-  };
 
   function showToast(msg: string) {
     setToast(msg);
@@ -100,7 +100,7 @@ export default function LaundryPage() {
     if (!deleteId) return;
     const res = await fetch(`/api/laundry/batches/${deleteId}`, { method: 'DELETE' });
     if (res.ok) {
-      setBatches(prev => prev.filter(b => b._id !== deleteId));
+      setReloadKey(k => k + 1);
       showToast(tl.deleted);
     } else {
       showToast(tl.deleteFailed);
@@ -406,6 +406,8 @@ export default function LaundryPage() {
           </table>
         </div>
       )}
+
+      {!loading && <Pagination {...pg.props} total={stats.total} />}
 
       {/* Delete confirmation */}
       {deleteId && (

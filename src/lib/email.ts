@@ -11,15 +11,18 @@ import { decryptSecret } from '@/lib/mfa';
 import { formatMoney } from '@/lib/money';
 import { logActivity } from '@/lib/activityLogger';
 import { logWarn } from '@/lib/logger';
+import { getOrderPayableTotal } from '@/lib/invoicing';
+import { assertPublicHost } from '@/lib/netGuard';
 
-export type EmailType = 'quote' | 'receipt' | 'deposit' | 'guestCount' | 'thankYou' | 'test';
-export const TEMPLATE_TYPES = ['quote', 'receipt', 'deposit', 'guestCount', 'thankYou'] as const;
+export type EmailType = 'quote' | 'receipt' | 'invoice' | 'deposit' | 'guestCount' | 'thankYou' | 'test';
+export const TEMPLATE_TYPES = ['quote', 'receipt', 'invoice', 'deposit', 'guestCount', 'thankYou'] as const;
 export const PLACEHOLDERS = ['clientName', 'eventDate', 'eventType', 'guestCount', 'totalAmount', 'balanceDue', 'companyName'];
 
 export const DEFAULT_TEMPLATES = {
   en: {
     quote:      { subject: 'Your quote from {{companyName}}', body: 'Hello {{clientName}},\n\nPlease find attached your quote for your event on {{eventDate}} ({{guestCount}} guests).\n\nTotal: {{totalAmount}}\n\nDon\'t hesitate to reply to this email with any questions.\n\nBest regards,\n{{companyName}}' },
     receipt:    { subject: 'Your payment receipt from {{companyName}}', body: 'Hello {{clientName}},\n\nThank you for your payment. Please find your receipt attached.\n\nRemaining balance: {{balanceDue}}\n\nBest regards,\n{{companyName}}' },
+    invoice:    { subject: 'Your invoice from {{companyName}}', body: 'Hello {{clientName}},\n\nPlease find attached your invoice for your event on {{eventDate}}.\n\nAmount due: {{balanceDue}}\n\nBest regards,\n{{companyName}}' },
     deposit:    { subject: 'Deposit reminder for your event on {{eventDate}}', body: 'Hello {{clientName}},\n\nThis is a friendly reminder that the deposit for your event on {{eventDate}} has not been received yet.\n\nAmount due: {{balanceDue}}\n\nPlease contact us if you have any questions.\n\nBest regards,\n{{companyName}}' },
     guestCount: { subject: 'Please confirm your final guest count', body: 'Hello {{clientName}},\n\nYour event on {{eventDate}} is coming up. We currently have {{guestCount}} guests planned.\n\nCould you reply to confirm your final guest count?\n\nBest regards,\n{{companyName}}' },
     thankYou:   { subject: 'Thank you from {{companyName}}', body: 'Hello {{clientName}},\n\nThank you for choosing us for your event on {{eventDate}}. We hope you and your guests enjoyed it.\n\nWe would love to hear your feedback, just reply to this email.\n\nBest regards,\n{{companyName}}' },
@@ -27,6 +30,7 @@ export const DEFAULT_TEMPLATES = {
   fr: {
     quote:      { subject: 'Votre devis de {{companyName}}', body: 'Bonjour {{clientName}},\n\nVeuillez trouver ci-joint votre devis pour votre événement du {{eventDate}} ({{guestCount}} invités).\n\nTotal : {{totalAmount}}\n\nN\'hésitez pas à répondre à cet e-mail pour toute question.\n\nCordialement,\n{{companyName}}' },
     receipt:    { subject: 'Votre reçu de paiement - {{companyName}}', body: 'Bonjour {{clientName}},\n\nMerci pour votre paiement. Veuillez trouver votre reçu ci-joint.\n\nSolde restant : {{balanceDue}}\n\nCordialement,\n{{companyName}}' },
+    invoice:    { subject: 'Votre facture - {{companyName}}', body: 'Bonjour {{clientName}},\n\nVeuillez trouver ci-joint votre facture pour votre événement du {{eventDate}}.\n\nMontant restant dû : {{balanceDue}}\n\nCordialement,\n{{companyName}}' },
     deposit:    { subject: 'Rappel d\'acompte pour votre événement du {{eventDate}}', body: 'Bonjour {{clientName}},\n\nNous vous rappelons que l\'acompte pour votre événement du {{eventDate}} n\'a pas encore été reçu.\n\nMontant dû : {{balanceDue}}\n\nN\'hésitez pas à nous contacter pour toute question.\n\nCordialement,\n{{companyName}}' },
     guestCount: { subject: 'Merci de confirmer le nombre final d\'invités', body: 'Bonjour {{clientName}},\n\nVotre événement du {{eventDate}} approche. Nous avons actuellement {{guestCount}} invités prévus.\n\nPourriez-vous nous confirmer le nombre final d\'invités en répondant à cet e-mail ?\n\nCordialement,\n{{companyName}}' },
     thankYou:   { subject: 'Merci de la part de {{companyName}}', body: 'Bonjour {{clientName}},\n\nMerci de nous avoir choisis pour votre événement du {{eventDate}}. Nous espérons que vous et vos invités l\'avez apprécié.\n\nVotre avis nous intéresse, il vous suffit de répondre à cet e-mail.\n\nCordialement,\n{{companyName}}' },
@@ -68,13 +72,14 @@ export async function buildVars(order, settings): Promise<Record<string, string>
     ? (await Payment.find({ order: order._id }).select('amount').lean()).reduce((s, p) => s + (p.amount || 0), 0)
     : 0;
   const locale = settings?.language === 'en' ? enUS : fr;
+  const payable = order?._id ? await getOrderPayableTotal(order) : (order?.totalAmount || 0);
   return {
     clientName:  order?.clientName || '',
     eventDate:   order?.eventDate ? dfFormat(new Date(order.eventDate), 'PPP', { locale }) : '',
     eventType:   order?.eventType || '',
     guestCount:  String(order?.guestCount ?? ''),
-    totalAmount: formatMoney(order?.totalAmount, cur),
-    balanceDue:  formatMoney(Math.max(0, (order?.totalAmount || 0) - paid), cur),
+    totalAmount: formatMoney(payable, cur),
+    balanceDue:  formatMoney(Math.max(0, payable - paid), cur),
     companyName: settings?.fromName || company?.companyName || '',
   };
 }
@@ -106,6 +111,8 @@ async function buildTransportAndFrom(settings) {
     } catch {
       throw new Error('The saved SMTP password can no longer be read. Please enter it again in Settings → Email.');
     }
+    // The host is tenant-supplied: never connect to our own network.
+    await assertPublicHost(settings.smtpHost);
     const transport = nodemailer.createTransport({
       host: settings.smtpHost,
       port: settings.smtpPort || 587,

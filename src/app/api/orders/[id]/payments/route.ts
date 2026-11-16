@@ -4,29 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Payment } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
-import { getAuth } from '@/lib/requireAuth';
+import { requirePermission } from '@/lib/requireAuth';
 import { applyStatusEventTrigger, canAutoConfirm } from '@/lib/orderStatus';
 import { serverError } from '@/lib/logger';
-
-// Sets order.paymentStatus from the already-known total paid and persists it.
-// Caller passes totalPaid so we don't re-query the payments collection.
-async function recalculatePaymentStatus(order, totalPaid) {
-  const orderTotal = order.totalAmount;
-
-  if (totalPaid >= orderTotal && orderTotal > 0) {
-    order.paymentStatus = 'fully-paid';
-  } else if (totalPaid > 0) {
-    order.paymentStatus = 'partially-paid';
-  } else {
-    order.paymentStatus = 'unpaid';
-  }
-  await order.save();
-}
+import { getOrderPayableTotal, syncPaymentState } from '@/lib/invoicing';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const auth = await getAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error } = await requirePermission(request, 'view_orders');
+    if (error) return error;
     await connectDB();
     const payments = await Payment.find({ order: params.id })
       .sort({ paymentDate: -1 })
@@ -39,8 +25,9 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
 
 async function POST_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const auth = await getAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Same permission the middleware requires for POST under /api/orders.
+    const { auth, error } = await requirePermission(request, 'create_orders');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
 
@@ -52,7 +39,8 @@ async function POST_(request: NextRequest, { params }: { params: Record<string, 
       return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
     }
 
-    const orderTotal = order.totalAmount;
+    // Measured against the invoice / active quote total TTC (falls back to the order's HT total).
+    const orderTotal = await getOrderPayableTotal(order);
     const existing = await Payment.find({ order: params.id }).lean();
     const existingTotal = +existing.reduce((s, p) => s + p.amount, 0).toFixed(2);
     const totalPaid = +(existingTotal + newAmount).toFixed(2);
@@ -84,7 +72,7 @@ async function POST_(request: NextRequest, { params }: { params: Record<string, 
 
     // totalPaid already reflects this new payment, so no need to re-query payments.
     // This also persists the status change above.
-    await recalculatePaymentStatus(order, totalPaid);
+    await syncPaymentState(order, totalPaid);
 
     const userId = auth.userId;
     await logActivity({

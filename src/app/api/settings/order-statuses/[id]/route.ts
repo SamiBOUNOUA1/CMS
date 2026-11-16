@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { OrderStatusConfig } from '@/lib/models';
@@ -7,6 +7,8 @@ import { serverError } from '@/lib/logger';
 
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_order_statuses');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
 
@@ -29,6 +31,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_order_statuses');
+    if (error) return error;
     await connectDB();
     const status = await OrderStatusConfig.findById(params.id);
     if (!status) return NextResponse.json({ error: 'Not found' }, { status: 404 });

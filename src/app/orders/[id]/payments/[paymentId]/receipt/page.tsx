@@ -34,6 +34,7 @@ export default function PaymentReceiptPage() {
   const [company, setCompany] = useState<any>(null);
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
   const [loading, setLoading] = useState(true);
+  const [payableTotal, setPayableTotal] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -43,6 +44,7 @@ export default function PaymentReceiptPage() {
       fetch('/api/settings/document-layout').then(r => r.ok ? r.json() : null),
     ]).then(([orderData, paymentsData, companyData, layoutData]: [any, any, any, any]) => {
       if (orderData?.order) setOrder(orderData.order);
+      if (typeof orderData?.payableTotal === 'number') setPayableTotal(orderData.payableTotal);
       if (paymentsData?.payments) {
         setAllPayments(paymentsData.payments);
         const found = paymentsData.payments.find((p: any) => p._id === paymentId);
@@ -74,8 +76,10 @@ export default function PaymentReceiptPage() {
   const travelFee = order.travelPrice || 0;
   const discount = order.discountAmount || 0;
   const orderTotal = order.totalAmount || 0;
+  // Amount due incl. VAT (invoice / active quote) when one exists — computed server-side.
+  const payable = typeof payableTotal === 'number' ? payableTotal : orderTotal;
   const totalPaid = +allPayments.reduce((s: number, p: any) => s + p.amount, 0).toFixed(2);
-  const remaining = +(orderTotal - totalPaid).toFixed(2);
+  const remaining = +(payable - totalPaid).toFixed(2);
 
   const itemsSubtotal = lineGroupsTotal(order.lineGroups);
   const staffSubtotal = (order.staffAssignments || []).reduce((s: number, sa: any) =>
@@ -336,6 +340,12 @@ export default function PaymentReceiptPage() {
             <span style={{ color: '#6b5e4e' }}>{tr.orderTotal}</span>
             <span style={{ color: '#1a1a1a', fontWeight: 'bold' }}>{formatCurrency(orderTotal, currency)}</span>
           </div>
+          {Math.abs(payable - orderTotal) >= 0.005 && (
+            <div className="flex justify-between" style={{ fontSize: '9pt' }}>
+              <span style={{ color: '#6b5e4e' }}>{t.invoices.totalTTC}</span>
+              <span style={{ color: '#1a1a1a', fontWeight: 'bold' }}>{formatCurrency(payable, currency)}</span>
+            </div>
+          )}
           <div className="flex justify-between" style={{ fontSize: '9pt' }}>
             <span style={{ color: '#6b5e4e' }}>{tr.paidAmount}</span>
             <span style={{ color: '#137333', fontWeight: 'bold' }}>{formatCurrency(totalPaid, currency)}</span>

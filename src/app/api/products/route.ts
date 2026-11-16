@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Product } from '@/lib/models';
 import { serverError } from '@/lib/logger';
+import { packPrice } from '@/lib/pricing';
 
 async function GET_() {
   try {
@@ -17,14 +18,28 @@ async function GET_() {
 
 async function POST_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_catalog');
+    if (error) return error;
     await connectDB();
-    const { name, shortDescription, productType, defaultPrice, unit, category, subItems, options } = await request.json();
+    const { name, shortDescription, productType, defaultPrice, unit, category, subItems, options, packItems, marginType, marginValue } = await request.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
+    const isPack = productType === 'pack';
+    const cleanPackItems = isPack
+      ? (packItems ?? [])
+          .map(i => ({ name: String(i?.name ?? '').trim(), price: Math.max(0, Number(i?.price) || 0) }))
+          .filter(i => i.name)
+      : [];
+    const cleanMarginType = marginType === 'percent' ? 'percent' : 'fixed';
+    const cleanMarginValue = isPack ? Math.max(0, Number(marginValue) || 0) : 0;
     const product = await Product.create({
       name: name.trim(),
       shortDescription: shortDescription?.trim() ?? '',
       productType: productType ?? 'simple',
-      defaultPrice: Number(defaultPrice) || 0,
+      // A pack's price is always derived from its items + margin, never taken from the client.
+      defaultPrice: isPack ? packPrice(cleanPackItems, cleanMarginType, cleanMarginValue) : Number(defaultPrice) || 0,
+      packItems: cleanPackItems,
+      marginType: cleanMarginType,
+      marginValue: cleanMarginValue,
       unit: unit?.trim() || 'item',
       category: category || null,
       subItems: subItems ?? [],

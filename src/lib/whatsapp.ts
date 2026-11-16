@@ -1,3 +1,5 @@
+import { decryptSecret } from '@/lib/mfa';
+
 const GRAPH_VERSION = 'v20.0';
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
@@ -6,6 +8,21 @@ export interface WhatsAppConfig {
   phoneNumberId?: string;
   accessToken?: string;
   defaultCountryCode?: string;
+}
+
+/**
+ * The access token as Meta expects it. Tokens are stored encrypted
+ * (iv.tag.data, see lib/mfa.ts); tokens saved before that are still plain text
+ * and are used as they are until the settings are saved again.
+ */
+export function readAccessToken(stored?: string): string {
+  const value = String(stored || '');
+  if (value.split('.').length !== 3) return value;
+  try {
+    return decryptSecret(value);
+  } catch {
+    throw new Error('The saved WhatsApp access token can no longer be read. Please enter it again in Settings → WhatsApp.');
+  }
 }
 
 /**
@@ -43,7 +60,7 @@ export async function uploadMedia(config: WhatsAppConfig, pdf: Buffer, filename:
 
   const res = await fetch(`${GRAPH_BASE}/${config.phoneNumberId}/media`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${config.accessToken}` },
+    headers: { Authorization: `Bearer ${readAccessToken(config.accessToken)}` },
     body: form,
   });
   if (!res.ok) throw new Error(`WhatsApp media upload failed: ${await graphError(res)}`);
@@ -91,7 +108,7 @@ export async function sendDocumentMessage(config: WhatsAppConfig, opts: SendOpti
   const res = await fetch(`${GRAPH_BASE}/${config.phoneNumberId}/messages`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${config.accessToken}`,
+      Authorization: `Bearer ${readAccessToken(config.accessToken)}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),

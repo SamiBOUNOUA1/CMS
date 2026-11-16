@@ -31,7 +31,9 @@ function LoginForm() {
       else setError(data.error || t.login.loginFailed);
       return;
     }
-    router.push(searchParams.get('from') || '/');
+    // Only local paths: "/orders" yes, "//evil.com" or "https://..." no.
+    const from = searchParams.get('from') || '';
+    router.push(/^\/(?![\/\\])/.test(from) ? from : '/');
     router.refresh();
   };
 

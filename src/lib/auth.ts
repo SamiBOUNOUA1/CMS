@@ -5,11 +5,11 @@ const COOKIE = 'cq_token';
 const PLATFORM_COOKIE = 'cq_platform_token'; // SaaS operator console session (separate from tenant users)
 const TTL = 60 * 60 * 8; // 8 hours
 
-export async function signToken(payload: Record<string, unknown>): Promise<string> {
+export async function signToken(payload: Record<string, unknown>, ttlSeconds = TTL): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(`${TTL}s`)
+    .setExpirationTime(`${ttlSeconds}s`)
     .sign(secret);
 }
 

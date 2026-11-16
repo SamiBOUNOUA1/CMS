@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useT } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
 import { useRowLink } from '@/lib/useRowLink';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -38,8 +40,9 @@ export default function SuppliersPage() {
   const [sortBy, setSortBy] = useState('name');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
+  const [total, setTotal] = useState(0);
   const { perms } = useUser();
-
+  const pg = usePagination('suppliers', [search, typeFilter, sortBy]);
 
   const fetchSuppliers = useCallback(async () => {
     setLoading(true);
@@ -47,15 +50,18 @@ export default function SuppliersPage() {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (typeFilter !== 'all') params.set('supplierType', typeFilter);
-      const res = await fetch(`/api/inventory/suppliers?${params}`);
+      params.set('sort', sortBy);
+      const res = await fetch(`/api/inventory/suppliers?${params}&${pg.query}`);
       const data = await res.json();
+      if (pg.page > (data.totalPages ?? 1)) { pg.setPage(data.totalPages ?? 1); return; }
       setSuppliers(data.suppliers || []);
+      setTotal(data.total ?? 0);
     } catch {
       showNotification(tp.loadFailed, 'error');
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter]);
+  }, [search, typeFilter, sortBy, pg.query]);
 
   useEffect(() => { fetchSuppliers(); }, [fetchSuppliers]);
 
@@ -76,10 +82,8 @@ export default function SuppliersPage() {
     setDeleteId(null);
   };
 
-  const sorted = [...suppliers].sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    return (a.name || '').localeCompare(b.name || '');
-  });
+  // Sorted server-side so the order holds across pages.
+  const sorted = suppliers;
 
   const typeChipStyle = (key: string) => ({
     background: typeFilter === key ? '#e8f0fe' : 'transparent',
@@ -127,7 +131,7 @@ export default function SuppliersPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="m-0 font-medium text-g-text text-[22px] sm:text-[26px]">{tp.title}</h1>
-          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.supplierCount(suppliers.length)}</p>
+          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.supplierCount(total)}</p>
         </div>
         {perms.edit_suppliers && (
           <Link
@@ -309,6 +313,8 @@ export default function SuppliersPage() {
           ))}
         </div>
       )}
+
+      {!loading && <Pagination {...pg.props} total={total} />}
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { format } from '@/lib/dateFormat';
 import Link from 'next/link';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -38,19 +40,29 @@ export default function ManagerEventsPage() {
   const [statuses, setStatuses] = useState<any[]>([]);
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const pg = usePagination('myEvents');
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/manager/events').then(r => r.ok ? r.json() : { orders: [] }),
       fetch('/api/settings/order-statuses').then(r => r.ok ? r.json() : { statuses: [] }),
       fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
-    ]).then(([evData, stData, meData]: [any, any, any]) => {
-      setOrders(evData.orders || []);
+    ]).then(([stData, meData]: [any, any]) => {
       setStatuses(stData.statuses || []);
       setUserId(meData?.user?._id || '');
-      setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/manager/events?${pg.query}`)
+      .then(r => r.ok ? r.json() : { orders: [] })
+      .then((evData: any) => {
+        setOrders(evData.orders || []);
+        setTotal(evData.total ?? 0);
+        setLoading(false);
+      });
+  }, [pg.query]);
 
   const statusMap = Object.fromEntries(statuses.map((s: any) => [s.name, s]));
 
@@ -67,7 +79,7 @@ export default function ManagerEventsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-normal text-g-text m-0">My Events</h1>
         <p className="mt-1 mb-0 text-sm text-g-text-2">
-          {orders.length} event{orders.length !== 1 ? 's' : ''} assigned to you
+          {total} event{total !== 1 ? 's' : ''} assigned to you
         </p>
       </div>
 
@@ -122,6 +134,8 @@ export default function ManagerEventsPage() {
           })}
         </div>
       )}
+
+      <Pagination {...pg.props} total={total} />
     </div>
   );
 }

@@ -7,8 +7,8 @@ import { useUser } from '@/lib/UserContext';
 import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea, FormSectionLabel, FormGrid } from '@/app/components/FormPrimitives';
 
 type ReminderKey = 'deposit' | 'guestCount' | 'thankYou';
-type TemplateKey = 'quote' | 'receipt' | 'deposit' | 'guestCount' | 'thankYou';
-const TEMPLATE_KEYS: TemplateKey[] = ['quote', 'receipt', 'deposit', 'guestCount', 'thankYou'];
+type TemplateKey = 'quote' | 'receipt' | 'invoice' | 'deposit' | 'guestCount' | 'thankYou';
+const TEMPLATE_KEYS: TemplateKey[] = ['quote', 'receipt', 'invoice', 'deposit', 'guestCount', 'thankYou'];
 
 interface Tpl { subject: string; body: string }
 interface EmailForm {
@@ -33,7 +33,7 @@ const EMPTY: EmailForm = {
   smtpHost: '', smtpPort: 587, smtpSecure: false, smtpUser: '', smtpPassword: '',
   fromName: '', fromEmail: '', replyTo: '',
   reminders: { deposit: { enabled: false, days: 14 }, guestCount: { enabled: false, days: 7 }, thankYou: { enabled: false, days: 1 } },
-  templates: { quote: emptyTpl(), receipt: emptyTpl(), deposit: emptyTpl(), guestCount: emptyTpl(), thankYou: emptyTpl() },
+  templates: { quote: emptyTpl(), receipt: emptyTpl(), invoice: emptyTpl(), deposit: emptyTpl(), guestCount: emptyTpl(), thankYou: emptyTpl() },
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,7 +46,7 @@ function fromServer(s: any): EmailForm {
     smtpUser: s.smtpUser || '', smtpPassword: s.smtpPassword || '',
     fromName: s.fromName || '', fromEmail: s.fromEmail || '', replyTo: s.replyTo || '',
     reminders: { deposit: rem('deposit'), guestCount: rem('guestCount'), thankYou: rem('thankYou') },
-    templates: { quote: tpl('quote'), receipt: tpl('receipt'), deposit: tpl('deposit'), guestCount: tpl('guestCount'), thankYou: tpl('thankYou') },
+    templates: { quote: tpl('quote'), receipt: tpl('receipt'), invoice: tpl('invoice'), deposit: tpl('deposit'), guestCount: tpl('guestCount'), thankYou: tpl('thankYou') },
   };
 }
 

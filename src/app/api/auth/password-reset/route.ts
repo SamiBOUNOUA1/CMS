@@ -5,15 +5,17 @@ import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { PasswordResetToken, User } from '@/lib/models';
 import { hashResetToken } from '@/lib/passwordReset';
-import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
+import { rateLimitShared, rateLimitSharedReset, clientIp } from '@/lib/rateLimit';
+import { REVOKE_SESSIONS, forgetSessionState } from '@/lib/sessionGuard';
 import { runAsSystem, runWithTenant } from '@/lib/tenantContext';
 import { logActivity } from '@/lib/activityLogger';
 import { logError, logWarn } from '@/lib/logger';
+import { passwordProblem } from '@/lib/passwordPolicy';
 
 const INVALID = 'This link is invalid or has expired.';
 
-function throttle(request: NextRequest) {
-  const rl = rateLimit(`pwreset:${clientIp(request)}`, 10, 15 * 60 * 1000);
+async function throttle(request: NextRequest) {
+  const rl = await rateLimitShared(`pwreset:${clientIp(request)}`, 10, 15 * 60 * 1000);
   if (rl.allowed) return null;
   logWarn('Too many attempts: rate limit reached', { route: '/api/auth/password-reset', tenantId: null, status: 429 });
   return NextResponse.json(
@@ -34,7 +36,7 @@ const maskEmail = (email: string) => {
 
 export async function GET(request: NextRequest) {
   try {
-    const limited = throttle(request);
+    const limited = await throttle(request);
     if (limited) return limited;
     await connectDB();
     const rec = await findValidToken(request.nextUrl.searchParams.get('token'));
@@ -49,11 +51,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const limited = throttle(request);
+    const limited = await throttle(request);
     if (limited) return limited;
     const { token, password } = await request.json();
-    if (!password || typeof password !== 'string' || password.length < 8)
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+    const pwError = passwordProblem(password);
+    if (pwError) return NextResponse.json({ error: pwError }, { status: 400 });
 
     await connectDB();
     const rec = await findValidToken(token);
@@ -69,9 +71,14 @@ export async function POST(request: NextRequest) {
     if (!claimed) return NextResponse.json({ error: INVALID }, { status: 400 });
 
     const passwordHash = await hash(password, 12);
-    await runAsSystem(() => User.updateOne({ _id: user._id }, { $set: { passwordHash } }));
+    // A new password also ends every session opened with the old one.
+    await runAsSystem(() => User.updateOne({ _id: user._id }, { $set: { passwordHash }, ...REVOKE_SESSIONS }));
+    forgetSessionState(String(user._id));
     await PasswordResetToken.deleteMany({ user: user._id, usedAt: null });
-    rateLimitReset(`login:${clientIp(request)}:${user.email.toLowerCase()}`);
+    await Promise.all([
+      rateLimitSharedReset(`login:${clientIp(request)}:${user.email.toLowerCase()}`),
+      rateLimitSharedReset(`login-acct:${user.email.toLowerCase()}`),
+    ]);
 
     await runWithTenant(String(user.tenantId), () => logActivity({
       action: 'password_reset', entityType: 'user', entityId: String(user._id), entityLabel: user.name,

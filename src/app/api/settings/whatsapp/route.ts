@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { WhatsAppSettings } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
+import { encryptSecret } from '@/lib/mfa';
 
 // Sentinel returned to the client in place of the real access token. When the
 // client sends this value back unchanged on PATCH, the token is left untouched.
@@ -46,6 +47,7 @@ async function PATCH_(request: NextRequest) {
     const {
       enabled, phoneNumberId, accessToken, businessAccountId, defaultCountryCode,
       quoteTemplateName, quoteTemplateLang, receiptTemplateName, receiptTemplateLang,
+      invoiceTemplateName, invoiceTemplateLang,
     } = body;
 
     const update: Record<string, unknown> = {};
@@ -57,8 +59,13 @@ async function PATCH_(request: NextRequest) {
     if (quoteTemplateLang !== undefined)   update.quoteTemplateLang = quoteTemplateLang;
     if (receiptTemplateName !== undefined) update.receiptTemplateName = receiptTemplateName;
     if (receiptTemplateLang !== undefined) update.receiptTemplateLang = receiptTemplateLang;
+    if (invoiceTemplateName !== undefined) update.invoiceTemplateName = invoiceTemplateName;
+    if (invoiceTemplateLang !== undefined) update.invoiceTemplateLang = invoiceTemplateLang;
     // Only overwrite the token when a real new value (not the mask) is provided.
-    if (accessToken !== undefined && accessToken !== TOKEN_MASK) update.accessToken = accessToken;
+    // Stored encrypted, like the SMTP password.
+    if (typeof accessToken === 'string' && accessToken !== TOKEN_MASK) {
+      update.accessToken = accessToken.trim() ? encryptSecret(accessToken.trim()) : '';
+    }
 
     const settings = await WhatsAppSettings.findOneAndUpdate(
       {},

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { FlowTemplate, Order } from '@/lib/models';
@@ -8,6 +8,8 @@ import { serverError } from '@/lib/logger';
 // PATCH /api/settings/flow-templates/[id]
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_flow_templates');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { name, isActive, steps } = body;
@@ -33,6 +35,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 // DELETE /api/settings/flow-templates/[id]
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_flow_templates');
+    if (error) return error;
     await connectDB();
     const inUse = await Order.exists({ 'flowInstance.templateId': params.id });
     if (inUse) {

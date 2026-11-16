@@ -95,12 +95,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (!permissions.manage_order_statuses) return forbidden(request);
     }
 
-    if (pathname.startsWith('/orders')) {
+    if (pathname.startsWith('/orders') || pathname.startsWith('/calculator')) {
       if (!permissions.view_orders) return forbidden(request);
     }
 
     if (pathname.startsWith('/orders/new')) {
       if (!permissions.create_orders) return forbidden(request);
+    }
+
+    if (pathname.startsWith('/invoices') || pathname.startsWith('/api/invoices')) {
+      if (!permissions.view_invoices) return forbidden(request);
     }
 
     if (pathname.startsWith('/customers')) {
@@ -161,6 +165,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
       if (pathname.startsWith('/api/material-templates') && !permissions.manage_event_materials) {
         return forbidden(request);
+      }
+
+      if (pathname.startsWith('/api/invoices') && !isSendWhatsapp) {
+        if (/^[/]api[/]invoices[/][^/]+[/]credit-note$/.test(pathname)) {
+          if (!permissions.issue_credit_notes) return forbidden(request);
+        } else if (method === 'POST') {
+          if (!permissions.issue_invoices) return forbidden(request);
+        } else {
+          return forbidden(request); // invoices are immutable: no PUT/PATCH/DELETE
+        }
       }
 
       if (pathname.startsWith('/api/quotes') && !isSendWhatsapp) {

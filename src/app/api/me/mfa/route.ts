@@ -6,6 +6,7 @@ import { User } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
 import { mfaStatus, startSetup, confirmSetup, disableMfa, regenerateRecoveryCodes } from '@/lib/mfaService';
 import { serverError } from '@/lib/logger';
+import { rateLimitShared } from '@/lib/rateLimit';
 
 // Two-factor status of the authenticated user.
 async function GET_(request: NextRequest) {
@@ -42,6 +43,8 @@ async function POST_(request: NextRequest) {
         }
         break;
       case 'disable':
+        if (!(await rateLimitShared(`mfa-disable:${id}`, 5, 15 * 60 * 1000)).allowed)
+          return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
         result = await disableMfa(User, id, body);
         if (!result.error && result.label) {
           await logActivity({ action: 'mfa_disabled', entityType: 'user', entityId: id, entityLabel: result.label, performedBy: id });

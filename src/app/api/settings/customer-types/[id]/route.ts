@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { CustomerTypeConfig } from '@/lib/models';
@@ -8,6 +8,8 @@ import { serverError } from '@/lib/logger';
 // PATCH /api/settings/customer-types/[id]
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_customer_types');
+    if (error) return error;
     await connectDB();
     const config = await CustomerTypeConfig.findById(params.id);
     if (!config) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -27,6 +29,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 // DELETE /api/settings/customer-types/[id]
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_customer_types');
+    if (error) return error;
     await connectDB();
     const config = await CustomerTypeConfig.findByIdAndDelete(params.id);
     if (!config) return NextResponse.json({ error: 'Not found' }, { status: 404 });

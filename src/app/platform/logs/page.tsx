@@ -4,6 +4,8 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { btnOutline } from '@/app/components/FormPrimitives';
 import { api } from '../shared';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 interface LogItem {
   _id: string;
@@ -71,7 +73,7 @@ function LogsPageInner() {
     from: '',
     to: '',
   });
-  const [page, setPage] = useState(1);
+  const pg = usePagination('platformLogs', [filters]);
   const [data, setData] = useState<LogsResponse | null>(null);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<LogItem | null>(null);
@@ -85,9 +87,8 @@ function LogsPageInner() {
 
   const load = useCallback(() => {
     const sp = query();
-    sp.set('page', String(page));
-    api<LogsResponse>(`/api/platform/logs?${sp}`).then(d => { setData(d); setError(''); }).catch(e => setError(e.message));
-  }, [query, page]);
+    api<LogsResponse>(`/api/platform/logs?${sp}&${pg.query}`).then(d => { setData(d); setError(''); }).catch(e => setError(e.message));
+  }, [query, pg.query]);
 
   // Debounce so typing in the search box doesn't fire a request per key.
   useEffect(() => {
@@ -95,7 +96,7 @@ function LogsPageInner() {
     return () => clearTimeout(t);
   }, [load]);
 
-  const set = (k: keyof typeof filters, v: string) => { setFilters(f => ({ ...f, [k]: v })); setPage(1); };
+  const set = (k: keyof typeof filters, v: string) => setFilters(f => ({ ...f, [k]: v }));
 
   const openDetail = async (item: LogItem) => {
     setSelected(item);
@@ -136,7 +137,6 @@ function LogsPageInner() {
   };
 
   const s = data?.summary;
-  const pages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
 
   return (
     <div>
@@ -228,13 +228,7 @@ function LogsPageInner() {
         </table>
       </div>
 
-      {data && pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4 text-sm text-g-text-2">
-          <button className={btnOutline} disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</button>
-          <span>Page {page} / {pages}</span>
-          <button className={btnOutline} disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Next</button>
-        </div>
-      )}
+      {data && <Pagination {...pg.props} total={data.total} />}
 
       {selected && (
         <>

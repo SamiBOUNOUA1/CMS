@@ -4,7 +4,7 @@ import { compare } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
 import { signPendingToken, cookieOptions, PLATFORM_MFA_PENDING_COOKIE, MFA_PENDING_TTL } from '@/lib/auth';
-import { rateLimit, rateLimitReset, clientIp } from '@/lib/rateLimit';
+import { rateLimitShared, rateLimitSharedReset, clientIp } from '@/lib/rateLimit';
 import { logError, logWarn } from '@/lib/logger';
 import { issuePlatformSession } from '@/lib/session';
 
@@ -16,7 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
 
     const rlKey = `platform-login:${clientIp(request)}:${email.toLowerCase()}`;
-    const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
+    const acctKey = `platform-login-acct:${email.toLowerCase()}`;
+    const [byIp, byAccount] = await Promise.all([
+      rateLimitShared(rlKey, 5, 15 * 60 * 1000),
+      rateLimitShared(acctKey, 10, 15 * 60 * 1000),
+    ]);
+    const rl = byIp.allowed ? byAccount : byIp;
     if (!rl.allowed) {
       logWarn('Too many attempts: rate limit reached', { route: '/api/platform/auth/login', method: 'POST', tenantId: null, status: 429 });
       return NextResponse.json(
@@ -29,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (!admin || !admin.isActive || !(await compare(password, admin.passwordHash)))
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
-    rateLimitReset(rlKey);
+    await Promise.all([rateLimitSharedReset(rlKey), rateLimitSharedReset(acctKey)]);
 
     if (admin.mfaEnabled) {
       const pending = await signPendingToken({ id: admin._id.toString(), platform: true });

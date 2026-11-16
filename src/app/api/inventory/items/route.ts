@@ -6,6 +6,7 @@ import { InventoryItem, Supplier, Warehouse } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
 import { serverError } from '@/lib/logger';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   try {
@@ -30,14 +31,22 @@ async function GET_(request: NextRequest) {
       query.$expr = { $lte: ['$currentStock', '$minStock'] };
     }
 
-    const items = await InventoryItem.find(query)
+    const pg = parsePagination(searchParams);
+    let find = InventoryItem.find(query)
       .populate('category', 'name color')
       .populate('supplier', 'name')
       .populate('warehouse', 'name')
-      .sort({ name: 1 })
-      .lean();
+      .sort({ name: 1 });
+    if (pg) find = find.skip(pg.skip).limit(pg.limit);
+    const items = await find.lean();
 
-    return NextResponse.json({ items });
+    if (!pg) return NextResponse.json({ items });
+
+    const [total, lowStockCount] = await Promise.all([
+      InventoryItem.countDocuments(query),
+      InventoryItem.countDocuments({ ...query, $expr: { $lte: ['$currentStock', '$minStock'] } }),
+    ]);
+    return NextResponse.json({ items, lowStockCount, ...pageMeta(total, pg) });
   } catch (err: unknown) {
     return serverError(err);
   }

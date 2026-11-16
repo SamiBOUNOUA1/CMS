@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Category } from '@/lib/models';
@@ -17,6 +17,8 @@ async function GET_() {
 
 async function POST_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_catalog');
+    if (error) return error;
     await connectDB();
     const { name } = await request.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });

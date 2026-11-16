@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { verifyPendingToken, cookieOptions, MFA_PENDING_COOKIE } from '@/lib/auth';
-import { rateLimit, rateLimitReset } from '@/lib/rateLimit';
+import { rateLimitShared, rateLimitSharedReset } from '@/lib/rateLimit';
 import { logError, logWarn } from '@/lib/logger';
 import { runAsSystem } from '@/lib/tenantContext';
 import { loadWithMfa, checkSecondFactor } from '@/lib/mfaService';
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { code, recoveryCode } = await request.json();
 
     const rlKey = `mfa:${pending.id}`;
-    const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
+    const rl = await rateLimitShared(rlKey, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
       logWarn('Too many attempts: rate limit reached', { route: '/api/auth/mfa/verify', method: 'POST', tenantId: null, status: 429 });
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }));
     if (!ok) return NextResponse.json({ error: 'invalid_code' }, { status: 401 });
 
-    rateLimitReset(rlKey);
+    await rateLimitSharedReset(rlKey);
     const res = await issueTenantSession(user);
     res.cookies.set(MFA_PENDING_COOKIE, '', cookieOptions(0));
     return res;

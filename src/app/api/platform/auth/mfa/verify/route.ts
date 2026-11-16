@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { PlatformAdmin } from '@/lib/models';
 import { verifyPendingToken, cookieOptions, PLATFORM_MFA_PENDING_COOKIE } from '@/lib/auth';
-import { rateLimit, rateLimitReset } from '@/lib/rateLimit';
+import { rateLimitShared, rateLimitSharedReset } from '@/lib/rateLimit';
 import { logError, logWarn } from '@/lib/logger';
 import { loadWithMfa, checkSecondFactor } from '@/lib/mfaService';
 import { issuePlatformSession } from '@/lib/session';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const { code, recoveryCode } = await request.json();
 
     const rlKey = `platform-mfa:${pending.id}`;
-    const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
+    const rl = await rateLimitShared(rlKey, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
       logWarn('Too many attempts: rate limit reached', { route: '/api/platform/auth/mfa/verify', method: 'POST', tenantId: null, status: 429 });
       return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     });
     if (!ok) return NextResponse.json({ error: 'invalid_code' }, { status: 401 });
 
-    rateLimitReset(rlKey);
+    await rateLimitSharedReset(rlKey);
     const res = await issuePlatformSession(admin);
     res.cookies.set(PLATFORM_MFA_PENDING_COOKIE, '', cookieOptions(0));
     return res;

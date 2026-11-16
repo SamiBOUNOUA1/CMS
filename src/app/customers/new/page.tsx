@@ -16,7 +16,8 @@ export default function NewCustomerPage() {
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
   const [form, setForm] = useState({
     name: '', email: '', phone: '', customerType: '', leadSource: '', notes: '',
-    billingAddress: { street: '', city: '', state: '', postalCode: '', country: 'FR' },
+    clientKind: 'individual', legalName: '', ice: '',
+    billingAddress: { street: '', city: '', state: '', postalCode: '', country: 'MA' },
   });
 
   useEffect(() => {
@@ -104,6 +105,22 @@ export default function NewCustomerPage() {
               ))}
             </FormSelect>
           </Field>
+          <Field label={t.invoices.customerKind}>
+            <FormSelect value={form.clientKind} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('clientKind', e.target.value)}>
+              <option value="individual">{t.invoices.issue.individual}</option>
+              <option value="company">{t.invoices.issue.company}</option>
+            </FormSelect>
+          </Field>
+          {form.clientKind === 'company' && (
+            <Field label={t.invoices.issue.legalName}>
+              <FormInput value={form.legalName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('legalName', e.target.value)} />
+            </Field>
+          )}
+          {form.clientKind === 'company' && (
+            <Field label={t.invoices.issue.ice}>
+              <FormInput value={form.ice} inputMode="numeric" maxLength={20} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('ice', e.target.value)} />
+            </Field>
+          )}
         </FormGrid>
       </FormCard>
 

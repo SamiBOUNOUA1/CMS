@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Task } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   const auth = await getAuth(request);
@@ -24,15 +25,20 @@ async function GET_(request: NextRequest) {
       filter.owner = userId;
     }
 
+    if (searchParams.get('status') === 'pending') filter.completed = { $ne: true };
+
+    const pg = parsePagination(searchParams);
     let query = Task.find(filter)
       .populate('owner', 'name _id')
       .populate('createdBy', 'name _id')
       .sort({ scheduledDate: 1 });
 
-    if (limitParam) query = query.limit(parseInt(limitParam, 10));
+    if (pg) query = query.skip(pg.skip).limit(pg.limit);
+    else if (limitParam) query = query.limit(parseInt(limitParam, 10));
 
-    const tasks = await query.lean();
-    return NextResponse.json({ tasks });
+    const [tasks, total] = await Promise.all([query.lean(), pg ? Task.countDocuments(filter) : null]);
+    if (!pg) return NextResponse.json({ tasks });
+    return NextResponse.json({ tasks, ...pageMeta(total, pg) });
   } catch (err: unknown) {
     return serverError(err);
   }

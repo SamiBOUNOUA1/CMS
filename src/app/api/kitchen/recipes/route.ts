@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { KitchenRecipe } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   const { error } = await requirePermission(request, 'view_kitchen');
@@ -24,12 +25,15 @@ async function GET_(request: NextRequest) {
     ];
   }
 
-  const recipes = await KitchenRecipe.find(filter)
+  const pg = parsePagination(searchParams);
+  let find = KitchenRecipe.find(filter)
     .populate('ingredients.stockItem', 'name unit unitCost currentStock minStock')
-    .sort({ name: 1 })
-    .lean();
+    .sort({ name: 1 });
+  if (pg) find = find.skip(pg.skip).limit(pg.limit);
+  const [recipes, total] = await Promise.all([find.lean(), pg ? KitchenRecipe.countDocuments(filter) : null]);
 
-  return NextResponse.json({ recipes });
+  if (!pg) return NextResponse.json({ recipes });
+  return NextResponse.json({ recipes, ...pageMeta(total ?? 0, pg) });
 }
 
 async function POST_(request: NextRequest) {

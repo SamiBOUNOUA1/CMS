@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Role, User, RolePermissions } from '@/lib/models';
@@ -9,6 +9,8 @@ import { serverError } from '@/lib/logger';
 // Cannot change the name of a system role; name is always derived from label for non-system roles
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const { label, isDefault, sortOrder } = await request.json();
 
@@ -57,6 +59,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 // Blocked if isSystem or if any users are still assigned to it
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
 
     const role = await Role.findById(params.id);

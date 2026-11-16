@@ -4,10 +4,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Order, Quote, FlowTemplate } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
-import { getAuth, requirePermission } from '@/lib/requireAuth';
+import { getAuth, requirePermission, requireAnyPermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
-import { lineGroupsTotal } from '@/lib/pricing';
+import { lineGroupsTotal, normalizeLineGroups } from '@/lib/pricing';
 import { serverError } from '@/lib/logger';
+import { parsePagination, pageMeta } from '@/lib/pagination';
+
+const ORDER_SORTS = {
+  date:   { createdAt: -1 },
+  total:  { totalAmount: -1, createdAt: -1 },
+  client: { clientName: 1, createdAt: -1 },
+};
 
 // Fields the orders list view needs — excludes the large nested arrays
 // (lineGroups, staffAssignments, materials, flowInstance) to keep responses small.
@@ -17,8 +24,9 @@ const ORDER_LIST_FIELDS =
 // GET /api/orders — list orders with latest active quote summary
 async function GET_(request: NextRequest) {
   try {
-    const auth = await getAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // The laundry batch page also lists orders (to link a batch to one).
+    const { error } = await requireAnyPermission(request, ['view_orders', 'view_laundry']);
+    if (error) return error;
     await connectDB();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -31,10 +39,12 @@ async function GET_(request: NextRequest) {
       filter.$or = [{ clientName: rx }, { eventType: rx }];
     }
 
-    const orders = await Order.find(filter)
-      .select(ORDER_LIST_FIELDS)
-      .sort({ createdAt: -1 })
-      .lean();
+    const sort = ORDER_SORTS[searchParams.get('sort')] ?? ORDER_SORTS.date;
+    const pg = parsePagination(searchParams);
+
+    let query = Order.find(filter).select(ORDER_LIST_FIELDS).sort(sort);
+    if (pg) query = query.skip(pg.skip).limit(pg.limit);
+    const orders = await query.lean();
 
     // Attach quote count + active quote version to each order.
     // The displayed total comes from the order's own totalAmount, not the quote.
@@ -60,7 +70,29 @@ async function GET_(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ orders: enriched });
+    if (!pg) return NextResponse.json({ orders: enriched });
+
+    // Paged request: the list page's stat cards need totals over every matching
+    // order, not just the current page.
+    const [agg] = await Order.aggregate([
+      { $match: filter },
+      { $group: {
+        _id: null,
+        total: { $sum: 1 },
+        withEvent: { $sum: { $cond: [{ $ifNull: ['$event', false] }, 1, 0] } },
+        pipeline: { $sum: { $ifNull: ['$totalAmount', 0] } },
+      } },
+    ]);
+    const total = agg?.total ?? 0;
+    const quoteCount = Object.keys(filter).length === 0
+      ? await Quote.countDocuments({})
+      : await Quote.countDocuments({ order: { $in: await Order.distinct('_id', filter) } });
+
+    return NextResponse.json({
+      orders: enriched,
+      ...pageMeta(total, pg),
+      stats: { total, withEvent: agg?.withEvent ?? 0, quotes: quoteCount, pipeline: agg?.pipeline ?? 0 },
+    });
   } catch (err: unknown) {
     return serverError(err);
   }
@@ -75,7 +107,8 @@ async function POST_(request: NextRequest) {
     const userId = auth.userId;
     const body = await request.json();
 
-    const lineGroups       = body.lineGroups       || [];
+    // Pack lines get their unitPrice / subItems re-derived from their kept items.
+    const lineGroups       = normalizeLineGroups(body.lineGroups || []);
     const staffAssignments = body.staffAssignments || [];
     const travelPrice = Number(body.travelPrice) || 0;
     const discountAmount = Number(body.discountAmount) || 0;
