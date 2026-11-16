@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useT, useCurrency } from '@/lib/LanguageContext';
@@ -8,6 +8,7 @@ import { useIsMobile } from '@/lib/useIsMobile';
 import { btnFilled, btnOutline, Field, FormInput, FormSelect, FormTextarea } from '@/app/components/FormPrimitives';
 import { StepLineItems, defaultGroupItem, defaultLineGroup } from '@/app/components/LineItemsStep';
 import { lineGroupsTotal } from '@/lib/pricing';
+import { ORDER_DRAFT_STORAGE_KEY, type OrderDraft } from '@/lib/calculator';
 import { StepStaff, defaultStaff } from '@/app/components/StaffStep';
 
 export default function NewOrderPage() {
@@ -50,6 +51,35 @@ export default function NewOrderPage() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerResults, setCustomerResults] = useState<any[]>([]);
   const [showCustomerResults, setShowCustomerResults] = useState(false);
+
+  const [discountAmount, setDiscountAmount] = useState(0);
+  // Set when the wizard was opened from the price calculator: the count its
+  // event-following line groups were built with (see next()).
+  const calcCountRef = useRef<number | null>(null);
+
+  // Pre-fill from the price calculator ("Create order" on /calculator).
+  useEffect(() => {
+    let draft: OrderDraft | null = null;
+    try {
+      draft = JSON.parse(sessionStorage.getItem(ORDER_DRAFT_STORAGE_KEY) || 'null');
+      sessionStorage.removeItem(ORDER_DRAFT_STORAGE_KEY);
+    } catch { /* storage unavailable — plain empty wizard */ }
+    if (!draft || !Array.isArray(draft.lineGroups)) return;
+    const d = draft;
+    setForm(f => ({
+      ...f,
+      eventType: d.eventType || f.eventType,
+      guestCount: d.guestCount || f.guestCount,
+      tableCount: d.tableCount ?? '',
+    }));
+    if (d.lineGroups.length > 0) setLineGroups(d.lineGroups);
+    setStaffAssignments(d.staffAssignments || []);
+    setDiscountAmount(Number(d.discountAmount) || 0);
+    if (d.travelRegion || d.travelPrice > 0) {
+      setSelectedRegion({ _id: d.travelRegionId || '__calculator__', label: d.travelRegion || '', travelPrice: d.travelPrice || 0 });
+    }
+    calcCountRef.current = d.effectiveCount;
+  }, []);
 
   useEffect(() => {
     if (travelRegions.length > 0 && selectedRegion === null) {
@@ -111,7 +141,12 @@ export default function NewOrderPage() {
   const next = () => {
     if (!validate()) return;
     if (step === 1) {
-      setLineGroups(prev => prev.map(g => ({ ...g, count: effectiveCount })));
+      // From the calculator, groups with their own quantity (e.g. 3 cakes, a fixed
+      // charge) must keep it: only groups that followed the event count are re-synced.
+      const calcCount = calcCountRef.current;
+      setLineGroups(prev => prev.map(g =>
+        calcCount === null || Number(g.count) === calcCount ? { ...g, count: effectiveCount } : g));
+      if (calcCount !== null) calcCountRef.current = effectiveCount;
     }
     setStep(s => Math.min(s + 1, lastStep));
   };
@@ -138,6 +173,7 @@ export default function NewOrderPage() {
         status: orderStatuses[0]?.name || 'new',
         travelRegion: selectedRegion?.label || '',
         travelPrice: travelPrice,
+        discountAmount,
         lineGroups,
         staffAssignments: staffAssignments.map(sa => ({
           ...sa,
@@ -162,7 +198,7 @@ export default function NewOrderPage() {
   const runningStaffTotal = staffAssignments.reduce(
     (s: number, sa: any) => s + Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), 0
   );
-  const runningTotal = runningItemsTotal + runningStaffTotal + travelPrice;
+  const runningTotal = Math.max(0, runningItemsTotal + runningStaffTotal + travelPrice - discountAmount);
 
   const lineItemsForm = { lineGroups };
   const setLineItemsForm = (updater: any) => {
@@ -419,6 +455,11 @@ export default function NewOrderPage() {
           {travelPrice > 0 && (
             <div className="text-[13px] text-g-text-2 mb-1">
               {tn.location.travelFee}: <span className="text-g-text">{currency}{travelPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {discountAmount > 0 && (
+            <div className="text-[13px] text-g-text-2 mb-1">
+              {tn.discount}: <span className="text-g-text">− {currency}{discountAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
           {tn.estimatedTotal} : <strong>{currency}{(runningTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>

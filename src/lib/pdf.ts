@@ -87,6 +87,9 @@ async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
 }
 
+// Long enough for one page render (60s navigation timeout plus the PDF itself).
+const PDF_TOKEN_TTL_SECONDS = 5 * 60;
+
 /**
  * Mints a short-lived admin token so Puppeteer can load auth-gated pages. It is
  * bound to the calling request's tenant, so the bot only sees that tenant's data.
@@ -99,7 +102,9 @@ async function mintInternalToken(): Promise<string> {
     role: 'admin',
     permissions: buildPermissions('admin'),
     tenantId,
-  });
+    // Not a user account: skips the per-user session check (lib/requireAuth.ts).
+    internal: true,
+  }, PDF_TOKEN_TTL_SECONDS);
 }
 
 /**

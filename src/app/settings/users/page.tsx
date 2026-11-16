@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useT } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 interface User {
   _id: string;
@@ -225,7 +226,7 @@ export default function UsersPage() {
               </div>
               <div>
                 <label className={labelCls}>{tu.password}</label>
-                <input required type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder={tu.passwordPlaceholder} minLength={8} className={inputCls} />
+                <input required type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder={tu.passwordPlaceholder} minLength={MIN_PASSWORD_LENGTH} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>{tu.role}</label>

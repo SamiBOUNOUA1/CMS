@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { KitchenStockItem } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { safeRegex } from '@/lib/security';
+import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
   const { error } = await requirePermission(request, 'view_kitchen');
@@ -25,9 +26,29 @@ async function GET_(request: NextRequest) {
     filter.$expr = { $lt: ['$currentStock', '$minStock'] };
   }
 
-  const items = await KitchenStockItem.find(filter).sort({ name: 1 }).lean();
+  const pg = parsePagination(searchParams);
+  let find = KitchenStockItem.find(filter).sort({ name: 1 });
+  if (pg) find = find.skip(pg.skip).limit(pg.limit);
+  const items = await find.lean();
 
-  return NextResponse.json({ items });
+  if (!pg) return NextResponse.json({ items });
+
+  // Stat cards cover every matching item, not just the current page.
+  const [agg] = await KitchenStockItem.aggregate([
+    { $match: filter },
+    { $group: {
+      _id: null,
+      total: { $sum: 1 },
+      lowStock: { $sum: { $cond: [{ $lt: ['$currentStock', '$minStock'] }, 1, 0] } },
+      totalValue: { $sum: { $multiply: [{ $ifNull: ['$currentStock', 0] }, { $ifNull: ['$unitCost', 0] }] } },
+    } },
+  ]);
+  const total = agg?.total ?? 0;
+  return NextResponse.json({
+    items,
+    ...pageMeta(total, pg),
+    stats: { total, lowStock: agg?.lowStock ?? 0, totalValue: agg?.totalValue ?? 0 },
+  });
 }
 
 async function POST_(request: NextRequest) {

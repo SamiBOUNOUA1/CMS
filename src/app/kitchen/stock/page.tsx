@@ -6,6 +6,8 @@ import { useT, useCurrency } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
 import { formatMoney } from '@/lib/money';
 import { useRowLink } from '@/lib/useRowLink';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -51,8 +53,9 @@ export default function KitchenStockPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  useEffect(() => {
-  }, []);
+  const [stats, setStats] = useState({ total: 0, lowStock: 0, totalValue: 0 });
+  const [reloadKey, setReloadKey] = useState(0);
+  const pg = usePagination('kitchenStock', [search, filterCategory, filterLowStock]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -60,15 +63,20 @@ export default function KitchenStockPage() {
     if (filterCategory) params.set('category', filterCategory);
     if (filterLowStock) params.set('lowStock', 'true');
     setLoading(true);
-    fetch(`/api/kitchen/stock?${params}`)
+    fetch(`/api/kitchen/stock?${params}&${pg.query}`)
       .then(r => r.ok ? r.json() : { items: [] })
-      .then((d: any) => { setItems(d.items ?? []); setLoading(false); });
-  }, [search, filterCategory, filterLowStock]);
+      .then((d: any) => {
+        if (pg.page > (d.totalPages ?? 1)) { pg.setPage(d.totalPages ?? 1); return; }
+        setItems(d.items ?? []);
+        if (d.stats) setStats(d.stats);
+        setLoading(false);
+      });
+  }, [search, filterCategory, filterLowStock, pg.query, reloadKey]);
 
   const canManage = user?.permissions?.manage_kitchen;
 
-  const lowStockCount = items.filter(i => i.currentStock < i.minStock).length;
-  const totalValue = items.reduce((s: number, i: any) => s + (i.currentStock * i.unitCost), 0);
+  const lowStockCount = stats.lowStock;
+  const totalValue = stats.totalValue;
 
   function showToast(msg: string) {
     setToast(msg);
@@ -82,7 +90,7 @@ export default function KitchenStockPage() {
     if (res.status === 409) {
       showToast(tk.deleteInUse);
     } else if (res.ok) {
-      setItems(prev => prev.filter(i => i._id !== deleteId));
+      setReloadKey(k => k + 1);
       showToast(tk.deleted);
     } else {
       showToast(tk.deleteFailed);
@@ -109,10 +117,10 @@ export default function KitchenStockPage() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
         {[
-          { label: tk.stats.total, value: items.length, color: ACCENT },
+          { label: tk.stats.total, value: stats.total, color: ACCENT },
           { label: tk.stats.lowStock, value: lowStockCount, color: '#d93025' },
           { label: tk.stats.totalValue, value: fmt(totalValue), color: '#137333' },
-          { label: tk.stats.active, value: items.length, color: '#1a73e8' },
+          { label: tk.stats.active, value: stats.total, color: '#1a73e8' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--google-surface)', borderRadius: 12, padding: isMobile ? '12px 14px' : '16px 20px', boxShadow: '0 1px 2px rgba(60,64,67,.3)' }}>
             <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: s.color }}>{s.value}</div>
@@ -288,6 +296,8 @@ export default function KitchenStockPage() {
           </table>
         )}
       </div>
+
+      {!loading && <Pagination {...pg.props} total={stats.total} />}
 
       {/* Delete Dialog */}
       {deleteId && (

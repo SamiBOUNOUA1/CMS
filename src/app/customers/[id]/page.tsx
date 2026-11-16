@@ -26,7 +26,8 @@ function formatDate(d) {
 
 const EMPTY_FORM = {
   name: '', email: '', phone: '', customerType: '', leadSource: '', notes: '',
-  billingAddress: { street: '', city: '', state: '', postalCode: '', country: 'FR' },
+  clientKind: 'individual', legalName: '', ice: '',
+  billingAddress: { street: '', city: '', state: '', postalCode: '', country: 'MA' },
 };
 
 export default function CustomerDetailPage() {
@@ -80,6 +81,9 @@ export default function CustomerDetailPage() {
       customerType: c.customerType || '',
       leadSource: c.leadSource || '',
       notes: c.notes || '',
+      clientKind: c.clientKind === 'company' ? 'company' : 'individual',
+      legalName: c.legalName || '',
+      ice: c.ice || '',
       billingAddress: {
         street: c.billingAddress?.street || '',
         city: c.billingAddress?.city || '',
@@ -106,7 +110,10 @@ export default function CustomerDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error);
+      }
       const data = await res.json();
       setClient(data.client);
       seedEditForm(data.client);
@@ -266,6 +273,11 @@ export default function CustomerDetailPage() {
                   { label: tp.fields.phone, value: client.phone || '—' },
                   { label: tp.fields.customerType, value: (client.customerType && typeMap[client.customerType]) || tp.noType },
                   { label: tp.fields.leadSource, value: (client.leadSource && tp.fields.leadSources[client.leadSource]) || tp.fields.noLeadSource },
+                  { label: t.invoices.customerKind, value: client.clientKind === 'company' ? t.invoices.issue.company : t.invoices.issue.individual },
+                  ...(client.clientKind === 'company' ? [
+                    { label: t.invoices.issue.legalName, value: client.legalName || '—' },
+                    { label: t.invoices.issue.ice, value: client.ice || '—' },
+                  ] : []),
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <p className={`m-0 ${fieldLabel}`}>{label}</p>
@@ -300,6 +312,22 @@ export default function CustomerDetailPage() {
                     ))}
                   </FormSelect>
                 </Field>
+                <Field label={t.invoices.customerKind}>
+                  <FormSelect value={editForm.clientKind} onChange={e => set('clientKind', e.target.value)}>
+                    <option value="individual">{t.invoices.issue.individual}</option>
+                    <option value="company">{t.invoices.issue.company}</option>
+                  </FormSelect>
+                </Field>
+                {editForm.clientKind === 'company' && (
+                  <Field label={t.invoices.issue.legalName}>
+                    <FormInput value={editForm.legalName} onChange={e => set('legalName', e.target.value)} />
+                  </Field>
+                )}
+                {editForm.clientKind === 'company' && (
+                  <Field label={t.invoices.issue.ice}>
+                    <FormInput value={editForm.ice} inputMode="numeric" maxLength={20} onChange={e => set('ice', e.target.value)} />
+                  </Field>
+                )}
               </FormGrid>
             )}
           </FormCard>

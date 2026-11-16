@@ -1,14 +1,17 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { RolePermissions, Role } from '@/lib/models';
+import { RolePermissions, Role, User } from '@/lib/models';
+import { REVOKE_SESSIONS, forgetSessionState } from '@/lib/sessionGuard';
 import { ALL_PERMISSIONS, buildPermissions } from '@/lib/permissions';
 import { serverError } from '@/lib/logger';
 
 // GET /api/admin/permissions — returns current permission matrix for all dynamic roles
-async function GET_() {
+async function GET_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const [roleDocs, permDocs] = await Promise.all([
       Role.find().sort({ sortOrder: 1, createdAt: 1 }).lean(),
@@ -30,6 +33,8 @@ async function GET_() {
 // Body: { role: 'manager', permissions: { create_quotes: true, ... } }
 async function PATCH_(request: NextRequest) {
   try {
+    const { auth, error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const { role, permissions } = await request.json();
 
@@ -51,6 +56,11 @@ async function PATCH_(request: NextRequest) {
       { $set: { permissions: sanitised } },
       { upsert: true, new: true }
     );
+
+    // Permissions live in the session token, so users of this role sign in again
+    // to pick up the change. The admin making the change keeps their session.
+    await User.updateMany({ role, _id: { $ne: auth.userId } }, REVOKE_SESSIONS);
+    forgetSessionState();
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

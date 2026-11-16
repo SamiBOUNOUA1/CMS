@@ -1,13 +1,15 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Role, User } from '@/lib/models';
 import { serverError } from '@/lib/logger';
 
 // GET /api/admin/roles — list all roles sorted by sortOrder
-async function GET_() {
+async function GET_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const roles = await Role.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
     return NextResponse.json({ roles });
@@ -20,6 +22,8 @@ async function GET_() {
 // Body: { label: string, isDefault?: boolean }
 async function POST_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_users');
+    if (error) return error;
     await connectDB();
     const { label, isDefault } = await request.json();
 

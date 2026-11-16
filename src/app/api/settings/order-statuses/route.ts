@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { OrderStatusConfig } from '@/lib/models';
@@ -35,6 +35,8 @@ async function GET_() {
 
 async function POST_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_order_statuses');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const name = body.label?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');

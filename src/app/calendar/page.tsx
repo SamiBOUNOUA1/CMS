@@ -30,22 +30,29 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const rangeFrom = calStart.toISOString();
+  const rangeTo = calEnd.toISOString();
+
+  // Only load the events visible in the current grid. Old results stay on screen
+  // while the next month loads; stale responses are ignored.
   useEffect(() => {
-    fetch('/api/calendar', { cache: 'no-store' })
+    let cancelled = false;
+    const params = new URLSearchParams({ from: rangeFrom, to: rangeTo });
+    fetch(`/api/calendar?${params}`, { cache: 'no-store' })
       .then(r => r.json())
-      .then((d: any) => setOrders(d.orders || []))
-      .finally(() => setLoading(false));
-  }, []);
+      .then((d: any) => { if (!cancelled) setOrders(d.orders || []); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [rangeFrom, rangeTo]);
 
   const closeModal = useCallback(() => setSelectedOrder(null), []);
 
   const ordersOnDay = (day: Date) =>
     orders.filter((o: any) => o.event?.eventDate && isSameDay(parseISO(o.event.eventDate), day));
-
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
   const days: Date[] = [];
   let d = calStart;

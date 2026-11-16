@@ -6,6 +6,8 @@ import { useT } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
 import { useRowLink } from '@/lib/useRowLink';
 import { SkeletonList } from '@/app/components/Skeleton';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -33,7 +35,9 @@ export default function CustomersPage() {
   const [sortBy, setSortBy] = useState('name');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
+  const [total, setTotal] = useState(0);
   const { perms } = useUser();
+  const pg = usePagination('customers', [search, typeFilter, sortBy]);
 
   useEffect(() => {
     fetch('/api/settings/customer-types')
@@ -47,15 +51,18 @@ export default function CustomersPage() {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (typeFilter !== 'all') params.set('customerType', typeFilter);
-      const res = await fetch(`/api/clients?${params}`);
+      params.set('sort', sortBy);
+      const res = await fetch(`/api/clients?${params}&${pg.query}`);
       const data = await res.json();
+      if (pg.page > (data.totalPages ?? 1)) { pg.setPage(data.totalPages ?? 1); return; }
       setCustomers(data.clients || []);
+      setTotal(data.total ?? 0);
     } catch {
       showNotification(tp.loadFailed, 'error');
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter]);
+  }, [search, typeFilter, sortBy, pg.query]);
 
   // Debounced so typing in the search box fires one request after the user pauses,
   // not one per keystroke.
@@ -83,10 +90,8 @@ export default function CustomersPage() {
 
   const typeMap = Object.fromEntries(customerTypes.map(ct => [ct.key, ct.label]));
 
-  const sorted = [...customers].sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    return (a.name || '').localeCompare(b.name || '');
-  });
+  // Sorted server-side so the order holds across pages.
+  const sorted = customers;
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-5 sm:px-6 sm:py-8">
@@ -126,7 +131,7 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="m-0 font-normal page-title text-[22px] sm:text-[28px]">{tp.title}</h1>
-          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.customerCount(customers.length)}</p>
+          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.customerCount(total)}</p>
         </div>
         {perms.edit_customers && (
           <Link href="/customers/new" className="bg-google-blue text-white border-none rounded-full py-2.5 px-5 text-sm font-medium no-underline inline-flex items-center gap-1.5">
@@ -304,6 +309,8 @@ export default function CustomersPage() {
           ))}
         </div>
       )}
+
+      {!loading && <Pagination {...pg.props} total={total} />}
     </div>
   );
 }

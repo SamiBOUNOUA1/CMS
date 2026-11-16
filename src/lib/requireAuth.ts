@@ -3,12 +3,17 @@ import { verifyToken, COOKIE, PLATFORM_COOKIE } from '@/lib/auth';
 import { getTenantLicense, getEnabledModules, moduleForApiPath } from '@/lib/license';
 import { runWithTenant } from '@/lib/tenantContext';
 import { getRequestMeta, logError, logWarn, runWithRequestMeta } from '@/lib/logger';
+import { isUserSessionCurrent, isPlatformSessionCurrent } from '@/lib/sessionGuard';
 
 export interface AuthContext {
   userId: string;
   role: string;
   tenantId: string;
   permissions: Record<string, boolean>;
+  /** The account's sessionVersion when the token was issued. */
+  sessionVersion?: number;
+  /** Token minted by the server for itself (PDF rendering); not tied to a user account. */
+  internal?: boolean;
 }
 
 /** Verifies the `cq_token` cookie and returns its claims, without the license check. */
@@ -23,7 +28,22 @@ export async function readSession(request: NextRequest): Promise<AuthContext | n
     role: String(payload.role),
     tenantId: String(payload.tenantId),
     permissions: (payload.permissions ?? {}) as Record<string, boolean>,
+    sessionVersion: Number(payload.sv ?? 0),
+    internal: payload.internal === true,
   };
+}
+
+/**
+ * False once the session was revoked: the user was deleted or deactivated, or
+ * their sessionVersion moved on (role/password change, 2FA reset, logout).
+ */
+async function sessionIsLive(auth: AuthContext): Promise<boolean> {
+  if (auth.internal) return true;
+  try {
+    return await isUserSessionCurrent(auth.tenantId, auth.userId, auth.sessionVersion ?? 0);
+  } catch {
+    return false; // fail closed if the account can't be read
+  }
 }
 
 /**
@@ -34,7 +54,7 @@ export async function readSession(request: NextRequest): Promise<AuthContext | n
  */
 export async function getAuth(request: NextRequest): Promise<AuthContext | null> {
   const auth = await readSession(request);
-  if (!auth) return null;
+  if (!auth || !(await sessionIsLive(auth))) return null;
   const license = await getTenantLicense(auth.tenantId);
   return license.active ? auth : null;
 }
@@ -62,8 +82,18 @@ export async function requirePermission(request: NextRequest, perm?: string): Pr
   return { auth };
 }
 
+/** Like requirePermission, but passes when the caller holds at least one of `perms`. */
+export async function requireAnyPermission(request: NextRequest, perms: string[]): Promise<Guarded> {
+  const auth = await getAuth(request);
+  if (!auth) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  if (!perms.some(p => auth.permissions[p])) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+  return { auth };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RouteHandler = (request: NextRequest, ctx: any) => Promise<Response> | Response;
+type RouteHandler =(request: NextRequest, ctx: any) => Promise<Response> | Response;
 
 /**
  * Wraps a route handler so it only runs for an authenticated user of an
@@ -76,7 +106,7 @@ type RouteHandler = (request: NextRequest, ctx: any) => Promise<Response> | Resp
 export function withTenant(handler: RouteHandler): RouteHandler {
   return async (request, ctx) => {
     const auth = await readSession(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth || !(await sessionIsLive(auth))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const license = await getTenantLicense(auth.tenantId);
     const where = { tenantId: auth.tenantId, role: auth.role, method: request.method, route: request.nextUrl.pathname, status: 403 };
     if (!license.active) {
@@ -128,6 +158,11 @@ export async function getPlatformAuth(request: NextRequest): Promise<PlatformAut
   if (!token) return null;
   const payload = await verifyToken(token);
   if (!payload || payload.platform !== true || payload.mfaPending) return null;
+  try {
+    if (!(await isPlatformSessionCurrent(String(payload.id), Number(payload.sv ?? 0)))) return null;
+  } catch {
+    return null;
+  }
   return { adminId: String(payload.id), name: String(payload.name ?? '') };
 }
 

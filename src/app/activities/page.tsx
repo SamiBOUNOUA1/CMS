@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { format } from '@/lib/dateFormat';
 import { ACTION_LABELS, ActivityIcon } from '@/lib/activityHelpers';
 import { useT } from '@/lib/LanguageContext';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 interface ActivityEntry {
   _id: string;
@@ -18,26 +20,22 @@ export default function ActivitiesPage() {
   const ta = useT().activityPage;
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-
-  const LIMIT = 20;
+  const pg = usePagination('activities');
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/activities?page=${page}&limit=${LIMIT}`)
+    fetch(`/api/activities?${pg.query}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
           setActivities(data.activities ?? []);
           setTotal(data.total ?? 0);
-          setTotalPages(data.totalPages ?? 1);
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [page]);
+  }, [pg.query]);
 
   return (
     <div className="max-w-[960px] mx-auto px-6 py-8">
@@ -102,27 +100,7 @@ export default function ActivitiesPage() {
         </div>
       )}
 
-      {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-6">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-1.5 text-[13px] font-[Roboto,Arial] text-google-blue border border-g-border rounded-[6px] bg-g-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--google-row-hover)] cursor-pointer"
-          >
-            {ta.prev}
-          </button>
-          <span className="text-[13px] text-g-text-2 font-[Roboto,Arial]">
-            {ta.pageOf(page, totalPages)}
-          </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-1.5 text-[13px] font-[Roboto,Arial] text-google-blue border border-g-border rounded-[6px] bg-g-surface disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--google-row-hover)] cursor-pointer"
-          >
-            {ta.next}
-          </button>
-        </div>
-      )}
+      {!loading && <Pagination {...pg.props} total={total} className="mt-6" />}
     </div>
   );
 }

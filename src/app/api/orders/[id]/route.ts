@@ -2,17 +2,18 @@
 import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Quote, Payment } from '@/lib/models';
+import { Order, Quote, Payment, Invoice } from '@/lib/models';
+import { getOrderPayableTotal, syncPaymentState } from '@/lib/invoicing';
 import { logActivity } from '@/lib/activityLogger';
 import { getAuth, requirePermission } from '@/lib/requireAuth';
-import { lineGroupsTotal } from '@/lib/pricing';
+import { lineGroupsTotal, normalizeLineGroups } from '@/lib/pricing';
 import { applyStatusEventTrigger } from '@/lib/orderStatus';
 import { serverError } from '@/lib/logger';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const auth = await getAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error } = await requirePermission(request, 'view_orders');
+    if (error) return error;
     await connectDB();
     const order = await Order.findById(params.id)
       .populate('event', 'eventDate eventType guestCount status eventLocation')
@@ -24,7 +25,13 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
       .sort({ versionNumber: 1 })
       .lean();
 
-    return NextResponse.json({ order, quotes });
+    const invoices = await Invoice.find({ order: params.id })
+      .select('type invoiceNumber issuedDate status totalTTC stampDuty creditedAmount balanceDue creditedInvoiceNumber')
+      .sort({ issuedDate: 1 })
+      .lean();
+    const payableTotal = await getOrderPayableTotal(order);
+
+    return NextResponse.json({ order, quotes, invoices, payableTotal });
   } catch (err: unknown) {
     return serverError(err);
   }
@@ -49,6 +56,9 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     for (const key of allowed) {
       if (body[key] !== undefined) order[key] = body[key];
     }
+    // Pack lines get their unitPrice / subItems re-derived from their kept items, so
+    // removing an included item always reprices the line and the order total below.
+    if (Array.isArray(body.lineGroups)) order.lineGroups = normalizeLineGroups(body.lineGroups);
     // When the assignee team is written, clear the legacy single-manager field so the two never drift.
     if (body.assignees !== undefined) order.assignedManager = null;
 
@@ -84,7 +94,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (body.status === 'completed' && prevStatus !== 'completed') {
       const existingPayments = await Payment.find({ order: params.id }).lean();
       const paidTotal = +existingPayments.reduce((s, p) => s + p.amount, 0).toFixed(2);
-      const remaining = +(order.totalAmount - paidTotal).toFixed(2);
+      const remaining = +((await getOrderPayableTotal(order)) - paidTotal).toFixed(2);
       if (remaining > 0) {
         const payment = await Payment.create({
           order: params.id,
@@ -93,8 +103,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
           paymentMethod: 'cash',
           notes: 'Auto-recorded on order completion',
         });
-        order.paymentStatus = 'fully-paid';
-        await order.save();
+        await syncPaymentState(order);
         await logActivity({
           action: 'payment_created',
           entityType: 'payment',
@@ -133,6 +142,13 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     const { error } = await requirePermission(request, 'delete_orders');
     if (error) return error;
     await connectDB();
+    // Invoices must be kept for 10 years (CGI art. 211): an invoiced order cannot be deleted.
+    if (await Invoice.exists({ order: params.id })) {
+      return NextResponse.json(
+        { error: 'has_invoices', message: 'This order has invoices and cannot be deleted.' },
+        { status: 409 },
+      );
+    }
     await Quote.deleteMany({ order: params.id });
     await Order.findByIdAndDelete(params.id);
     return NextResponse.json({ success: true });

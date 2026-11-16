@@ -5,6 +5,8 @@ import { useT } from '@/lib/LanguageContext';
 import { format } from '@/lib/dateFormat';
 import { btnFilled } from '@/app/components/FormPrimitives';
 import TaskCreateModal from '@/app/components/TaskCreateModal';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 interface Task {
   _id: string; type: string; notes?: string; scheduledDate: string;
@@ -50,18 +52,23 @@ export default function TasksPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  const [total, setTotal] = useState(0);
+  const pg = usePagination('tasks');
+
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/tasks');
+      const res = await fetch(`/api/tasks?status=pending&${pg.query}`);
       const data = await res.json();
+      if (pg.page > (data.totalPages ?? 1)) { pg.setPage(data.totalPages ?? 1); return; }
       setTasks(data.tasks ?? []);
+      setTotal(data.total ?? 0);
     } catch {
       showNotif(tp.loadFailed, 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pg.query]);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -79,6 +86,7 @@ export default function TasksPage() {
         body: JSON.stringify({ completed: !current }),
       });
       if (!res.ok) throw new Error();
+      setTotal(n => n + (current ? 1 : -1));
       showNotif(tp.updated);
     } catch {
       setTasks(prev => prev.map(t => t._id === taskId ? { ...t, completed: current } : t));
@@ -90,7 +98,7 @@ export default function TasksPage() {
     try {
       const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
-      setTasks(prev => prev.filter(t => t._id !== id));
+      fetchTasks();
       showNotif(tp.deleted);
     } catch {
       showNotif(tp.deleteFailed, 'error');
@@ -109,7 +117,7 @@ export default function TasksPage() {
         <div>
           <h1 className="text-[22px] font-medium text-g-text m-0">{tp.title}</h1>
           {!loading && (
-            <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.taskCount(pendingTasks.length)}</p>
+            <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.taskCount(total)}</p>
           )}
         </div>
         <button onClick={() => setShowCreate(true)} className={btnFilled}>
@@ -211,6 +219,8 @@ export default function TasksPage() {
           </div>
         </>
       )}
+
+      {!loading && <Pagination {...pg.props} total={total} />}
 
       {deleteId && (
         <div className="fixed inset-0 bg-black/45 z-[200] flex items-center justify-center">

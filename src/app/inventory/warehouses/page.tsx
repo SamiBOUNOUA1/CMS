@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useT } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
 import { useRowLink } from '@/lib/useRowLink';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 function avatarColor(name = '') {
   const colors = ['#1a73e8', '#137333', '#d93025', '#f9ab00', '#9c27b0', '#00838f', '#e91e63', '#546e7a'];
@@ -33,25 +35,27 @@ export default function WarehousesPage() {
   const [sortBy, setSortBy] = useState('name');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: string } | null>(null);
+  const [total, setTotal] = useState(0);
   const { perms } = useUser();
-
-  useEffect(() => {
-  }, []);
+  const pg = usePagination('warehouses', [search, sortBy]);
 
   const fetchWarehouses = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      const res = await fetch(`/api/inventory/warehouses?${params}`);
+      params.set('sort', sortBy);
+      const res = await fetch(`/api/inventory/warehouses?${params}&${pg.query}`);
       const data = await res.json();
+      if (pg.page > (data.totalPages ?? 1)) { pg.setPage(data.totalPages ?? 1); return; }
       setWarehouses(data.warehouses || []);
+      setTotal(data.total ?? 0);
     } catch {
       showNotification(tp.loadFailed, 'error');
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, sortBy, pg.query]);
 
   // Debounced so typing in the search box fires one request after the user pauses,
   // not one per keystroke.
@@ -77,10 +81,8 @@ export default function WarehousesPage() {
     setDeleteId(null);
   };
 
-  const sorted = [...warehouses].sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    return (a.name || '').localeCompare(b.name || '');
-  });
+  // Sorted server-side so the order holds across pages.
+  const sorted = warehouses;
 
   const coordLabel = (w: Warehouse) => {
     const { lat, lng } = w.coordinates ?? {};
@@ -128,7 +130,7 @@ export default function WarehousesPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="m-0 font-medium text-g-text text-[22px] sm:text-[26px]">{tp.title}</h1>
-          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.warehouseCount(warehouses.length)}</p>
+          <p className="mt-1 mb-0 text-[13px] text-g-text-2">{tp.warehouseCount(total)}</p>
         </div>
         {perms.edit_warehouses && (
           <Link
@@ -303,6 +305,8 @@ export default function WarehousesPage() {
           ))}
         </div>
       )}
+
+      {!loading && <Pagination {...pg.props} total={total} />}
     </div>
   );
 }

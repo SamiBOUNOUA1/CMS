@@ -24,6 +24,22 @@ interface Task {
   notes?: string;
 }
 
+interface UpcomingEvent {
+  _id: string;
+  clientName: string;
+  eventDate: string;
+  startTime: string;
+  eventTypeLabel: string;
+  guestCount: number;
+  tableCount: number;
+  eventLocation: string;
+  status: string;
+  statusLabel: string;
+  statusColor: string;
+  assigned: boolean;
+  materials: { total: number; checked: number; missing: number };
+}
+
 interface User {
   name: string;
   permissions?: Record<string, boolean>;
@@ -61,6 +77,18 @@ export default function HomePage() {
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [canViewActivities, setCanViewActivities] = useState(false);
   const [reportKpis, setReportKpis] = useState<ReportKpis | null>(null);
+  const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/home/upcoming-events')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) setEvents(d.events ?? []);
+        setLoadingEvents(false);
+      })
+      .catch(() => setLoadingEvents(false));
+  }, []);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -130,6 +158,27 @@ export default function HomePage() {
 
   const typeLabel = (type: string) => tt.types?.[type] ?? type;
 
+  const perms = user?.permissions ?? {};
+
+  // Where an event row leads: the order for users with order access, the My Events
+  // detail for team members, otherwise the calendar.
+  const eventHref = (ev: UpcomingEvent) => {
+    if (perms.view_orders) return `/orders/${ev._id}`;
+    if (ev.assigned) return `/manager/events/${ev._id}`;
+    return '/calendar';
+  };
+
+  const dayLabel = (iso: string) => {
+    const d = new Date(iso);
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diff = Math.round((startOfDay - startOfToday) / 86400000);
+    if (diff === 0) return tp.today;
+    if (diff === 1) return tp.tomorrow;
+    return format(d, 'EEE d MMM');
+  };
+
   const statCards = [
     { label: tp.stats?.upcoming,  count: upcoming, color: '#1a73e8' },
     { label: tp.stats?.overdue,   count: overdue,  color: '#d93025' },
@@ -167,6 +216,76 @@ export default function HomePage() {
             </Link>
           </div>
         )}
+
+        {/* Upcoming events (next 7 days) */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="font-sans text-[17px] font-medium text-g-text m-0">{tp.upcomingEvents}</h2>
+            <Link
+              href={perms.view_calendar ? '/calendar' : '/manager/events'}
+              className="text-[13px] text-google-blue no-underline font-[Roboto,Arial]"
+            >
+              {perms.view_calendar ? tp.viewCalendar : tp.viewMyEvents} →
+            </Link>
+          </div>
+
+          {loadingEvents && <SkeletonList rows={3} />}
+
+          {!loadingEvents && events.length === 0 && (
+            <div className="text-g-text-3 text-sm font-[Roboto,Arial] py-3">{tp.noUpcomingEvents}</div>
+          )}
+
+          {!loadingEvents && events.map(ev => (
+            <Link
+              key={ev._id}
+              href={eventHref(ev)}
+              className="flex items-center gap-4 flex-wrap sm:flex-nowrap bg-g-surface border border-g-border rounded-[10px] px-4 py-3 mb-2 no-underline hover:shadow-google-1 transition-shadow"
+            >
+              {/* Day + time */}
+              <div className="w-[92px] flex-shrink-0">
+                <div className="text-[13px] font-medium text-g-text font-sans">{dayLabel(ev.eventDate)}</div>
+                {ev.startTime && (
+                  <div className="text-xs text-g-text-2 font-[Roboto,Arial] mt-0.5">{ev.startTime}</div>
+                )}
+              </div>
+
+              {/* Client + details */}
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-medium text-g-text truncate">{ev.clientName}</div>
+                <div className="text-xs text-g-text-2 font-[Roboto,Arial] truncate mt-0.5">
+                  {[
+                    ev.eventTypeLabel,
+                    ev.tableCount ? tp.tables(ev.tableCount) : tp.guests(ev.guestCount),
+                    ev.eventLocation,
+                  ].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+
+              {/* Materials progress */}
+              {ev.materials.total > 0 && (
+                <div className="text-xs font-[Roboto,Arial] flex-shrink-0 text-right">
+                  <div className="text-g-text-2">
+                    {tp.materials} {ev.materials.checked}/{ev.materials.total}
+                  </div>
+                  {ev.materials.missing > 0 && (
+                    <div className="text-google-red mt-0.5">{tp.materialsMissing(ev.materials.missing)}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Status */}
+              <span
+                className="rounded-full py-1 px-3 text-xs font-semibold flex-shrink-0"
+                style={{
+                  background: ev.statusColor ? ev.statusColor + '22' : 'var(--google-bg)',
+                  color: ev.statusColor || 'var(--google-text-secondary)',
+                }}
+              >
+                {ev.statusLabel}
+              </span>
+            </Link>
+          ))}
+        </div>
 
         {/* Stats row */}
         <div className="flex gap-4 flex-wrap mb-8">

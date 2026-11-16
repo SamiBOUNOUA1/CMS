@@ -11,6 +11,8 @@ import { useUser } from '@/lib/UserContext';
 import { formatMoneyOrDash } from '@/lib/money';
 import { useRowLink } from '@/lib/useRowLink';
 import { SkeletonList } from '@/app/components/Skeleton';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 import { ClipboardIcon, CheckCircleIcon, DocumentIcon, PaymentsIcon } from '@/app/components/Icons';
 
 const EVENT_TYPE_ICONS: Record<string, string> = {
@@ -48,7 +50,10 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ total: 0, withEvent: 0, quotes: 0, pipeline: 0 });
   const { perms } = useUser();
+  const pg = usePagination('orders', [statusFilter, search, sortBy]);
 
   useEffect(() => {
     fetch('/api/settings/order-statuses')
@@ -62,15 +67,20 @@ export default function OrdersPage() {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (search) params.set('search', search);
-      const res = await fetch(`/api/orders?${params}`);
+      params.set('sort', sortBy);
+      const res = await fetch(`/api/orders?${params}&${pg.query}`);
       const data = await res.json();
+      // A delete can empty the last page — step back to the new last page.
+      if (pg.page > (data.totalPages ?? 1)) { pg.setPage(data.totalPages ?? 1); return; }
       setOrders(data.orders || []);
+      setTotal(data.total ?? 0);
+      if (data.stats) setStats(data.stats);
     } catch {
       showNotification(tp.loadFailed, 'error');
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search]);
+  }, [statusFilter, search, sortBy, pg.query]);
 
   // Debounced so typing in the search box fires one request after the user pauses,
   // not one per keystroke.
@@ -95,14 +105,8 @@ export default function OrdersPage() {
 
   const statusMap = Object.fromEntries(statuses.map(s => [s.name, s]));
 
-  const sorted = [...orders].sort((a, b) => {
-    if (sortBy === 'total') return (b.totalAmount || 0) - (a.totalAmount || 0);
-    if (sortBy === 'client') return (a.clientName || '').localeCompare(b.clientName || '');
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
-  const withEventCount = orders.filter(o => o.event).length;
-  const totalPipeline = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+  // Sorted server-side so the order holds across pages.
+  const sorted = orders;
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-5 sm:px-6 sm:py-8">
@@ -120,7 +124,7 @@ export default function OrdersPage() {
       <div className="flex items-start justify-between mb-5 gap-3">
         <div>
           <h1 className="page-title font-normal m-0 text-[22px] sm:text-[28px]">{tp.title}</h1>
-          <p className="text-[13px] text-g-text-2 mt-1 mb-0">{tp.orderCount(orders.length)}</p>
+          <p className="text-[13px] text-g-text-2 mt-1 mb-0">{tp.orderCount(total)}</p>
         </div>
         {perms.create_orders && (
           <Link href="/orders/new" className={`${btnFilled} flex-shrink-0 flex items-center`}>
@@ -136,10 +140,10 @@ export default function OrdersPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { label: tp.stats.total, value: orders.length, Icon: ClipboardIcon, color: 'var(--google-blue-accent)' },
-          { label: tp.stats.withEvent, value: withEventCount, Icon: CheckCircleIcon, color: 'var(--google-green-accent)' },
-          { label: tp.stats.quotes, value: orders.reduce((s, o) => s + (o.quoteCount || 0), 0), Icon: DocumentIcon, color: 'var(--google-yellow)' },
-          { label: tp.stats.pipeline, value: formatCurrency(totalPipeline, currency), Icon: PaymentsIcon, color: 'var(--google-blue-accent)', large: true },
+          { label: tp.stats.total, value: stats.total, Icon: ClipboardIcon, color: 'var(--google-blue-accent)' },
+          { label: tp.stats.withEvent, value: stats.withEvent, Icon: CheckCircleIcon, color: 'var(--google-green-accent)' },
+          { label: tp.stats.quotes, value: stats.quotes, Icon: DocumentIcon, color: 'var(--google-yellow)' },
+          { label: tp.stats.pipeline, value: formatCurrency(stats.pipeline, currency), Icon: PaymentsIcon, color: 'var(--google-blue-accent)', large: true },
         ].map(card => (
           <div key={card.label} className="bg-g-surface rounded-xl border border-g-border shadow-google-1 px-4 py-3.5 sm:px-6 sm:py-5">
             <div className="flex items-center gap-1.5 mb-2">
@@ -312,6 +316,8 @@ export default function OrdersPage() {
           })}
         </div>
       </>)}
+
+      {!loading && <Pagination {...pg.props} total={total} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client } from '@/lib/models';
@@ -8,6 +8,8 @@ import { serverError } from '@/lib/logger';
 // GET /api/clients/[id]
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'view_customers');
+    if (error) return error;
     await connectDB();
     const client = await Client.findById(params.id).lean();
     if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -20,12 +22,21 @@ async function GET_(request: NextRequest, { params }: { params: Record<string, s
 // PATCH /api/clients/[id]
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'edit_customers');
+    if (error) return error;
     await connectDB();
     const client = await Client.findById(params.id);
     if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await request.json();
-    const allowed = ['name', 'email', 'phone', 'billingAddress', 'notes', 'customerType', 'leadSource'];
+    const allowed = ['name', 'email', 'phone', 'billingAddress', 'notes', 'customerType', 'leadSource', 'clientKind', 'legalName', 'ice'];
+    if (body.ice !== undefined) {
+      body.ice = String(body.ice || '').replace(/\s/g, '');
+      if (body.ice && !/^[0-9]{15}$/.test(body.ice)) {
+        return NextResponse.json({ error: 'ICE must be 15 digits' }, { status: 400 });
+      }
+    }
+    if (body.clientKind !== undefined && body.clientKind !== 'company') body.clientKind = 'individual';
     for (const key of allowed) {
       if (body[key] !== undefined) client[key] = body[key];
     }
@@ -39,6 +50,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 // DELETE /api/clients/[id]
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'delete_customers');
+    if (error) return error;
     await connectDB();
     const client = await Client.findByIdAndDelete(params.id);
     if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });

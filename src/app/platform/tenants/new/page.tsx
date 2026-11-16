@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, FormSelect, btnFilled, btnOutline } from '@/app/components/FormPrimitives';
 import { api, toDateInput, addPeriod } from '../../shared';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 interface PlanOpt { _id: string; name: string; isActive: boolean }
 
@@ -77,7 +78,7 @@ export default function NewTenantPage() {
         <FormGrid>
           <Field label="Name *"><FormInput value={form.adminName} onChange={e => set('adminName', e.target.value)} required /></Field>
           <Field label="Email (login) *"><FormInput type="email" value={form.adminEmail} onChange={e => set('adminEmail', e.target.value)} required /></Field>
-          <Field label="Temporary password *"><FormInput type="text" minLength={8} value={form.adminPassword} onChange={e => set('adminPassword', e.target.value)} required /></Field>
+          <Field label="Temporary password *"><FormInput type="text" minLength={MIN_PASSWORD_LENGTH} value={form.adminPassword} onChange={e => set('adminPassword', e.target.value)} required /></Field>
         </FormGrid>
         <p className="text-xs text-g-text-2 mt-3 mb-0">Share these credentials with the customer and ask them to change the password from their profile.</p>
       </FormCard>

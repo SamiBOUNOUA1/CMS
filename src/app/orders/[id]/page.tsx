@@ -19,6 +19,9 @@ import { useUser } from '@/lib/UserContext';
 import { formatMoneyOrDash } from '@/lib/money';
 import { SkeletonDetail } from '@/app/components/Skeleton';
 import { GroupIcon, PlaceIcon, RestaurantIcon, TagIcon } from '@/app/components/Icons';
+import InvoiceStatusBadge from '@/app/components/InvoiceStatusBadge';
+import IssueInvoiceModal from '@/app/components/IssueInvoiceModal';
+import { computeVatBreakdown, totalsFromBreakdown } from '@/lib/vat';
 
 const EVENT_TYPE_ICONS = {
   wedding: '💍', corporate: '🏢', birthday: '🎂',
@@ -55,6 +58,9 @@ export default function OrderDetailPage() {
 
   const [order, setOrder] = useState(null);
   const [quotes, setQuotes] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [payableTotal, setPayableTotal] = useState(null);
+  const [issueOpen, setIssueOpen] = useState(false);
   const [statuses, setStatuses] = useState([]);
   const [eventTypeConfigs, setEventTypeConfigs] = useState([]);
   const [products, setProducts] = useState([]);
@@ -118,6 +124,8 @@ export default function OrderDetailPage() {
       const paymentsData = paymentsRes.ok ? await paymentsRes.json() : { payments: [] };
       setOrder(data.order);
       setQuotes(data.quotes || []);
+      setInvoices(data.invoices || []);
+      setPayableTotal(typeof data.payableTotal === 'number' ? data.payableTotal : null);
       setPayments(paymentsData.payments || []);
       setEditForm({
         clientName: data.order.clientName, clientEmail: data.order.clientEmail,
@@ -217,7 +225,7 @@ export default function OrderDetailPage() {
   const handleGenerateQuote = async (pricingForm) => {
     setGeneratingQuote(true);
     try {
-      const res = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: id, validUntil: pricingForm.validUntil || undefined, taxRate: Number(pricingForm.taxRate), clientNotes: pricingForm.clientNotes, internalNotes: pricingForm.internalNotes }) });
+      const res = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: id, validUntil: pricingForm.validUntil || undefined, taxRate: Number(pricingForm.taxRate), serviceVatRate: pricingForm.serviceVatRate === '' ? null : Number(pricingForm.serviceVatRate), clientNotes: pricingForm.clientNotes, internalNotes: pricingForm.internalNotes }) });
       if (!res.ok) throw new Error();
       await loadData(); setQuoteModalOpen(false); showNotification(td.quoteGenerated);
     } catch { showNotification(td.quoteGenerateFailed, 'error'); } finally { setGeneratingQuote(false); }
@@ -248,6 +256,7 @@ export default function OrderDetailPage() {
   const handleDeletePayment = async (pid) => {
     try {
       const res = await fetch(`/api/orders/${id}/payments/${pid}`, { method: 'DELETE' });
+      if (res.status === 409) { showNotification(t.invoices.paymentOnInvoice, 'error'); setDeletingPaymentId(null); return; }
       if (!res.ok) throw new Error();
       await loadData(); showNotification(td.paymentDeleted);
     } catch { showNotification(td.paymentDeleteFailed, 'error'); }
@@ -283,7 +292,10 @@ export default function OrderDetailPage() {
   const isTableMode = activeConfig?.countMode === 'tables';
   const tableCapacity = activeConfig?.tableCapacity || 10;
   const hasMenuItems = order.lineGroups?.some(g => g.items?.some(i => i.name));
-  const orderTotal = order.totalAmount || 0;
+  // Payments are measured against the invoice / active quote total TTC (server-computed).
+  const orderTotal = payableTotal ?? (order.totalAmount || 0);
+  const activeQuote = quotes.find(q => q.isActive);
+  const openInvoice = invoices.find(inv => inv.type === 'invoice' && inv.status !== 'cancelled');
   const paidAmount = +payments.reduce((s, p) => s + p.amount, 0).toFixed(2);
   const remainingAmount = +(orderTotal - paidAmount).toFixed(2);
   const orderItemsTotal = lineGroupsTotal(order.lineGroups, i => !!i.name);
@@ -355,6 +367,11 @@ export default function OrderDetailPage() {
         <button onClick={addTeamRow} className={btnOutlineSmall + ' mb-2'}>{td.team.addPerson}</button>
         {managers.length === 0 && <p className="m-0 text-xs text-google-yellow">{td.team.noUsers}</p>}
       </Modal>
+
+      {issueOpen && (
+        <IssueInvoiceModal t={t} orderId={id} onClose={() => setIssueOpen(false)}
+          onIssued={(inv) => { setIssueOpen(false); showNotification(t.invoices.issue.issued(inv.invoiceNumber)); loadData(); }} />
+      )}
 
       {quoteModalOpen && (
         <GenerateQuoteModal t={t} order={order} itemsTotal={orderItemsTotal} staffTotal={orderStaffTotal} quotes={quotes}
@@ -747,6 +764,46 @@ export default function OrderDetailPage() {
 
       </>)}
 
+      {tab === 'quotes' && perms.view_invoices && (
+      <div className={cardCls}>
+        <div className="py-4 px-6 border-b border-g-border flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-base font-medium text-g-text m-0">{t.invoices.orderSection}</h2>
+          {perms.issue_invoices && !openInvoice && (
+            <div className="flex items-center gap-2">
+              {!activeQuote && <span className="text-xs text-google-yellow">{t.invoices.issue.needQuote}</span>}
+              <button onClick={() => setIssueOpen(true)} disabled={!activeQuote} className={btnFilled} style={{ opacity: activeQuote ? 1 : 0.5, cursor: activeQuote ? 'pointer' : 'not-allowed' }}>
+                {t.invoices.issue.button}
+              </button>
+            </div>
+          )}
+        </div>
+        {invoices.length === 0 ? (
+          <div className="py-8 px-6 text-center text-g-text-2 text-sm">{t.invoices.orderNone}</div>
+        ) : (
+          <div>
+            {invoices.map((inv, i) => {
+              const isCredit = inv.type === 'credit_note';
+              return (
+                <Link key={inv._id} href={`/invoices/${inv._id}`} className="flex items-center py-3.5 px-6 gap-3 no-underline" style={{ borderTop: i > 0 ? '1px solid var(--google-border)' : 'none' }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-g-text">
+                      {isCredit ? t.invoices.types.credit_note : t.invoices.types.invoice} {inv.invoiceNumber}
+                      {isCredit && <span className="font-normal text-g-text-3"> → {inv.creditedInvoiceNumber}</span>}
+                    </div>
+                    <div className="text-xs text-g-text-3 mt-0.5">{format(new Date(inv.issuedDate), 'dd MMM yyyy')}</div>
+                  </div>
+                  <div className="font-semibold text-[15px] flex-shrink-0" style={{ color: isCredit ? 'var(--google-red)' : 'var(--google-text-primary)' }}>
+                    {isCredit ? '– ' : ''}{formatCurrency((inv.totalTTC || 0) + (inv.stampDuty || 0), currency)}
+                  </div>
+                  {!isCredit && <InvoiceStatusBadge status={inv.status} label={t.invoices.statuses[inv.status]} />}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      )}
+
       {tab === 'quotes' && (
       <div className={`${cardCls} !mb-0`}>
         <div className="py-4 px-6 border-b border-g-border flex items-center justify-between gap-3 flex-wrap">
@@ -776,7 +833,7 @@ export default function OrderDetailPage() {
                     {quote.validUntil ? ` · ${td.validUntil(format(new Date(quote.validUntil), 'dd MMM yyyy'))}` : ''}
                   </div>
                 </div>
-                <div className="font-medium text-base text-g-text flex-shrink-0">{formatCurrency(order.totalAmount, currency)}</div>
+                <div className="font-medium text-base text-g-text flex-shrink-0">{formatCurrency(quote.total ?? order.totalAmount, currency)}</div>
                 <div className="flex gap-1 flex-shrink-0">
                   <Link href={`/quotes/${quote._id}`} className={iconBtn} title={td.viewQuote} aria-label={td.viewQuote}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>
@@ -841,6 +898,10 @@ function MenuItemsReadView({ groups, currency, emptyLabel, orderId, canEdit, onP
                       <span>+ {o.name}</span>
                       <span>{fmt(Number(o.price) || 0, currency)}</span>
                     </div>
+                  ))}
+                  {/* Pack lines: what is still included (items removed for this order are left out). */}
+                  {item.isPack && (item.packItems || []).filter(p => !p.removed).map((p, pi) => (
+                    <div key={`pk${pi}`} className="text-xs text-g-text-2 pl-4">– {p.name}</div>
                   ))}
                   {packTotal > 0 && (
                     <div className="pl-4 py-0.5">
@@ -952,13 +1013,18 @@ function GenerateQuoteModal({ t, order, itemsTotal, staffTotal, quotes, generati
   const [form, setForm] = useState({
     validUntil: prevActive?.validUntil ? prevActive.validUntil.slice(0, 10) : '',
     taxRate: prevActive?.taxRate ?? 0.2,
+    serviceVatRate: prevActive?.travelVatRate ?? '',
     clientNotes: prevActive?.clientNotes ?? '',
     internalNotes: prevActive?.internalNotes ?? '',
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const discount = order.discountAmount || 0;
   const subtotal = itemsTotal + staffTotal - discount;
-  const taxAmount = subtotal * Number(form.taxRate);
+  const serviceRate = form.serviceVatRate === '' ? Number(form.taxRate) : Number(form.serviceVatRate);
+  const { totalVAT: taxAmount } = totalsFromBreakdown(computeVatBreakdown([
+    { totalHT: itemsTotal, vatRate: Number(form.taxRate) },
+    { totalHT: staffTotal, vatRate: serviceRate },
+  ], discount));
   const total = subtotal + taxAmount;
   const inputCls = 'w-full py-2 px-3 border border-g-border rounded-lg text-sm outline-none text-g-text bg-g-surface box-border';
   const labelCls = 'text-xs font-medium text-g-text-2 block mb-1';
@@ -978,10 +1044,19 @@ function GenerateQuoteModal({ t, order, itemsTotal, staffTotal, quotes, generati
             <div><label className={labelCls}>{tn.summary.taxRate}</label>
               <select value={form.taxRate} onChange={e => set('taxRate', e.target.value)} className={`${inputCls} appearance-none`}>
                 <option value="0">{tn.summary.taxOptions.t0}</option>
-                <option value="0.055">{tn.summary.taxOptions.t5}</option>
+                <option value="0.1">{tn.summary.taxOptions.t10}</option>
+                <option value="0.2">{tn.summary.taxOptions.t20}</option>
+                {![0, 0.1, 0.2].includes(Number(form.taxRate)) && <option value={form.taxRate}>{Math.round(Number(form.taxRate) * 1000) / 10} %</option>}
+              </select>
+            </div>
+            <div><label className={labelCls}>{t.invoices.serviceVatRate}</label>
+              <select value={form.serviceVatRate} onChange={e => set('serviceVatRate', e.target.value)} className={`${inputCls} appearance-none`}>
+                <option value="">{t.invoices.sameRate}</option>
+                <option value="0">{tn.summary.taxOptions.t0}</option>
                 <option value="0.1">{tn.summary.taxOptions.t10}</option>
                 <option value="0.2">{tn.summary.taxOptions.t20}</option>
               </select>
+              <p className="text-[11px] text-g-text-3 mt-1 mb-0">{t.invoices.serviceVatRateHint}</p>
             </div>
             <div><label className={labelCls}>{tn.summary.clientNotes}</label><textarea value={form.clientNotes} onChange={e => set('clientNotes', e.target.value)} rows={2} placeholder={tn.summary.clientNotesPlaceholder} className={`${inputCls} resize-y`} /></div>
             <div><label className={labelCls}>{tn.summary.internalNotes}</label><textarea value={form.internalNotes} onChange={e => set('internalNotes', e.target.value)} rows={2} placeholder={tn.summary.internalNotesPlaceholder} className={`${inputCls} resize-y`} /></div>
@@ -992,7 +1067,7 @@ function GenerateQuoteModal({ t, order, itemsTotal, staffTotal, quotes, generati
               [tn.summary.staffLabel, staffTotal],
               discount > 0 ? [`- ${tn.summary.discount}`, -discount] : null,
               [tn.summary.subtotal, subtotal],
-              [tn.summary.tax(Math.round(Number(form.taxRate) * 100)), taxAmount],
+              [serviceRate === Number(form.taxRate) ? tn.summary.tax(Math.round(Number(form.taxRate) * 100)) : t.invoices.vatTotal, taxAmount],
             ].filter(Boolean).map(row => (
               <div key={row[0]} className="flex justify-between text-[13px] text-g-text-2 mb-1.5">
                 <span>{row[0]}</span><span>{formatCurrency(row[1], currency)}</span>

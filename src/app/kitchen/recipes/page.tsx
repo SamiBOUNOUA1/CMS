@@ -6,6 +6,8 @@ import { useT, useCurrency } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
 import { formatMoney } from '@/lib/money';
 import { useRowLink } from '@/lib/useRowLink';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -66,8 +68,11 @@ export default function KitchenRecipesPage() {
   const { user } = useUser();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [total, setTotal] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
+  const pg = usePagination('recipes', [search, filterCategory]);
 
-  useEffect(() => {
+  useEffect(() => {
   }, []);
 
   useEffect(() => {
@@ -75,10 +80,15 @@ export default function KitchenRecipesPage() {
     if (search) params.set('search', search);
     if (filterCategory) params.set('category', filterCategory);
     setLoading(true);
-    fetch(`/api/kitchen/recipes?${params}`)
+    fetch(`/api/kitchen/recipes?${params}&${pg.query}`)
       .then(r => r.ok ? r.json() : { recipes: [] })
-      .then((d: any) => { setRecipes(d.recipes ?? []); setLoading(false); });
-  }, [search, filterCategory]);
+      .then((d: any) => {
+        if (pg.page > (d.totalPages ?? 1)) { pg.setPage(d.totalPages ?? 1); return; }
+        setRecipes(d.recipes ?? []);
+        setTotal(d.total ?? 0);
+        setLoading(false);
+      });
+  }, [search, filterCategory, pg.query, reloadKey]);
 
   const canManage = user?.permissions?.manage_kitchen;
 
@@ -89,7 +99,7 @@ export default function KitchenRecipesPage() {
     const res = await fetch(`/api/kitchen/recipes/${deleteId}`, { method: 'DELETE' });
     setDeleteId(null);
     if (res.ok) {
-      setRecipes(prev => prev.filter(r => r._id !== deleteId));
+      setReloadKey(k => k + 1);
       showToast(tk.deleted);
     } else {
       showToast(tk.deleteFailed);
@@ -118,8 +128,8 @@ export default function KitchenRecipesPage() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 28 }}>
         {[
-          { label: tk.stats.total, value: recipes.length, color: ACCENT },
-          { label: tk.stats.active, value: recipes.length, color: '#137333' },
+          { label: tk.stats.total, value: total, color: ACCENT },
+          { label: tk.stats.active, value: total, color: '#137333' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--google-surface)', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 2px rgba(60,64,67,.3)' }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
@@ -221,6 +231,8 @@ export default function KitchenRecipesPage() {
           </table>
         )}
       </div>
+
+      {!loading && <Pagination {...pg.props} total={total} />}
 
       {/* Delete Dialog */}
       {deleteId && (

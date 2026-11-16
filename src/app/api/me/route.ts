@@ -6,6 +6,11 @@ import { connectDB } from '@/lib/mongodb';
 import { User } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
+import { passwordProblem } from '@/lib/passwordPolicy';
+import { rateLimitShared, rateLimitSharedReset } from '@/lib/rateLimit';
+import { forgetSessionState } from '@/lib/sessionGuard';
+import { buildTenantSession } from '@/lib/session';
+import { COOKIE, cookieOptions } from '@/lib/auth';
 
 // Returns the currently authenticated user's profile.
 async function GET_(request: NextRequest) {
@@ -40,10 +45,13 @@ async function PATCH_(request: NextRequest) {
       user.name = name;
     }
 
+    // The email is the login name, so changing it (like changing the password)
+    // requires the current password.
+    let newEmail = null;
     if (typeof body.email === 'string') {
       const email = body.email.trim().toLowerCase();
       if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-      user.email = email;
+      if (email !== user.email) newEmail = email;
     }
 
     if (body.preferredLanguage !== undefined) {
@@ -53,19 +61,43 @@ async function PATCH_(request: NextRequest) {
     }
 
     // Password change requires the current password for verification.
-    if (body.newPassword) {
-      if (String(body.newPassword).length < 8)
-        return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
-      const valid = await compare(body.currentPassword || '', user.passwordHash);
+    let passwordChanged = false;
+    if (body.newPassword || newEmail) {
+      if (body.newPassword) {
+        const pwError = passwordProblem(body.newPassword);
+        if (pwError) return NextResponse.json({ error: pwError }, { status: 400 });
+      }
+      // Limits guessing of the current password from an open session.
+      const rlKey = `pwcheck:${id}`;
+      const rl = await rateLimitShared(rlKey, 5, 15 * 60 * 1000);
+      if (!rl.allowed)
+        return NextResponse.json(
+          { error: 'Too many attempts. Please try again later.' },
+          { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+        );
+      const valid = await compare(String(body.currentPassword || ''), user.passwordHash);
       if (!valid)
         return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
-      user.passwordHash = await hash(body.newPassword, 12);
+      await rateLimitSharedReset(rlKey);
+      if (newEmail) user.email = newEmail;
+      if (body.newPassword) {
+        user.passwordHash = await hash(String(body.newPassword), 12);
+        // Ends every other session of this user; this one is renewed below.
+        user.sessionVersion = (user.sessionVersion ?? 0) + 1;
+        passwordChanged = true;
+      }
     }
 
     await user.save();
     const safe = user.toObject();
     delete safe.passwordHash;
-    return NextResponse.json({ user: safe });
+    const res = NextResponse.json({ user: safe });
+    if (passwordChanged) {
+      forgetSessionState(id);
+      const session = await buildTenantSession(user);
+      if (session.token) res.cookies.set(COOKIE, session.token, cookieOptions());
+    }
+    return res;
   } catch (err: unknown) {
     if (err?.code === 11000) return NextResponse.json({ error: 'Email already in use' }, { status: 409 });
     return serverError(err);

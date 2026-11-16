@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { EmailSettings } from '@/lib/models';
 import { serverError } from '@/lib/logger';
 import { encryptSecret } from '@/lib/mfa';
+import { hostLooksInternal } from '@/lib/netGuard';
 import { DEFAULT_TEMPLATES, PLACEHOLDERS, TEMPLATE_TYPES, isPlatformEmailConfigured, loadEmailSettings } from '@/lib/email';
 
 // Sent to the client instead of the real SMTP password. When it comes back
@@ -47,6 +48,8 @@ async function PATCH_(request: NextRequest) {
     for (const k of ['smtpHost', 'smtpUser', 'fromName', 'fromEmail', 'replyTo']) {
       if (typeof b[k] === 'string') update[k] = b[k].trim();
     }
+    if (update.smtpHost && hostLooksInternal(update.smtpHost as string))
+      return NextResponse.json({ error: 'This mail server address is not allowed.' }, { status: 400 });
     if (b.smtpPort !== undefined) update.smtpPort = Math.max(1, Math.min(65535, Number(b.smtpPort) || 587));
     if (b.smtpSecure !== undefined) update.smtpSecure = !!b.smtpSecure;
     if (typeof b.smtpPassword === 'string' && b.smtpPassword !== PASSWORD_MASK) {

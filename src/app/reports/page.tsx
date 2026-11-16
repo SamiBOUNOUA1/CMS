@@ -138,7 +138,7 @@ export default function ReportsPage() {
             {data.revenueByMonth.every(m => m.revenue === 0) ? (
               <p className="text-g-text-3 text-sm m-0">{tr.empty}</p>
             ) : (<>
-              /* Mobile: horizontal bars with always-visible values */
+              {/* Mobile: horizontal bars with always-visible values */}
               <div className="sm:hidden space-y-2.5">
                 {data.revenueByMonth.filter(m => m.revenue > 0).map(m => (
                   <div key={m.key} className="flex items-center gap-2.5">
@@ -150,7 +150,7 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-              /* Desktop: vertical bars, value on hover */
+              {/* Desktop: vertical bars, value on hover */}
               <div className="hidden sm:flex items-end gap-1.5 h-[180px]">
                 {data.revenueByMonth.map(m => (
                   <div key={m.key} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full group">

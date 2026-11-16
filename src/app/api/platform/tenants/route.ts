@@ -7,6 +7,7 @@ import { evaluateLicense } from '@/lib/license';
 import { countsByTenant } from '@/lib/platformMetrics';
 import { provisionTenant } from '@/lib/tenantProvisioning';
 import { logError } from '@/lib/logger';
+import { passwordProblem } from '@/lib/passwordPolicy';
 
 export const GET = withPlatformAdmin(async () => {
   await connectDB();
@@ -30,8 +31,8 @@ export const POST = withPlatformAdmin(async (request) => {
   const b = await request.json();
   if (!b.name?.trim() || !b.adminName?.trim() || !b.adminEmail?.trim() || !b.adminPassword || !b.licenseExpiresAt)
     return NextResponse.json({ error: 'Company name, admin name/email/password and license expiry are required' }, { status: 400 });
-  if (String(b.adminPassword).length < 8)
-    return NextResponse.json({ error: 'Admin password must be at least 8 characters' }, { status: 400 });
+  const pwError = passwordProblem(b.adminPassword);
+  if (pwError) return NextResponse.json({ error: `Admin password: ${pwError}` }, { status: 400 });
   try {
     const tenant = await provisionTenant({
       name: b.name.trim(),

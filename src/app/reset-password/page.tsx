@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/lib/LanguageContext';
 import { FormInput } from '@/app/components/FormPrimitives';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 type Status = 'checking' | 'invalid' | 'ready' | 'done';
 
@@ -98,12 +99,12 @@ function ResetForm() {
             <div className="mb-4">
               <label className={labelCls}>{tr.newPassword}</label>
               <FormInput type="password" value={password} onChange={e => setPassword(e.target.value)}
-                required minLength={8} autoFocus autoComplete="new-password" placeholder={tr.minLength} />
+                required minLength={MIN_PASSWORD_LENGTH} autoFocus autoComplete="new-password" placeholder={tr.minLength} />
             </div>
             <div className="mb-6">
               <label className={labelCls}>{tr.confirmPassword}</label>
               <FormInput type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
-                required minLength={8} autoComplete="new-password" />
+                required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
             </div>
             {error && <div className="bg-google-red-light text-google-red rounded-lg px-3.5 py-2.5 text-[13px] mb-4">{error}</div>}
             <button

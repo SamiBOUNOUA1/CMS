@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { StaffRoleConfig } from '@/lib/models';
@@ -8,6 +8,8 @@ import { serverError } from '@/lib/logger';
 // PATCH /api/settings/staff-roles/[id]
 async function PATCH_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_catalog');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { label, isActive } = body;
@@ -32,6 +34,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
 // DELETE /api/settings/staff-roles/[id]
 async function DELETE_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
+    const { error } = await requirePermission(request, 'manage_catalog');
+    if (error) return error;
     await connectDB();
     await StaffRoleConfig.findByIdAndDelete(params.id);
     return NextResponse.json({ ok: true });

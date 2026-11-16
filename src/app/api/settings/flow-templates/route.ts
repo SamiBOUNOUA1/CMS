@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { FlowTemplate } from '@/lib/models';
@@ -21,6 +21,8 @@ async function GET_() {
 // POST /api/settings/flow-templates
 async function POST_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_flow_templates');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { name, eventTypeKey } = body;

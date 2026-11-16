@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { withTenant } from '@/lib/requireAuth';
+import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { EventTypeConfig } from '@/lib/models';
@@ -37,6 +37,8 @@ async function GET_() {
 // POST /api/event-type-configs — create a new event type
 async function POST_(request: NextRequest) {
   try {
+    const { error } = await requirePermission(request, 'manage_event_types');
+    if (error) return error;
     await connectDB();
     const body = await request.json();
     const { label, countMode = 'persons', tableCapacity = 10, isActive = true } = body;

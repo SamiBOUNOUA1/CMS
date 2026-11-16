@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useT, useLanguage } from '@/lib/LanguageContext';
 import { useRowLink } from '@/lib/useRowLink';
+import Pagination from '@/app/components/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -64,6 +66,9 @@ export default function InventoryPage() {
   const [filterWarehouse, setFilterWarehouse] = useState('');
   const [filterLowStock, setFilterLowStock] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const pg = usePagination('inventory', [search, filterCategory, filterWarehouse, filterLowStock]);
 
   useEffect(() => {
     fetch('/api/inventory/categories')
@@ -83,12 +88,17 @@ export default function InventoryPage() {
       if (filterCategory) params.set('category', filterCategory);
       if (filterWarehouse) params.set('warehouse', filterWarehouse);
       if (filterLowStock) params.set('lowStock', 'true');
-      fetch(`/api/inventory/items?${params}`)
+      fetch(`/api/inventory/items?${params}&${pg.query}`)
         .then(r => r.ok ? r.json() : { items: [] })
-        .then((d: any) => { setItems(d.items ?? []); setLoading(false); });
+        .then((d: any) => {
+          setItems(d.items ?? []);
+          setTotal(d.total ?? 0);
+          setLowStockCount(d.lowStockCount ?? 0);
+          setLoading(false);
+        });
     }, 300);
     return () => clearTimeout(t);
-  }, [search, filterCategory, filterWarehouse, filterLowStock]);
+  }, [search, filterCategory, filterWarehouse, filterLowStock, pg.query]);
 
   useEffect(() => {
     if (!previewUrl) return;
@@ -98,7 +108,6 @@ export default function InventoryPage() {
   }, [previewUrl]);
 
   const isLow = (item: any) => item.currentStock <= item.minStock;
-  const lowStockCount = items.filter(isLow).length;
 
   return (
     <div className="max-w-[1100px] mx-auto px-3 sm:px-8 pt-6 sm:pt-8 pb-12">
@@ -129,7 +138,7 @@ export default function InventoryPage() {
             <BoxIcon />
           </div>
           <div className="min-w-0">
-            <p className="text-[18px] sm:text-[22px] font-medium text-g-text m-0 leading-tight">{loading ? '–' : items.length}</p>
+            <p className="text-[18px] sm:text-[22px] font-medium text-g-text m-0 leading-tight">{loading ? '–' : total}</p>
             <p className="text-[10px] sm:text-[12px] text-g-text-2 m-0 mt-0.5 truncate">{ti.table.name}</p>
           </div>
         </div>
@@ -414,6 +423,7 @@ export default function InventoryPage() {
               </tbody>
             </table>
           </div>
+          <Pagination {...pg.props} total={total} />
         </>
       )}
 
