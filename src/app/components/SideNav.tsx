@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
+import { localized } from '@/lib/modules';
 
 const ClipboardListIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -41,12 +42,19 @@ const ChefHatIcon = () => (
   </svg>
 );
 
+const LifeBuoyIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm7.46 7.12l-2.78 1.15a4.982 4.982 0 0 0-2.95-2.94l1.15-2.78c2.1.8 3.77 2.47 4.58 4.57zM12 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zM9.13 4.54l1.17 2.78a5 5 0 0 0-2.98 2.97L4.54 9.13a7.984 7.984 0 0 1 4.59-4.59zM4.54 14.87l2.78-1.15a4.968 4.968 0 0 0 2.97 2.96l-1.17 2.78a7.996 7.996 0 0 1-4.58-4.59zm10.34 4.59l-1.15-2.78a4.978 4.978 0 0 0 2.95-2.97l2.78 1.17a8.007 8.007 0 0 1-4.58 4.58z"/>
+  </svg>
+);
+
 const ICON_MAP: Record<string, () => JSX.Element> = {
   ClipboardList: ClipboardListIcon,
   Warehouse: WarehouseIcon,
   CheckSquare: CheckSquareIcon,
   WashingMachine: WashingMachineIcon,
   ChefHat: ChefHatIcon,
+  LifeBuoy: LifeBuoyIcon,
 };
 
 export default function SideNav() {
@@ -70,13 +78,13 @@ export default function SideNav() {
         {visibleModules.map(mod => {
           const IconComp = ICON_MAP[mod.icon] ?? ClipboardListIcon;
           const isActive = mod.routes.some(r => pathname.startsWith(r));
-          const label = lang === 'fr' ? mod.nameFr : mod.name;
+          const label = localized(mod, 'name', lang);
           return (
             <div key={mod.id}>
               <Link
                 href={mod.primaryRoute}
                 title={label}
-                className="flex items-center gap-3 py-3 pl-5 no-underline rounded-r-lg overflow-hidden whitespace-nowrap transition-[background,color,border-color] duration-150"
+                className="flex items-center gap-3 py-3 ps-5 no-underline rounded-e-lg overflow-hidden whitespace-nowrap transition-[background,color,border-color] duration-150"
                 style={{
                   color: isActive ? mod.color : 'var(--google-text-secondary)',
                   background: isActive ? `${mod.color}18` : 'transparent',
@@ -103,7 +111,7 @@ export default function SideNav() {
           <Link
             href={settingsHref}
             title={t.nav.settings}
-            className="flex items-center gap-3 py-3 pl-[21px] no-underline rounded-r-lg overflow-hidden whitespace-nowrap transition-[background,color,border-color] duration-150"
+            className="flex items-center gap-3 py-3 ps-[21px] no-underline rounded-e-lg overflow-hidden whitespace-nowrap transition-[background,color,border-color] duration-150"
             style={{
               color: pathname.startsWith('/settings') ? 'var(--google-blue-accent)' : 'var(--google-text-secondary)',
               background: pathname.startsWith('/settings') ? 'var(--google-blue-light)' : 'transparent',

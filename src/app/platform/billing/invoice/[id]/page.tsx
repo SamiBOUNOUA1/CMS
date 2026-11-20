@@ -10,7 +10,10 @@ interface InvoiceData {
     periodFrom: string; periodTo: string; method: string; reference: string; note: string; tenantName: string;
   };
   tenant: { name: string; contactName: string; contactEmail: string; contactPhone: string };
-  issuer: { name: string; address: string; email: string; phone: string; taxId: string };
+  issuer: {
+    name: string; address: string; email: string; phone: string; taxId: string;
+    ice?: string; identifiantFiscal?: string; rcNumber?: string; rcCourt?: string; taxeProfessionnelle?: string;
+  };
 }
 
 // Printable receipt for one subscription payment. Uses the browser's print
@@ -41,8 +44,18 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
             {issuer.email && <div className="text-sm">{issuer.email}</div>}
             {issuer.phone && <div className="text-sm">{issuer.phone}</div>}
             {issuer.taxId && <div className="text-sm">Tax ID: {issuer.taxId}</div>}
+            {issuer.ice && <div className="text-sm">ICE : {issuer.ice}</div>}
+            {(issuer.identifiantFiscal || issuer.rcNumber || issuer.taxeProfessionnelle) && (
+              <div className="text-sm">
+                {[
+                  issuer.identifiantFiscal && `IF : ${issuer.identifiantFiscal}`,
+                  issuer.rcNumber && `RC : ${issuer.rcNumber}${issuer.rcCourt ? ` (${issuer.rcCourt})` : ''}`,
+                  issuer.taxeProfessionnelle && `TP : ${issuer.taxeProfessionnelle}`,
+                ].filter(Boolean).join(' · ')}
+              </div>
+            )}
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <div className="text-[13px] uppercase tracking-wider text-[#5f6368]">Invoice / Receipt</div>
             <div className="text-[18px] font-medium">{p.invoiceNumber}</div>
             <div className="text-sm mt-1">Date: {fmtDate(p.paidAt)}</div>
@@ -59,9 +72,9 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
 
         <table className="w-full text-sm border-collapse mb-8">
           <thead>
-            <tr className="text-left border-b-2 border-[#202124]">
+            <tr className="text-start border-b-2 border-[#202124]">
               <th className="py-2 font-medium">Description</th>
-              <th className="py-2 font-medium text-right">Amount</th>
+              <th className="py-2 font-medium text-end">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -70,11 +83,11 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
                 Catero subscription
                 <div className="text-[#5f6368] text-xs">Period {fmtDate(p.periodFrom)} – {fmtDate(p.periodTo)}</div>
               </td>
-              <td className="py-3 text-right whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
+              <td className="py-3 text-end whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
             </tr>
             <tr>
-              <td className="py-3 text-right font-medium">Total paid</td>
-              <td className="py-3 text-right font-medium whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
+              <td className="py-3 text-end font-medium">Total paid</td>
+              <td className="py-3 text-end font-medium whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
             </tr>
           </tbody>
         </table>

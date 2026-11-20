@@ -11,7 +11,7 @@ export interface TenantLicense {
   name: string;
   active: boolean;
   /** Why access is denied, when `active` is false. */
-  reason: 'suspended' | 'expired' | 'not_found' | null;
+  reason: 'suspended' | 'pending_contract' | 'expired' | 'not_found' | null;
   expiresAt: Date | null;
   maxUsers: number;          // 0 = unlimited
   allowedModules: string[];  // optional module ids the tenant's plan includes
@@ -76,7 +76,7 @@ export function evaluateLicense(tenant): TenantLicense {
     tenantId: String(tenant._id),
     name: tenant.name,
     active: !suspended && !expired,
-    reason: suspended ? 'suspended' : expired ? 'expired' : null,
+    reason: tenant.status === 'pending_contract' ? 'pending_contract' : suspended ? 'suspended' : expired ? 'expired' : null,
     expiresAt,
     maxUsers,
     allowedModules,

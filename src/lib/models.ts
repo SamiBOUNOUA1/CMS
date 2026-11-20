@@ -3,6 +3,9 @@ import mongoose, { Schema, models, model } from 'mongoose';
 import { tenantPlugin } from '@/lib/tenantPlugin';
 import { computeVatBreakdown, totalsFromBreakdown } from '@/lib/vat';
 import { getTenantStore } from '@/lib/tenantContext';
+import {
+  CASE_STATUSES, CASE_PRIORITIES, CASE_CATEGORIES, CASE_BODY_MAX, CASE_SUBJECT_MAX,
+} from '@/lib/supportCases';
 
 // ── TRAVEL REGION CONFIG ──────────────────────────────────────────────────────
 const travelRegionConfigSchema = new Schema(
@@ -115,7 +118,9 @@ const userSchema = new Schema(
     isActive: { type: Boolean, default: true },
     // Bumped to end every open session of this user (see lib/sessionGuard.ts).
     sessionVersion: { type: Number, default: 0 },
-    preferredLanguage: { type: String, enum: ['en', 'fr'], default: 'en' },
+    preferredLanguage: { type: String, enum: ['en', 'fr', 'ar'], default: 'en' },
+    // Notification groups this user also wants by email (see lib/notifications.ts).
+    notificationEmail: { type: [{ type: String, enum: ['event', 'task', 'sales', 'stock', 'system'] }], default: [] },
     // Two-factor auth (TOTP). Secrets are encrypted (lib/mfa.ts); never selected by default.
     mfaEnabled:       { type: Boolean, default: false },
     mfaSecret:        { type: String, select: false },
@@ -834,10 +839,12 @@ const laundryBatchSchema = new Schema(
     items:              [laundryBatchItemSchema],
     createdBy:          { type: Schema.Types.ObjectId, ref: 'User', default: null },
     inventoryProcessed: { type: Boolean, default: false },
+    sentAt:             { type: Date, default: null }, // when it moved to 'sent' (overdue notices)
   },
   { timestamps: true }
 );
 laundryBatchSchema.index({ order: 1 });
+laundryBatchSchema.index({ tenantId: 1, status: 1, sentAt: 1 });
 laundryBatchSchema.plugin(tenantPlugin);
 laundryBatchSchema.index({ tenantId: 1, batchNumber: 1 }, { unique: true });
 export const LaundryBatch = models.LaundryBatch || model('LaundryBatch', laundryBatchSchema);
@@ -1021,6 +1028,7 @@ const activitySchema = new Schema(
       'mfa_enabled', 'mfa_disabled', 'mfa_reset',
       'password_reset_sent', 'password_reset',
       'invoice_issued', 'credit_note_issued', 'invoice_sent',
+      'case_created',
     ]},
     entityType:  { type: String, required: true },
     entityId:    { type: Schema.Types.ObjectId, required: true },
@@ -1033,6 +1041,33 @@ const activitySchema = new Schema(
 activitySchema.index({ tenantId: 1, createdAt: -1 });
 activitySchema.plugin(tenantPlugin);
 export const Activity = models.Activity || model('Activity', activitySchema);
+
+// ── NOTIFICATION ──────────────────────────────────────────────────────────────
+// Per-user in-app notifications (lib/notifications.ts). Text is rendered from
+// type + params (lib/notificationText.ts) so it follows the reader's language.
+export const NOTIFICATION_GROUPS = ['event', 'task', 'sales', 'stock', 'system'];
+const notificationSchema = new Schema(
+  {
+    recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    group:     { type: String, enum: NOTIFICATION_GROUPS, required: true },
+    type:      { type: String, required: true },
+    params:    { type: Schema.Types.Mixed, default: {} },
+    link:      { type: String, default: '' },
+    actor:     { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    readAt:    { type: Date, default: null },
+    // Set by scheduled jobs so a daily run never sends the same notice twice.
+    dedupeKey: { type: String },
+  },
+  { timestamps: true }
+);
+notificationSchema.index({ tenantId: 1, recipient: 1, readAt: 1, createdAt: -1 });
+notificationSchema.index(
+  { tenantId: 1, recipient: 1, dedupeKey: 1 },
+  { unique: true, partialFilterExpression: { dedupeKey: { $type: 'string' } } },
+);
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+notificationSchema.plugin(tenantPlugin);
+export const Notification = models.Notification || model('Notification', notificationSchema);
 
 // ── PASSWORD RESET TOKEN ──────────────────────────────────────────────────────
 // One-time links emailed by a tenant admin or the platform operator. No
@@ -1055,6 +1090,24 @@ const passwordResetTokenSchema = new Schema(
 );
 passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const PasswordResetToken = models.PasswordResetToken || model('PasswordResetToken', passwordResetTokenSchema);
+
+// ── CALENDAR FEED ─────────────────────────────────────────────────────────────
+// Private iCal subscription links (Google / Apple / Outlook "subscribe from URL").
+// No tenantPlugin: the public feed endpoint looks tokens up across tenants, so
+// tenant-side code must always filter by tenantId itself. Only the sha256 hash
+// of the token is stored; the raw URL is shown to the user once.
+const calendarFeedSchema = new Schema(
+  {
+    user:           { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    tenantId:       { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
+    scope:          { type: String, enum: ['all', 'mine'], required: true },
+    tokenHash:      { type: String, required: true, unique: true },
+    lastAccessedAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
+calendarFeedSchema.index({ tenantId: 1, user: 1, scope: 1 }, { unique: true });
+export const CalendarFeed = models.CalendarFeed || model('CalendarFeed', calendarFeedSchema);
 
 // Attempt counters for login / code / password checks, shared by all server
 // instances (see lib/rateLimit.ts). No tenantPlugin: used before login. The key
@@ -1155,8 +1208,22 @@ const tenantSchema = new Schema(
     contactName:  { type: String, default: '', trim: true },
     contactEmail: { type: String, default: '', trim: true, lowercase: true },
     contactPhone: { type: String, default: '', trim: true },
-    status:       { type: String, enum: ['active', 'suspended'], default: 'active' },
+    // 'pending_contract': newly created, blocked until its contract is confirmed.
+    status:       { type: String, enum: ['active', 'suspended', 'pending_contract'], default: 'active' },
     plan:         { type: Schema.Types.ObjectId, ref: 'Plan', default: null },
+    // The customer's legal identity, printed on its contract.
+    legal: {
+      legalName:           { type: String, default: '', trim: true },
+      legalForm:           { type: String, default: '', trim: true },
+      ice:                 { type: String, default: '', trim: true },
+      identifiantFiscal:   { type: String, default: '', trim: true },
+      rcNumber:            { type: String, default: '', trim: true },
+      rcCourt:             { type: String, default: '', trim: true },
+      address:             { type: String, default: '', trim: true },
+      city:                { type: String, default: '', trim: true },
+      representativeName:  { type: String, default: '', trim: true },
+      representativeTitle: { type: String, default: '', trim: true },
+    },
     // Per-tenant overrides of the plan; null = inherit from plan.
     overrides: {
       maxUsers: { type: Number, default: null },
@@ -1212,6 +1279,67 @@ const tenantPaymentSchema = new Schema(
 );
 export const TenantPayment = models.TenantPayment || model('TenantPayment', tenantPaymentSchema);
 
+// ── PLATFORM SETTINGS (singleton, _id 'default') ──────────────────────────────
+// The operator's own legal identity (contracts + platform invoices) and the
+// contract templates per language. Empty fields fall back to env / built-ins.
+const pStr = () => ({ type: String, default: '', trim: true });
+const platformSettingsSchema = new Schema(
+  {
+    _id: { type: String, default: 'default' },
+    issuer: {
+      name: pStr(), legalName: pStr(), legalForm: pStr(), shareCapital: pStr(), ice: pStr(),
+      identifiantFiscal: pStr(), rcNumber: pStr(), rcCourt: pStr(), taxeProfessionnelle: pStr(),
+      address: pStr(), city: pStr(), email: pStr(), phone: pStr(),
+      representativeName: pStr(), representativeTitle: pStr(),
+    },
+    contractTemplates: {
+      fr: { type: String, default: '' },
+      en: { type: String, default: '' },
+      ar: { type: String, default: '' },
+    },
+    defaultContractLanguage: { type: String, enum: ['fr', 'en', 'ar'], default: 'fr' },
+  },
+  { timestamps: true }
+);
+export const PlatformSettings = models.PlatformSettings || model('PlatformSettings', platformSettingsSchema);
+
+// ── TENANT CONTRACT (legal agreement: draft → issued → signed → confirmed) ─────
+const tenantContractSchema = new Schema(
+  {
+    tenant:     { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+    tenantName: { type: String, default: '', trim: true },
+    // Assigned when issued (CTR-YYYY-0001), so drafts don't consume numbers.
+    number:   { type: String, default: null },
+    language: { type: String, enum: ['fr', 'en', 'ar'], default: 'fr' },
+    status:   { type: String, enum: ['draft', 'issued', 'signed', 'confirmed', 'cancelled'], default: 'draft' },
+    body:         { type: String, default: '' }, // template text with {{placeholders}}, editable in draft
+    renderedBody: { type: String, default: '' }, // placeholders resolved, frozen at issue
+    snapshot:     { type: Schema.Types.Mixed, default: null },
+    signedFile: {
+      objectPath:   { type: String, default: null },
+      originalName: { type: String, default: '' },
+      size:         { type: Number, default: 0 },
+      uploadedAt:   { type: Date, default: null },
+      uploadedBy:   { type: String, default: '' },
+    },
+    issuedAt:     { type: Date, default: null },
+    confirmedAt:  { type: Date, default: null },
+    confirmedBy:  { type: Schema.Types.ObjectId, ref: 'PlatformAdmin', default: null },
+    cancelledAt:  { type: Date, default: null },
+    cancelReason: { type: String, default: '' },
+    events: [{
+      _id: false,
+      at:     { type: Date, default: Date.now },
+      action: { type: String, required: true },
+      by:     { type: String, default: '' },
+      note:   { type: String, default: '' },
+    }],
+  },
+  { timestamps: true }
+);
+tenantContractSchema.index({ number: 1 }, { unique: true, partialFilterExpression: { number: { $type: 'string' } } });
+export const TenantContract = models.TenantContract || model('TenantContract', tenantContractSchema);
+
 // ── PLATFORM COUNTER (monotonic sequences, e.g. invoice numbers per year) ──────
 const platformCounterSchema = new Schema({ _id: String, seq: { type: Number, default: 0 } });
 export const PlatformCounter = models.PlatformCounter || model('PlatformCounter', platformCounterSchema);
@@ -1249,3 +1377,46 @@ systemLogSchema.index({ fingerprint: 1, tenant: 1, resolved: 1 });
 systemLogSchema.index({ level: 1, lastSeen: -1 });
 systemLogSchema.index({ lastSeen: 1 }, { expireAfterSeconds: LOG_RETENTION_DAYS * 24 * 3600 });
 export const SystemLog = models.SystemLog || model('SystemLog', systemLogSchema);
+
+// ── SUPPORT CASE (tenant → platform operator support ticket) ──────────────────
+// Tenant-owned (tenantPlugin) so tenant routes are isolated automatically; the
+// platform console reads across tenants via runAsSystem. `internalNotes` is
+// select:false — operator-only, never returned unless asked for explicitly.
+const caseMessageSchema = new Schema({
+  authorType: { type: String, enum: ['tenant', 'platform'], required: true },
+  authorId:   { type: Schema.Types.ObjectId, default: null },
+  authorName: { type: String, default: '', trim: true },
+  body:       { type: String, required: true, trim: true, maxlength: CASE_BODY_MAX },
+  createdAt:  { type: Date, default: Date.now },
+});
+const caseNoteSchema = new Schema({
+  authorId:   { type: Schema.Types.ObjectId, ref: 'PlatformAdmin', default: null },
+  authorName: { type: String, default: '', trim: true },
+  body:       { type: String, required: true, trim: true, maxlength: CASE_BODY_MAX },
+  createdAt:  { type: Date, default: Date.now },
+});
+const supportCaseSchema = new Schema(
+  {
+    caseNumber:    { type: String, required: true, unique: true },
+    tenantName:    { type: String, default: '', trim: true },
+    subject:       { type: String, required: true, trim: true, maxlength: CASE_SUBJECT_MAX },
+    category:      { type: String, enum: CASE_CATEGORIES, default: 'other' },
+    priority:      { type: String, enum: CASE_PRIORITIES, default: 'normal' },
+    status:        { type: String, enum: CASE_STATUSES, default: 'open' },
+    createdBy:     { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdByName: { type: String, default: '', trim: true },
+    assignedTo:    { type: Schema.Types.ObjectId, ref: 'PlatformAdmin', default: null },
+    messages:      { type: [caseMessageSchema], default: [] },
+    internalNotes: { type: [caseNoteSchema], default: [], select: false },
+    lastMessageAt: { type: Date, default: Date.now },
+    lastMessageBy: { type: String, enum: ['tenant', 'platform'], default: 'tenant' },
+    resolvedAt:    { type: Date, default: null },
+    closedAt:      { type: Date, default: null },
+  },
+  { timestamps: true }
+);
+supportCaseSchema.index({ tenantId: 1, status: 1, lastMessageAt: -1 });
+supportCaseSchema.index({ tenantId: 1, createdBy: 1, lastMessageAt: -1 });
+supportCaseSchema.index({ status: 1, lastMessageAt: -1 });
+supportCaseSchema.plugin(tenantPlugin);
+export const SupportCase = models.SupportCase || model('SupportCase', supportCaseSchema);

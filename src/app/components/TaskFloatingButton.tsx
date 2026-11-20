@@ -109,7 +109,7 @@ export default function TaskFloatingButton() {
       <button
         onClick={openModal}
         aria-label={tm.titleCreate}
-        className="no-print fixed bottom-6 right-6 z-[199] w-14 h-14 rounded-full bg-google-blue text-white border-none flex items-center justify-center text-3xl font-light font-sans cursor-pointer"
+        className="no-print fixed bottom-6 end-6 z-[199] w-14 h-14 rounded-full bg-google-blue text-white border-none flex items-center justify-center text-3xl font-light font-sans cursor-pointer"
         style={{ boxShadow: '0 4px 12px rgba(26,115,232,.4)' }}
       >
         +
@@ -213,7 +213,7 @@ export default function TaskFloatingButton() {
       {/* Toast notification */}
       {notification && (
         <div
-          className="fixed bottom-24 right-6 z-[1000] text-white rounded-lg px-4 py-3 text-sm font-[Roboto,Arial]"
+          className="fixed bottom-24 end-6 z-[1000] text-white rounded-lg px-4 py-3 text-sm font-[Roboto,Arial]"
           style={{
             background: notification.type === 'error' ? '#d93025' : '#202124',
             boxShadow: '0 4px 12px rgba(0,0,0,.2)',

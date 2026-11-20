@@ -32,15 +32,20 @@ export async function createResetToken(user, requestedBy: RequestedBy): Promise<
   return token;
 }
 
-/** Public URL of the reset page. APP_BASE_URL wins over proxy headers. */
-export function resetLink(request: NextRequest, token: string): string {
+/** Public base URL of the app (no trailing slash). APP_BASE_URL wins over proxy headers. */
+export function appBaseUrl(request: NextRequest): string {
   let base = process.env.APP_BASE_URL;
   if (!base) {
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
     const proto = (request.headers.get('x-forwarded-proto') || '').split(',')[0].trim();
     base = host ? `${proto || 'https'}://${host.split(',')[0].trim()}` : request.nextUrl.origin;
   }
-  return `${base.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
+  return base.replace(/\/+$/, '');
+}
+
+/** Public URL of the reset page. */
+export function resetLink(request: NextRequest, token: string): string {
+  return `${appBaseUrl(request)}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
 const TEXT = {
@@ -54,6 +59,11 @@ const TEXT = {
     body: (name, link) =>
       `Bonjour ${name},\n\nUn administrateur a demandé la réinitialisation de votre mot de passe. Ouvrez ce lien pour choisir un nouveau mot de passe :\n\n${link}\n\nLe lien n'est utilisable qu'une fois et expire dans 1 heure. Si vous n'attendiez pas cet e-mail, vous pouvez l'ignorer ; votre mot de passe actuel reste inchangé.`,
   },
+  ar: {
+    subject: 'إعادة تعيين كلمة المرور',
+    body: (name, link) =>
+      `مرحبًا ${name}،\n\nطلب أحد المسؤولين إعادة تعيين كلمة المرور الخاصة بك. افتح هذا الرابط لاختيار كلمة مرور جديدة:\n\n${link}\n\nيمكن استخدام الرابط مرة واحدة وتنتهي صلاحيته خلال ساعة. إذا لم تكن تتوقع هذه الرسالة، يمكنك تجاهلها؛ وتبقى كلمة المرور الحالية كما هي.`,
+  },
 };
 
 /**
@@ -63,6 +73,6 @@ const TEXT = {
 export async function sendResetEmail(user, link: string, tenantSettings?) {
   const t = await systemTransport(tenantSettings);
   if (!t) throw new EmailNotConfiguredError();
-  const txt = TEXT[user.preferredLanguage === 'fr' ? 'fr' : 'en'];
+  const txt = TEXT[user.preferredLanguage] || TEXT.en;
   await sendRawEmail({ ...t, to: user.email, subject: txt.subject, text: txt.body(user.name, link) });
 }

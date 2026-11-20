@@ -267,7 +267,7 @@ export default function EventTypesSettingsPage() {
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <div>
                             <span className="font-medium text-g-text text-sm">{cfg.label}</span>
-                            <span className="ml-2 text-[11px] text-g-text-3" style={{ fontFamily: 'monospace' }}>({cfg.key})</span>
+                            <span className="ms-2 text-[11px] text-g-text-3" style={{ fontFamily: 'monospace' }}>({cfg.key})</span>
                           </div>
                           <button
                             onClick={() => handleToggleActive(cfg)}
@@ -336,7 +336,7 @@ export default function EventTypesSettingsPage() {
                           ) : (
                             <span>{cfg.label}</span>
                           )}
-                          <span className="ml-2 text-[11px] text-g-text-3" style={{ fontFamily: 'monospace' }}>({cfg.key})</span>
+                          <span className="ms-2 text-[11px] text-g-text-3" style={{ fontFamily: 'monospace' }}>({cfg.key})</span>
                         </td>
                         {/* Count mode */}
                         <td className="py-3 px-4">

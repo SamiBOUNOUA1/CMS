@@ -72,12 +72,12 @@ export default function BillingPage() {
       <div className="bg-g-surface border border-g-border rounded-2xl overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
+            <tr className="text-start text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
               <th className="px-4 py-3 font-medium">Paid</th>
               <th className="px-4 py-3 font-medium">Tenant</th>
               <th className="px-4 py-3 font-medium">Invoice</th>
               <th className="px-4 py-3 font-medium">Period</th>
-              <th className="px-4 py-3 font-medium text-right">Amount</th>
+              <th className="px-4 py-3 font-medium text-end">Amount</th>
               <th className="px-4 py-3 font-medium">Method</th>
             </tr>
           </thead>
@@ -98,7 +98,7 @@ export default function BillingPage() {
                   <Link href={`/platform/billing/invoice/${p._id}`} target="_blank" className="text-google-blue no-underline">{p.invoiceNumber}</Link>
                 </td>
                 <td className="px-4 py-3 text-g-text-2 whitespace-nowrap">{fmtDate(p.periodFrom)} → {fmtDate(p.periodTo)}</td>
-                <td className="px-4 py-3 text-g-text text-right whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
+                <td className="px-4 py-3 text-g-text text-end whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
                 <td className="px-4 py-3 text-g-text-2">{PAYMENT_METHODS.find(m => m.id === p.method)?.name ?? p.method}</td>
               </tr>
             ))}

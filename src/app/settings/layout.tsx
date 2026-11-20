@@ -236,10 +236,10 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
       {/* ── Desktop sidebar ─────────────────────────────────────────────────── */}
       <aside
-        className="hidden sm:block flex-shrink-0 border-r border-g-border sticky top-0 self-start overflow-y-auto"
+        className="hidden sm:block flex-shrink-0 border-e border-g-border sticky top-0 self-start overflow-y-auto"
         style={{ width: 220, padding: '28px 12px 40px', maxHeight: 'calc(100vh - 104px)' }}
       >
-        <div className="mb-5 pl-3">
+        <div className="mb-5 ps-3">
           <h1 className="text-lg font-medium text-g-text m-0" style={{ fontFamily: "'Google Sans'" }}>
             {ts.title}
           </h1>
@@ -249,7 +249,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
       {/* ── Mobile: top bar ──────────────────────────────────────────────────── */}
       <div
-        className="flex sm:hidden fixed left-0 right-0 bg-g-surface border-b border-g-border items-center gap-3 py-2.5 px-4"
+        className="flex sm:hidden fixed start-0 end-0 bg-g-surface border-b border-g-border items-center gap-3 py-2.5 px-4"
         style={{ top: 104, zIndex: 80 }}
       >
         <button
@@ -272,7 +272,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             className="fixed inset-0"
             style={{ background: 'rgba(0,0,0,.35)', zIndex: 149 }}
           />
-          <div className="fixed top-0 left-0 bottom-0 flex flex-col overflow-y-auto bg-g-surface"
+          <div className="fixed top-0 start-0 bottom-0 flex flex-col overflow-y-auto bg-g-surface"
             style={{ width: 260, zIndex: 150, boxShadow: '4px 0 24px rgba(0,0,0,.15)' }}>
             <div className="flex items-center justify-between border-b border-g-border" style={{ padding: '18px 16px' }}>
               <span className="text-[17px] font-medium text-g-text" style={{ fontFamily: "'Google Sans'" }}>

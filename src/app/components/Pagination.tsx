@@ -60,7 +60,7 @@ export default function Pagination({ page, pageSize, total, onPageChange, onPage
       </label>
 
       <div className="flex items-center gap-1">
-        <span className="mr-2 whitespace-nowrap">{tp.range(from, to, total)}</span>
+        <span className="me-2 whitespace-nowrap">{tp.range(from, to, total)}</span>
         <button type="button" onClick={() => go(page - 1)} disabled={page <= 1} aria-label={tp.prev} title={tp.prev} className={navBtn}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" /></svg>
         </button>

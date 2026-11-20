@@ -4,7 +4,7 @@ import { MODULE_REGISTRY } from '@/lib/modules';
 
 export const OPTIONAL_MODULES = MODULE_REGISTRY.filter(m => !m.builtIn);
 
-export type LicenseState = 'active' | 'expired' | 'suspended' | 'not_found';
+export type LicenseState = 'active' | 'expired' | 'suspended' | 'pending_contract' | 'not_found';
 
 const DAY = 24 * 3600 * 1000;
 
@@ -12,7 +12,8 @@ const DAY = 24 * 3600 * 1000;
 export function LicenseBadge({ state, expiresAt }: { state: LicenseState; expiresAt?: string | null }) {
   const daysLeft = expiresAt ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / DAY) : null;
   let label = 'Active', bg = '#e6f4ea', fg = '#137333';
-  if (state === 'suspended') { label = 'Suspended'; bg = '#fce8e6'; fg = '#d93025'; }
+  if (state === 'pending_contract') { label = 'Pending contract'; bg = '#fef7e0'; fg = '#b06000'; }
+  else if (state === 'suspended') { label = 'Suspended'; bg = '#fce8e6'; fg = '#d93025'; }
   else if (state === 'expired') { label = 'Expired'; bg = '#fce8e6'; fg = '#d93025'; }
   else if (daysLeft !== null && daysLeft <= 30) { label = `Expires in ${daysLeft}d`; bg = '#fef7e0'; fg = '#b06000'; }
   return (

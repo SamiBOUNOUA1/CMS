@@ -494,7 +494,7 @@ function EditList({
                 <button
                   key={tpl._id}
                   onClick={() => pickTemplate(tpl)}
-                  className="w-full text-left p-3.5 rounded-2xl border border-g-border bg-g-surface hover:bg-g-bg cursor-pointer flex items-center gap-3"
+                  className="w-full text-start p-3.5 rounded-2xl border border-g-border bg-g-surface hover:bg-g-bg cursor-pointer flex items-center gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-g-text text-[15px] truncate">{tpl.name}</div>

@@ -494,7 +494,7 @@ export default function DataManagementPage() {
                   <thead>
                     <tr style={{ background: 'var(--google-bg)' }}>
                       {[td.review.colCollection, td.review.colNew, td.review.colConflicts, td.review.colAction].map(h => (
-                        <th key={h} className="text-left text-[11px] font-semibold text-g-text-2 uppercase tracking-[0.04em]"
+                        <th key={h} className="text-start text-[11px] font-semibold text-g-text-2 uppercase tracking-[0.04em]"
                           style={{ padding: '10px 14px', fontFamily: "'Google Sans'", borderBottom: '1px solid var(--google-border)' }}>
                           {h}
                         </th>

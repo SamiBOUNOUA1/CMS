@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,14 +47,14 @@
 }
 
 body {
-  font-family: 'Roboto', Arial, sans-serif;
+  font-family: 'Roboto', 'Noto Sans Arabic', Arial, sans-serif;
   background-color: var(--google-bg);
   color: var(--google-text-primary);
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5 {
-  font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+  font-family: 'Google Sans', 'Roboto', 'Noto Sans Arabic', Arial, sans-serif;
 }
 
 /* Google-style ripple effect */
@@ -120,24 +120,24 @@ h1, h2, h3, h4, h5 {
 
 /* ── Sub-navigation bar (SubNav) ─────────────────────────────────────────── */
 .subnav-bar {
-  padding-left: 72px; /* aligns with content area after 64px sidebar */
+  padding-inline-start: 72px; /* aligns with content area after 64px sidebar */
 }
 .subnav-bar::-webkit-scrollbar { display: none; }
 
 @media (max-width: 639px) {
-  .subnav-bar { padding-left: 16px !important; }
+  .subnav-bar { padding-inline-start: 16px !important; }
 }
 
 /* ── Left sidebar (SideNav) ───────────────────────────────────────────────── */
 .sidenav {
   position: fixed;
-  left: 0;
+  inset-inline-start: 0;
   top: 104px; /* 64px header + 40px subnav */
   bottom: 0;
   width: 64px;
   z-index: 40;
   background: var(--google-surface);
-  border-right: 1px solid var(--google-border);
+  border-inline-end: 1px solid var(--google-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -161,11 +161,23 @@ h1, h2, h3, h4, h5 {
   opacity: 1;
 }
 
+/* Sidebar shadow points away from the edge it is pinned to */
+[dir="rtl"] .sidenav { box-shadow: -1px 0 2px rgba(60,64,67,.06); }
+[dir="rtl"] .sidenav:hover { box-shadow: -2px 0 8px rgba(60,64,67,.15); }
+
 /* Hide sidebar on mobile — use hamburger in AppNav instead */
 @media (max-width: 639px) {
   .sidenav { display: none; }
-  .sidenav-main { margin-left: 0 !important; }
+  .sidenav-main { margin-inline-start: 0 !important; }
 }
+
+/* ── Right-to-left (Arabic) ─────────────────────────────────────────────── */
+/* Emails, phone numbers and URLs stay left-to-right inside an RTL page. */
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="url"] { direction: ltr; text-align: right; }
+/* Directional arrow icons (chevrons, back arrows) flip in RTL. */
+[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
 
 /* ── Quote detail page (screen) ──────────────────────────────────────────── */
 @media (max-width: 639px) {
@@ -183,7 +195,7 @@ h1, h2, h3, h4, h5 {
   .subnav-bar { display: none !important; }
   .sidenav { display: none !important; }
   body { background: white !important; font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif) !important; }
-  main { margin-top: 0 !important; margin-left: 0 !important; }
+  main { margin-top: 0 !important; margin-inline-start: 0 !important; }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
   .print-only-flex { display: flex !important; }
@@ -227,8 +239,8 @@ h1, h2, h3, h4, h5 {
   }
 
   .pdf-section-title {
-    border-left: 2px solid var(--pdf-accent, #c9a96e);
-    padding-left: 8px;
+    border-inline-start: 2px solid var(--pdf-accent, #c9a96e);
+    padding-inline-start: 8px;
     font-family: var(--pdf-font, 'Georgia', 'Times New Roman', serif);
     font-size: 10pt;
     letter-spacing: 0.06em;

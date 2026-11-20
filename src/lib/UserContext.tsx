@@ -11,6 +11,7 @@ export interface SubRoute {
   href: string;
   label: string;
   labelFr: string;
+  labelAr?: string;
   permission?: string;
   anyPermission?: string[];
 }
@@ -19,6 +20,7 @@ export interface AppModule {
   id: string;
   name: string;
   nameFr: string;
+  nameAr?: string;
   icon: string;
   color: string;
   isEnabled: boolean;

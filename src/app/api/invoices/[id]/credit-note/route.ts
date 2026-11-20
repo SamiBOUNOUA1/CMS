@@ -3,6 +3,7 @@ import { withTenant, requirePermission } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { logActivity } from '@/lib/activityLogger';
+import { notify, orderLink, financeUsers } from '@/lib/notifications';
 import { serverError } from '@/lib/logger';
 import { InvoiceError, issueCreditNote } from '@/lib/invoicing';
 
@@ -32,6 +33,12 @@ async function POST_(request: NextRequest, { params }: { params: Record<string, 
       entityLabel: `${credit.invoiceNumber} → ${credit.creditedInvoiceNumber}`,
       performedBy: auth.userId,
       metadata: { orderId: String(credit.order), creditedInvoice: params.id, totalTTC: credit.totalTTC },
+    });
+
+    await notify({
+      recipients: await financeUsers(), group: 'sales', type: 'credit_note_issued',
+      params: { number: credit.invoiceNumber, client: credit.buyer?.legalName || credit.buyer?.name || '', amount: Math.abs(credit.totalTTC || 0) },
+      link: orderLink(credit.order), actorId: auth.userId,
     });
 
     return NextResponse.json({ creditNote: credit }, { status: 201 });

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Client, Invoice, Order } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { notify, orderLink, financeUsers } from '@/lib/notifications';
 import { serverError } from '@/lib/logger';
 import { InvoiceError, issueInvoice, prepareInvoice } from '@/lib/invoicing';
 
@@ -123,6 +124,12 @@ async function POST_(request: NextRequest) {
       entityLabel: `${invoice.invoiceNumber} – ${invoice.buyer.legalName || invoice.buyer.name}`,
       performedBy: auth.userId,
       metadata: { orderId: String(order._id), invoiceNumber: invoice.invoiceNumber, totalTTC: invoice.totalTTC },
+    });
+
+    await notify({
+      recipients: await financeUsers(), group: 'sales', type: 'invoice_issued',
+      params: { number: invoice.invoiceNumber, client: invoice.buyer.legalName || invoice.buyer.name, amount: invoice.totalTTC },
+      link: orderLink(order), actorId: auth.userId,
     });
 
     return NextResponse.json({ invoice }, { status: 201 });

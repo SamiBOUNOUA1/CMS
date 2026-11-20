@@ -3,7 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
-import { User, Role } from '@/lib/models';
+import { User, Role, CalendarFeed } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { userLimitError } from '@/lib/license';
 import { MFA_CLEAR } from '@/lib/mfaService';
@@ -110,6 +110,7 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
     }
 
     await User.findByIdAndDelete(params.id);
+    await CalendarFeed.deleteMany({ tenantId: auth.tenantId, user: params.id });
     forgetSessionState(params.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

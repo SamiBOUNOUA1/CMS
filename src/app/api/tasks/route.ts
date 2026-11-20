@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongodb';
 import { Task } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
+import { notify } from '@/lib/notifications';
 import { parsePagination, pageMeta } from '@/lib/pagination';
 
 async function GET_(request: NextRequest) {
@@ -71,6 +72,12 @@ async function POST_(request: NextRequest) {
       notes,
       owner,
       createdBy: userId,
+    });
+
+    await notify({
+      recipients: [owner], group: 'task', type: 'task_assigned',
+      params: { taskType: type, date: task.scheduledDate, notes: String(notes).slice(0, 120) },
+      link: '/tasks', actorId: userId,
     });
 
     const populated = await Task.findById(task._id)

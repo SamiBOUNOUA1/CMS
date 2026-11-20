@@ -439,7 +439,7 @@ export default function OrderDetailPage() {
             }`}
           >
             {tb.label}
-            {tb.count > 0 && <span className="ml-1.5 text-xs rounded-full bg-g-bg text-g-text-2 px-1.5 py-px">{tb.count}</span>}
+            {tb.count > 0 && <span className="ms-1.5 text-xs rounded-full bg-g-bg text-g-text-2 px-1.5 py-px">{tb.count}</span>}
           </button>
         ))}
       </div>
@@ -894,17 +894,17 @@ function MenuItemsReadView({ groups, currency, emptyLabel, orderId, canEdit, onP
                     <span className="text-g-text-2">{fmt(itemLineTotal(g.count, item), currency)}</span>
                   </div>
                   {(item.selectedOptions || []).map((o, oi) => (
-                    <div key={oi} className="flex justify-between text-xs text-g-text-2 pl-4">
+                    <div key={oi} className="flex justify-between text-xs text-g-text-2 ps-4">
                       <span>+ {o.name}</span>
                       <span>{fmt(Number(o.price) || 0, currency)}</span>
                     </div>
                   ))}
                   {/* Pack lines: what is still included (items removed for this order are left out). */}
                   {item.isPack && (item.packItems || []).filter(p => !p.removed).map((p, pi) => (
-                    <div key={`pk${pi}`} className="text-xs text-g-text-2 pl-4">– {p.name}</div>
+                    <div key={`pk${pi}`} className="text-xs text-g-text-2 ps-4">– {p.name}</div>
                   ))}
                   {packTotal > 0 && (
-                    <div className="pl-4 py-0.5">
+                    <div className="ps-4 py-0.5">
                       <button
                         type="button"
                         onClick={() => setOpen({ gi, ii: origII })}

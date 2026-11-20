@@ -128,7 +128,7 @@ export default function OrdersPage() {
         </div>
         {perms.create_orders && (
           <Link href="/orders/new" className={`${btnFilled} flex-shrink-0 flex items-center`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="sm:mr-1.5" aria-hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="sm:me-1.5" aria-hidden>
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
             </svg>
             <span className="hidden sm:inline">{tp.newOrder}</span>
@@ -159,7 +159,7 @@ export default function OrdersPage() {
 
       {/* Search */}
       <div className="bg-g-surface rounded-full border border-g-border flex items-center px-4 py-1 mb-4 shadow-google-1">
-        <svg width="18" height="18" viewBox="0 0 24 24" className="mr-2.5 flex-shrink-0 text-g-text-3 fill-current">
+        <svg width="18" height="18" viewBox="0 0 24 24" className="me-2.5 flex-shrink-0 text-g-text-3 fill-current">
           <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
         </svg>
         <input
@@ -192,7 +192,7 @@ export default function OrdersPage() {
             {s === 'all' ? tp.filter.all : (statusMap[s]?.label || s)}
           </button>
         ))}
-        <div className="ml-auto flex-shrink-0">
+        <div className="ms-auto flex-shrink-0">
           <select
             value={sortBy}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value)}
@@ -263,8 +263,8 @@ export default function OrdersPage() {
             <div className="flex-1">{tp.table.guests}</div>
             <div className="flex-1">{tp.table.status}</div>
             <div className="flex-1 text-center">{tp.table.quotes}</div>
-            <div className="flex-1 text-right">{tp.table.total}</div>
-            <div className="w-10 flex-none text-right"><span className="sr-only">{tp.table.actions}</span></div>
+            <div className="flex-1 text-end">{tp.table.total}</div>
+            <div className="w-10 flex-none text-end"><span className="sr-only">{tp.table.actions}</span></div>
           </div>
           {sorted.map((order, i) => {
             const sc = statusMap[order.status];
@@ -301,7 +301,7 @@ export default function OrdersPage() {
                   {order.quoteCount || 0}
                   {order.activeQuoteVersion ? ` (${tp.activeVersion(order.activeQuoteVersion)})` : ''}
                 </div>
-                <div className="flex-1 text-right font-medium text-[15px] text-g-text">
+                <div className="flex-1 text-end font-medium text-[15px] text-g-text">
                   {formatCurrency(order.totalAmount, currency)}
                 </div>
                 <div className="w-10 flex-none flex justify-end gap-1">

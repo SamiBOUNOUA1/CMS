@@ -9,7 +9,7 @@ interface TenantRow {
   _id: string;
   name: string;
   contactEmail: string;
-  status: 'active' | 'suspended';
+  status: 'active' | 'suspended' | 'pending_contract';
   plan: { name: string; price?: number; currency?: string; billingPeriod?: 'monthly' | 'yearly' } | null;
   license: { expiresAt: string };
   licenseState: LicenseState;
@@ -48,7 +48,8 @@ export default function PlatformTenantsPage() {
       total: list.length,
       active: list.filter(t => t.licenseState === 'active').length,
       expiring: list.filter(t => t.licenseState === 'active' && new Date(t.license.expiresAt).getTime() < soon).length,
-      blocked: list.filter(t => t.licenseState !== 'active').length,
+      blocked: list.filter(t => t.licenseState !== 'active' && t.licenseState !== 'pending_contract').length,
+      pending: list.filter(t => t.licenseState === 'pending_contract').length,
     };
   }, [tenants]);
 
@@ -59,11 +60,12 @@ export default function PlatformTenantsPage() {
         <Link href="/platform/tenants/new" className={`${btnFilled} no-underline`}>New tenant</Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         {[
           ['Customers', summary.total],
           ['Active', summary.active],
           ['Expiring ≤ 30 days', summary.expiring],
+          ['Awaiting contract', summary.pending],
           ['Expired / suspended', summary.blocked],
           ['MRR', fmtMoneyMap(summary.mrr)],
         ].map(([label, n]) => (
@@ -81,13 +83,13 @@ export default function PlatformTenantsPage() {
       <div className="bg-g-surface border border-g-border rounded-2xl overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
+            <tr className="text-start text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
               <th className="px-4 py-3 font-medium">Company</th>
               <th className="px-4 py-3 font-medium">Plan</th>
               <th className="px-4 py-3 font-medium">License</th>
               <th className="px-4 py-3 font-medium">Expires</th>
-              <th className="px-4 py-3 font-medium text-right">Users</th>
-              <th className="px-4 py-3 font-medium text-right">Orders</th>
+              <th className="px-4 py-3 font-medium text-end">Users</th>
+              <th className="px-4 py-3 font-medium text-end">Orders</th>
               <th className="px-4 py-3 font-medium">Last login</th>
             </tr>
           </thead>
@@ -112,10 +114,10 @@ export default function PlatformTenantsPage() {
                 </td>
                 <td className="px-4 py-3"><LicenseBadge state={t.licenseState} expiresAt={t.license?.expiresAt} /></td>
                 <td className="px-4 py-3 text-g-text">{fmtDate(t.license?.expiresAt)}</td>
-                <td className="px-4 py-3 text-right text-g-text">
+                <td className="px-4 py-3 text-end text-g-text">
                   {t.usage.activeUsers}{t.maxUsers ? ` / ${t.maxUsers}` : ''}
                 </td>
-                <td className="px-4 py-3 text-right text-g-text">{t.usage.orders}</td>
+                <td className="px-4 py-3 text-end text-g-text">{t.usage.orders}</td>
                 <td className="px-4 py-3 text-g-text-2">{fmtDate(t.lastActivityAt)}</td>
               </tr>
             ))}

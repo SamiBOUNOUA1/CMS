@@ -290,10 +290,10 @@ export default function FlowTemplatesSettingsPage() {
                     <span className="text-[15px] font-medium text-g-text">
                       {tmpl.name}
                     </span>
-                    <span className="ml-2.5 text-[11px] py-[2px] px-2 rounded-xl bg-google-blue-light text-google-blue font-medium">
+                    <span className="ms-2.5 text-[11px] py-[2px] px-2 rounded-xl bg-google-blue-light text-google-blue font-medium">
                       {etLabel}
                     </span>
-                    <span className="ml-2 text-xs text-g-text-3">
+                    <span className="ms-2 text-xs text-g-text-3">
                       {steps.length} {tf.stepsTitle.toLowerCase()}
                     </span>
                   </div>

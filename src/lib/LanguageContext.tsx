@@ -7,7 +7,9 @@ import { translations } from './i18n';
 import { setDateLang } from './dateFormat';
 import { useUser } from './UserContext';
 
-type Lang = 'en' | 'fr';
+export type Lang = 'en' | 'fr' | 'ar';
+export const LANGS: readonly Lang[] = ['en', 'fr', 'ar'];
+const isLang = (v: unknown): v is Lang => v === 'en' || v === 'fr' || v === 'ar';
 // The translations object is deeply nested — use a permissive type to avoid
 // having to fully annotate every key in the large i18n file.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,6 +17,8 @@ type Translations = any;
 
 interface LanguageContextType {
   lang: Lang;
+  /** 'rtl' for Arabic, 'ltr' otherwise. */
+  dir: 'ltr' | 'rtl';
   switchLanguage: (l: Lang) => void;
   t: Translations;
   currency: string;
@@ -30,7 +34,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('lang');
-    if (saved === 'en' || saved === 'fr') setLang(saved);
+    if (isLang(saved)) setLang(saved);
   }, []);
 
   const [currency, setCurrency] = useState('€');
@@ -67,7 +71,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (appliedForRef.current === id) return;
     appliedForRef.current = id;
     const pref = user?.preferredLanguage;
-    if (pref === 'en' || pref === 'fr') {
+    if (isLang(pref)) {
       setLang(pref);
       if (typeof window !== 'undefined') localStorage.setItem('lang', pref);
     }
@@ -81,8 +85,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Set before children render so their dates use the right locale.
   setDateLang(lang);
 
+  // Arabic is written right-to-left: flip the whole document so layouts,
+  // text alignment and logical (start/end) spacing mirror automatically.
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dir;
+  }, [lang, dir]);
+
   return (
-    <LanguageContext.Provider value={{ lang, switchLanguage, t: (translations as Record<Lang, Translations>)[lang], currency, setCurrency }}>
+    <LanguageContext.Provider value={{ lang, dir, switchLanguage, t: (translations as Record<Lang, Translations>)[lang], currency, setCurrency }}>
       {children}
     </LanguageContext.Provider>
   );

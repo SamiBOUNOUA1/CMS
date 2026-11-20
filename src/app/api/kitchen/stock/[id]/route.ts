@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { KitchenStockItem, KitchenStockAdjustment, KitchenRecipe } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { notifyIfLow } from '@/lib/notifications';
 import { requirePermission } from '@/lib/requireAuth';
 
 async function GET_(
@@ -44,6 +45,7 @@ async function PATCH_(
 
   if (stockDelta !== undefined) {
     const delta = Number(stockDelta);
+    const prevStock = item.currentStock;
     item.currentStock = Math.max(0, item.currentStock + delta);
     await item.save();
 
@@ -63,6 +65,7 @@ async function PATCH_(
       performedBy: userId,
       metadata: { adjustmentType: adjustmentType || 'purchase', stockDelta: delta },
     });
+    await notifyIfLow('kitchen', item, prevStock, userId);
   } else {
     const allowed = ['name', 'nameAr', 'category', 'unit', 'minStock', 'unitCost', 'notes', 'isActive'];
     for (const key of allowed) {

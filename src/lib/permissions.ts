@@ -40,6 +40,8 @@ export const ALL_PERMISSIONS = [
   'view_reports',
   'manage_data',
   'manage_integrations',
+  'create_cases',
+  'view_all_cases',
 ] as const;
 
 export type PermissionKey = typeof ALL_PERMISSIONS[number];
@@ -88,6 +90,8 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_reports:           true,
     manage_data:            true,
     manage_integrations:    true,
+    create_cases:           true,
+    view_all_cases:         true,
   },
   manager: {
     view_orders:            false,
@@ -131,6 +135,8 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_reports:           false,
     manage_data:            false,
     manage_integrations:    false,
+    create_cases:           true,
+    view_all_cases:         false,
   },
   viewer: {
     view_orders:            true,
@@ -174,6 +180,8 @@ export const DEFAULT_PERMISSIONS: Record<string, PermissionsMap> = {
     view_reports:           false,
     manage_data:            false,
     manage_integrations:    false,
+    create_cases:           false,
+    view_all_cases:         false,
   },
 };
 

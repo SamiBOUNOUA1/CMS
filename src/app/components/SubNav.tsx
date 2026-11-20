@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
+import { localized } from '@/lib/modules';
 
 export default function SubNav() {
   const pathname = usePathname();
@@ -23,7 +24,7 @@ export default function SubNav() {
 
   return (
     <div
-      className="subnav-bar fixed top-16 left-0 right-0 h-10 z-[39] flex items-stretch overflow-x-auto overflow-y-hidden"
+      className="subnav-bar fixed top-16 start-0 end-0 h-10 z-[39] flex items-stretch overflow-x-auto overflow-y-hidden"
       style={{
         background: visibleSubRoutes.length > 0 ? 'var(--google-surface)' : 'var(--google-bg)',
         borderBottom: visibleSubRoutes.length > 0 ? '1px solid var(--google-border)' : 'none',
@@ -31,7 +32,7 @@ export default function SubNav() {
       } as React.CSSProperties}
     >
       {visibleSubRoutes.map(sr => {
-        const label = lang === 'fr' ? sr.labelFr : sr.label;
+        const label = localized(sr, 'label', lang);
         const isActive = pathname === sr.href || pathname.startsWith(sr.href + '/');
         const color = activeModule?.color ?? '#1a73e8';
         return (

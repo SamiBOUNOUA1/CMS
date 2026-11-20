@@ -18,6 +18,10 @@ export const viewport = {
   initialScale: 1,
 };
 
+// Apply the saved language direction before first paint so an Arabic UI does
+// not flash left-to-right while React hydrates.
+const dirScript = `(function(){try{if(localStorage.getItem('lang')==='ar'){document.documentElement.dir='rtl';document.documentElement.lang='ar'}}catch(e){}})()`;
+
 const themeScript = `(function(){var t=localStorage.getItem('theme')||'system';document.documentElement.setAttribute('data-theme',t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light')})()`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -26,6 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: earlyErrorScript }} />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: dirScript }} />
       </head>
       <body>
         <ThemeProvider>

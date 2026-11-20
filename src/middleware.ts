@@ -4,7 +4,9 @@ import { MODULE_REGISTRY } from '@/lib/modules';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const PUBLIC = ['/login', '/license-expired', '/reset-password'];
-const PUBLIC_API = ['/api/auth/login', '/api/auth/password-reset','/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state', '/api/logs/client', '/api/cron/'];
+const PUBLIC_API = ['/api/auth/login', '/api/auth/password-reset','/api/auth/logout', '/api/auth/mfa/verify', '/api/settings/modules/state', '/api/logs/client', '/api/cron/',
+  // Secret-token iCal subscription feed (Google Calendar etc. poll it without a cookie).
+  '/api/calendar/feed/'];
 const PLATFORM_PUBLIC = ['/platform/login', '/api/platform/auth/login', '/api/platform/auth/logout', '/api/platform/auth/mfa/verify'];
 
 async function getEnabledModuleIds(request: NextRequest, tenantId: string): Promise<string[] | null> {
@@ -270,6 +272,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // ── Activities page & API guard ──────────────────────────────────────────
     if (pathname.startsWith('/activities') || pathname.startsWith('/api/activities')) {
       if (!permissions.view_activities) return forbidden(request);
+    }
+
+    // ── Support cases page & API guard ───────────────────────────────────────
+    // Fine-grained checks (create vs. own/all cases) happen in the handlers.
+    if (pathname.startsWith('/support') || pathname.startsWith('/api/cases')) {
+      if (!permissions.create_cases && !permissions.view_all_cases) return forbidden(request);
     }
 
     // ── Module-level guards ──────────────────────────────────────────────────

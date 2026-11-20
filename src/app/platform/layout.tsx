@@ -14,6 +14,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [openErrors, setOpenErrors] = useState(0);
+  const [awaitingCases, setAwaitingCases] = useState(0);
 
   // Close the mobile menu after navigating.
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -24,6 +25,11 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
     fetch('/api/platform/logs?level=error&limit=1')
       .then(r => (r.ok ? r.json() : null))
       .then(d => setOpenErrors(d?.summary?.errorGroups24h ?? 0))
+      .catch(() => {});
+    // Support cases whose last message is from the tenant (operator owes a reply).
+    fetch('/api/platform/cases?limit=1')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setAwaitingCases(d?.summary?.awaiting ?? 0))
       .catch(() => {});
   }, [pathname]);
 
@@ -38,11 +44,13 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
     { href: '/platform', label: 'Tenants', active: pathname === '/platform' || pathname.startsWith('/platform/tenants') },
     { href: '/platform/plans', label: 'Plans', active: pathname.startsWith('/platform/plans') },
     { href: '/platform/billing', label: 'Billing', active: pathname.startsWith('/platform/billing') },
+    { href: '/platform/cases', label: 'Cases', active: pathname.startsWith('/platform/cases'), badge: awaitingCases },
     { href: '/platform/logs', label: 'Logs', active: pathname.startsWith('/platform/logs'), badge: openErrors },
+    { href: '/platform/settings', label: 'Settings', active: pathname.startsWith('/platform/settings') },
     { href: '/platform/security', label: 'Security', active: pathname.startsWith('/platform/security') },
   ];
   const badge = (n?: number) => (n ? (
-    <span className="ml-1.5 inline-block min-w-[18px] px-1.5 rounded-full bg-google-red text-white text-[11px] leading-[18px] text-center">
+    <span className="ms-1.5 inline-block min-w-[18px] px-1.5 rounded-full bg-google-red text-white text-[11px] leading-[18px] text-center">
       {n > 99 ? '99+' : n}
     </span>
   ) : null);
@@ -55,7 +63,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
             <PlatformLogo />
             <span className="font-sans text-[17px] text-g-text whitespace-nowrap">
               Cat<span className="font-medium">ero</span>
-              <span className="ml-2 text-[11px] uppercase tracking-wider text-g-text-2">Platform</span>
+              <span className="ms-2 text-[11px] uppercase tracking-wider text-g-text-2">Platform</span>
             </span>
           </Link>
           {/* sm+: inline nav. Below sm it moves into the burger menu. */}
@@ -74,7 +82,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
             onClick={() => setMenuOpen(o => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
-            className="sm:hidden ml-auto -mr-2 p-2 rounded-full bg-transparent border-none text-g-text-2 cursor-pointer"
+            className="sm:hidden ms-auto -me-2 p-2 rounded-full bg-transparent border-none text-g-text-2 cursor-pointer"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               {menuOpen
@@ -96,7 +104,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               <span className="text-sm text-g-text-2">Theme</span>
               <ThemeSwitch />
             </div>
-            <button onClick={logout} className="text-left px-4 py-2.5 mt-1 border-t border-g-border rounded-none bg-transparent border-x-0 border-b-0 text-sm text-g-text-2 cursor-pointer">
+            <button onClick={logout} className="text-start px-4 py-2.5 mt-1 border-t border-g-border rounded-none bg-transparent border-x-0 border-b-0 text-sm text-g-text-2 cursor-pointer">
               Sign out
             </button>
           </nav>

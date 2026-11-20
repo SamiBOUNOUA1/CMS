@@ -72,12 +72,12 @@ export function InventorySearch({
     <div className="bg-g-surface rounded-2xl border border-g-border shadow-google-1 p-4 mb-4">
       <div className="text-[11px] font-semibold text-g-text-3 uppercase tracking-wide mb-2">{label}</div>
       <div className="relative">
-        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-g-text-3 pointer-events-none"><SearchIcon /></span>
+        <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-g-text-3 pointer-events-none"><SearchIcon /></span>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={placeholder}
-          className="w-full py-2.5 pl-11 pr-4 rounded-full border border-g-border text-sm bg-g-bg text-g-text outline-none focus:border-google-blue transition-colors"
+          className="w-full py-2.5 ps-11 pe-4 rounded-full border border-g-border text-sm bg-g-bg text-g-text outline-none focus:border-google-blue transition-colors"
         />
       </div>
       {search && (
@@ -90,7 +90,7 @@ export function InventorySearch({
             <button
               key={item._id}
               onClick={() => { onAdd(item); setSearch(''); setResults([]); }}
-              className="flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-g-bg text-left cursor-pointer bg-transparent"
+              className="flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-g-bg text-start cursor-pointer bg-transparent"
             >
               <MaterialImage url={item.imageUrl} name={item.name} size={40} />
               <span className="flex-1 min-w-0 text-sm text-g-text truncate">{item.name}</span>

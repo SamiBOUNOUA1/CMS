@@ -542,7 +542,7 @@ function ProductsTab({ tp, currency }: { t: ReturnType<typeof useT>; tc: ReturnT
                     <p className="text-xs text-g-text-2 mt-0.5 mb-0 overflow-hidden text-ellipsis whitespace-nowrap">{product.shortDescription}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2.5 flex-shrink-0 ml-3">
+                <div className="flex items-center gap-2.5 flex-shrink-0 ms-3">
                   <span className="text-[13px] text-g-text-2">
                     {product.defaultPrice ? formatMoney(product.defaultPrice, currency) : '—'}
                   </span>

@@ -71,6 +71,9 @@ export default function CalendarPage() {
         <div>
           <h1 className="text-[28px] font-normal page-title m-0">{t.calendar?.title || 'Calendar'}</h1>
           <p className="text-sm text-g-text-2 mt-1 mb-0">{t.calendar?.subtitle || 'Confirmed events'}</p>
+          <Link href="/profile#calendar-sync" className="inline-block text-[13px] text-google-blue mt-1.5 no-underline hover:underline">
+            {t.calendar?.syncLink || 'Sync to Google Calendar'}
+          </Link>
         </div>
         {usedTypes.length > 0 && (
           <div className="flex flex-wrap gap-2 items-center">
@@ -97,7 +100,7 @@ export default function CalendarPage() {
         <button onClick={() => setCurrentDate(d => addMonths(d, 1))} className="w-9 h-9 rounded-full border border-g-border bg-g-surface cursor-pointer text-g-text-2 flex items-center justify-center">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
         </button>
-        <button onClick={() => setCurrentDate(new Date())} className="ml-1 py-1.5 px-3.5 rounded-full border border-g-border bg-g-surface cursor-pointer text-[13px] text-g-text-2 font-medium">
+        <button onClick={() => setCurrentDate(new Date())} className="ms-1 py-1.5 px-3.5 rounded-full border border-g-border bg-g-surface cursor-pointer text-[13px] text-g-text-2 font-medium">
           {t.calendar?.today || 'Today'}
         </button>
       </div>
@@ -153,7 +156,7 @@ export default function CalendarPage() {
                         <button
                           key={o._id}
                           onClick={() => setSelectedOrder(o)}
-                          className="block w-full text-left rounded py-0.5 px-1.5 text-[11px] cursor-pointer font-medium overflow-hidden text-ellipsis whitespace-nowrap border"
+                          className="block w-full text-start rounded py-0.5 px-1.5 text-[11px] cursor-pointer font-medium overflow-hidden text-ellipsis whitespace-nowrap border"
                           style={{ background: c.bg, borderColor: c.border, color: c.text }}
                         >
                           {o.clientName || '—'}
@@ -161,7 +164,7 @@ export default function CalendarPage() {
                       );
                     })}
                     {dayOrders.length > 3 && (
-                      <span className="text-[11px] text-g-text-2 pl-1.5">+{dayOrders.length - 3} more</span>
+                      <span className="text-[11px] text-g-text-2 ps-1.5">+{dayOrders.length - 3} more</span>
                     )}
                   </div>
                 </div>

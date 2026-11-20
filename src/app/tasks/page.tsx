@@ -236,7 +236,7 @@ export default function TasksPage() {
       )}
 
       {notification && (
-        <div className="fixed bottom-6 right-6 z-[1000] text-white rounded-lg py-3 px-[18px] text-sm shadow-google-2" style={{ background: notification.type === 'error' ? '#d93025' : '#202124' }}>
+        <div className="fixed bottom-6 end-6 z-[1000] text-white rounded-lg py-3 px-[18px] text-sm shadow-google-2" style={{ background: notification.type === 'error' ? '#d93025' : '#202124' }}>
           {notification.msg}
         </div>
       )}

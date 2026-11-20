@@ -157,7 +157,7 @@ export default function PaymentReceiptPage() {
               {layout.showVatNumber && company?.vatNumber && <span style={{ marginTop: 4, fontSize: '7.5pt', color: '#9a8c7a', fontFamily: docFont }}>{company.vatNumber}</span>}
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <p style={{ ...pdfLabel, margin: '0 0 6px' }}>{tr.receipt}</p>
             <p style={{ margin: 0, fontFamily: docFont, fontSize: '20pt', fontWeight: 400, color: '#1a1a1a' }}>
               #{payment._id.slice(-8).toUpperCase()}
@@ -174,13 +174,13 @@ export default function PaymentReceiptPage() {
         <hr className="pdf-rule-thin" style={{ marginTop: 3 }} />
 
         <div className="receipt-client-event flex gap-0 mt-4 pb-1">
-          <div className="flex-1 pr-6" style={{ borderRight: '1px solid #e8e0d0' }}>
+          <div className="flex-1 pe-6" style={{ borderRight: '1px solid #e8e0d0' }}>
             <p style={pdfLabel}>{tr.client}</p>
             <p style={{ margin: 0, fontFamily: docFont, fontSize: '11pt', color: '#1a1a1a' }}>{clientName}</p>
             {clientEmail && <p style={{ margin: '2px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{clientEmail}</p>}
             {clientPhone && <p style={{ margin: '1px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{clientPhone}</p>}
           </div>
-          <div className="flex-1 pl-6">
+          <div className="flex-1 ps-6">
             <p style={pdfLabel}>{tr.event}</p>
             {eventType && <p style={{ margin: 0, fontFamily: docFont, fontSize: '11pt', color: '#1a1a1a', textTransform: 'capitalize' }}>{eventType.replace('-', ' ')}</p>}
             {eventDate && <p style={{ margin: '2px 0 0', fontFamily: docFont, fontSize: '8.5pt', color: '#6b5e4e' }}>{format(new Date(eventDate), 'dd MMMM yyyy')}</p>}
@@ -226,7 +226,7 @@ export default function PaymentReceiptPage() {
               </div>
             )}
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <p style={{ ...pdfLabel, margin: '0 0 4px' }}>{tr.paymentDetails}</p>
             <p style={{ margin: 0, fontFamily: docFont, fontSize: '22pt', fontWeight: 400, color: '#137333' }}>
               {formatCurrency(payment.amount, currency)}
@@ -249,20 +249,20 @@ export default function PaymentReceiptPage() {
                   <span style={{ fontFamily: docFont, fontSize: '10pt', fontWeight: 'bold', color: '#6b5e4e' }}>{formatCurrency(groupTotal, currency)}</span>
                 </div>
                 {(g.items || []).map((item: any, i: number) => (
-                  <div key={i} className="pl-3.5 ml-2" style={{ borderLeft: '2px solid #e8e0d0', marginBottom: i < g.items.length - 1 ? 6 : 0 }}>
+                  <div key={i} className="ps-3.5 ms-2" style={{ borderLeft: '2px solid #e8e0d0', marginBottom: i < g.items.length - 1 ? 6 : 0 }}>
                     <div className="flex justify-between items-baseline py-1 px-2">
                       <span style={{ fontFamily: docFont, fontSize: '9pt', color: '#1a1a1a' }}>{item.name}</span>
                       <span style={{ fontFamily: docFont, fontSize: '8.5pt', color: '#9a8c7a', whiteSpace: 'nowrap', marginLeft: 12 }}>×{g.count}</span>
                     </div>
                     {item.subItems?.length > 0 && (
-                      <div className="pl-2 pb-1">
+                      <div className="ps-2 pb-1">
                         {item.subItems.map((s: any, si: number) => (
-                          <span key={si} className="inline-block mr-2.5" style={{ fontFamily: docFont, fontSize: '8pt', color: '#9a8c7a' }}>· {s.name}</span>
+                          <span key={si} className="inline-block me-2.5" style={{ fontFamily: docFont, fontSize: '8pt', color: '#9a8c7a' }}>· {s.name}</span>
                         ))}
                       </div>
                     )}
                     {item.selectedOptions?.length > 0 && (
-                      <div className="pl-2 pb-1">
+                      <div className="ps-2 pb-1">
                         {item.selectedOptions.map((o: any, oi: number) => (
                           <div key={oi} className="flex justify-between" style={{ fontFamily: docFont, fontSize: '8pt', color: '#6b5e4e' }}>
                             <span>+ {o.name}</span>
@@ -314,7 +314,7 @@ export default function PaymentReceiptPage() {
       {/* Financial Summary */}
       <div className="receipt-summary mb-6">
         <hr className="pdf-rule-gold" />
-        <div className="flex flex-col gap-1.5 max-w-[300px] ml-auto mt-3">
+        <div className="flex flex-col gap-1.5 max-w-[300px] ms-auto mt-3">
           {(travelFee > 0 || discount > 0) && (
             <div className="flex justify-between" style={{ fontSize: '8.5pt' }}>
               <span style={{ color: '#9a8c7a', fontStyle: 'italic' }}>{tr.subtotal}</span>

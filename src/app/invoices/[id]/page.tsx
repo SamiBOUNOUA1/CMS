@@ -89,7 +89,7 @@ export default function InvoicePage() {
           <span>›</span>
           <span className="text-g-text">{invoice.invoiceNumber}</span>
           {invoice.order && (
-            <Link href={`/orders/${invoice.order}`} className="text-google-blue no-underline ml-2">{ti.viewOrder}</Link>
+            <Link href={`/orders/${invoice.order}`} className="text-google-blue no-underline ms-2">{ti.viewOrder}</Link>
           )}
           <StatusBadge status={invoice.status} label={ti.statuses[invoice.status]} />
         </div>

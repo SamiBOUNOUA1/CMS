@@ -202,7 +202,7 @@ export default function UsersPage() {
         <p className="text-[13px] text-g-text-2 m-0">
           {tu.userCount(users.length)}
           {maxUsers > 0 && (
-            <span className="ml-2">· {users.filter(u => u.isActive).length} / {maxUsers} {tu.activeOfMax}</span>
+            <span className="ms-2">· {users.filter(u => u.isActive).length} / {maxUsers} {tu.activeOfMax}</span>
           )}
         </p>
         <button onClick={() => { setShowForm(true); resetForm(); }} className="bg-google-blue text-white border-none rounded-full py-2.5 px-5 text-sm font-medium cursor-pointer flex-shrink-0 shadow-google-1">
@@ -416,7 +416,7 @@ function EditForm({ user, roles, onSave, onResetMfa, onSendReset, canSetPassword
 function MfaBadge({ tu }: { tu: ReturnType<typeof useT>['users'] }) {
   return (
     <span title={tu.mfaOn}
-      className="ml-1.5 align-middle rounded-xl py-[1px] px-1.5 text-[10px] font-semibold"
+      className="ms-1.5 align-middle rounded-xl py-[1px] px-1.5 text-[10px] font-semibold"
       style={{ background: 'var(--google-green-light)', color: 'var(--google-green)' }}>
       {tu.mfaBadge}
     </span>

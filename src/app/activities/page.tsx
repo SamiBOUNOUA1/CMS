@@ -91,7 +91,7 @@ export default function ActivitiesPage() {
                 )}
               </div>
 
-              <div className="text-[12px] text-g-text-3 font-[Roboto,Arial] flex-shrink-0 text-right">
+              <div className="text-[12px] text-g-text-3 font-[Roboto,Arial] flex-shrink-0 text-end">
                 {format(new Date(a.createdAt), 'dd MMM yyyy')}
                 <div className="text-[11px]">{format(new Date(a.createdAt), 'HH:mm')}</div>
               </div>

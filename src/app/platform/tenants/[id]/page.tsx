@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, FormSelect, FormTextarea, btnFilled, btnOutline } from '@/app/components/FormPrimitives';
 import { LicenseBadge, OPTIONAL_MODULES, api, fmtDate, fmtBytes, toDateInput, addPeriod, type LicenseState } from '../../shared';
 import PaymentsCard, { type PlanBilling } from './PaymentsCard';
+import ContractCard, { type TenantLegal } from './ContractCard';
 
 interface Detail {
   tenant: {
-    _id: string; name: string; status: 'active' | 'suspended';
+    _id: string; name: string; status: 'active' | 'suspended' | 'pending_contract'; legal?: TenantLegal;
     contactName: string; contactEmail: string; contactPhone: string; notes: string;
     plan: ({ _id: string; name: string; maxUsers: number; modules: string[] } & PlanBilling) | null;
     overrides: { maxUsers: number | null; modules: string[] | null };
@@ -155,7 +156,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
         <h1 className="font-sans text-[22px] font-normal text-g-text m-0">{tenant.name}</h1>
         <LicenseBadge state={license.state} expiresAt={tenant.license.expiresAt} />
         <div className="flex-1" />
-        <button
+        {tenant.status !== 'pending_contract' && <button
           onClick={toggleStatus} disabled={saving}
           className="rounded-full py-2 px-5 text-sm font-medium cursor-pointer border"
           style={tenant.status === 'active'
@@ -163,11 +164,19 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
             : { background: '#137333', color: '#fff', borderColor: '#137333' }}
         >
           {tenant.status === 'active' ? 'Suspend access' : 'Enable access'}
-        </button>
+        </button>}
       </div>
 
+      {tenant.status === 'pending_contract' && (
+        <div className="bg-[#fef7e0] text-[#b06000] rounded-lg px-3.5 py-2.5 text-[13px] mb-4">
+          <span className="font-medium">Access blocked – awaiting the signed contract.</span>{' '}
+          Finalize the contract below, have it signed, upload the signed PDF and confirm it to open access.
+        </div>
+      )}
       {notice && <div className="bg-[#e6f4ea] text-[#137333] rounded-lg px-3.5 py-2.5 text-[13px] mb-4">{notice}</div>}
       {error && <div className="bg-google-red-light text-google-red rounded-lg px-3.5 py-2.5 text-[13px] mb-4">{error}</div>}
+
+      <ContractCard tenantId={params.id} tenantStatus={tenant.status} legal={tenant.legal ?? {}} onChanged={load} />
 
       <FormCard>
         <FormSectionLabel>Usage (counts only)</FormSectionLabel>

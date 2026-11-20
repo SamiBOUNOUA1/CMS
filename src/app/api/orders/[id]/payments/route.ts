@@ -8,6 +8,7 @@ import { requirePermission } from '@/lib/requireAuth';
 import { applyStatusEventTrigger, canAutoConfirm } from '@/lib/orderStatus';
 import { serverError } from '@/lib/logger';
 import { getOrderPayableTotal, syncPaymentState } from '@/lib/invoicing';
+import { notify, orderTeam, orderLink, statusLabel, financeUsers } from '@/lib/notifications';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -92,6 +93,19 @@ async function POST_(request: NextRequest, { params }: { params: Record<string, 
         entityLabel: `${order.clientName} – confirmed`,
         performedBy: userId,
         metadata: { previousStatus: prevStatus, newStatus: 'confirmed', auto: true, reason: 'first_payment' },
+      });
+    }
+
+    const link = orderLink(order);
+    await notify({
+      recipients: [...(await financeUsers()), ...orderTeam(order, ['manager'])],
+      group: 'sales', type: 'payment_received',
+      params: { client: order.clientName, amount: newAmount }, link, actorId: userId,
+    });
+    if (autoConfirmed) {
+      await notify({
+        recipients: orderTeam(order), group: 'event', type: 'event_status',
+        params: { client: order.clientName, date: order.eventDate, status: await statusLabel('confirmed') }, link, actorId: userId,
       });
     }
 

@@ -279,7 +279,7 @@ export default function NewOrderPage() {
               />
             </Field>
             {showCustomerResults && (
-              <div className="absolute top-full left-0 right-0 z-[100] bg-g-surface border border-g-border rounded-lg shadow-google-2 mt-1 overflow-hidden">
+              <div className="absolute top-full start-0 end-0 z-[100] bg-g-surface border border-g-border rounded-lg shadow-google-2 mt-1 overflow-hidden">
                 {customerResults.length === 0 ? (
                   <div className="py-3 px-4 text-[13px] text-g-text-2">{tn.client.noResults}</div>
                 ) : (
@@ -287,7 +287,7 @@ export default function NewOrderPage() {
                     <button
                       key={c._id}
                       onMouseDown={() => selectCustomer(c)}
-                      className="block w-full text-left py-2.5 px-4 border-none bg-transparent cursor-pointer border-b border-g-border hover:bg-g-bg"
+                      className="block w-full text-start py-2.5 px-4 border-none bg-transparent cursor-pointer border-b border-g-border hover:bg-g-bg"
                     >
                       <div className="text-sm text-g-text font-medium">{c.name}</div>
                       <div className="text-xs text-g-text-2">{c.email}{c.phone ? ` · ${c.phone}` : ''}</div>
@@ -382,7 +382,7 @@ export default function NewOrderPage() {
                   <button
                     key={region._id}
                     onClick={() => setSelectedRegion(region)}
-                    className="flex items-center justify-between p-4 rounded-xl cursor-pointer text-left transition-all duration-150"
+                    className="flex items-center justify-between p-4 rounded-xl cursor-pointer text-start transition-all duration-150"
                     style={{
                       border: `2px solid ${isSelected ? '#1a73e8' : 'var(--google-border)'}`,
                       background: isSelected ? '#e8f0fe' : 'var(--google-surface)',
@@ -451,7 +451,7 @@ export default function NewOrderPage() {
 
       {/* Running total */}
       {step >= 3 && (
-        <div className="text-right text-[15px] text-g-text mt-4">
+        <div className="text-end text-[15px] text-g-text mt-4">
           {travelPrice > 0 && (
             <div className="text-[13px] text-g-text-2 mb-1">
               {tn.location.travelFee}: <span className="text-g-text">{currency}{travelPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>

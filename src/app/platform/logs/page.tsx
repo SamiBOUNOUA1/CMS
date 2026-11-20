@@ -196,11 +196,11 @@ function LogsPageInner() {
       <div className="bg-g-surface border border-g-border rounded-2xl overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
+            <tr className="text-start text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
               <th className="px-4 py-3 font-medium">Level</th>
               <th className="px-4 py-3 font-medium">Message</th>
               <th className="px-4 py-3 font-medium">Tenant</th>
-              <th className="px-4 py-3 font-medium text-right">Count</th>
+              <th className="px-4 py-3 font-medium text-end">Count</th>
               <th className="px-4 py-3 font-medium">Last seen</th>
             </tr>
           </thead>
@@ -220,7 +220,7 @@ function LogsPageInner() {
                   </div>
                 </td>
                 <td className="px-4 py-3 align-top whitespace-nowrap text-g-text-2">{item.tenantName || '—'}</td>
-                <td className="px-4 py-3 align-top text-right">{item.count}</td>
+                <td className="px-4 py-3 align-top text-end">{item.count}</td>
                 <td className="px-4 py-3 align-top whitespace-nowrap text-g-text-2" title={fmtDateTime(item.lastSeen)}>{timeAgo(item.lastSeen)}</td>
               </tr>
             ))}
@@ -233,7 +233,7 @@ function LogsPageInner() {
       {selected && (
         <>
           <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setSelected(null)} aria-hidden />
-          <aside className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[560px] bg-g-surface border-l border-g-border overflow-y-auto p-5">
+          <aside className="fixed end-0 top-0 bottom-0 z-50 w-full max-w-[560px] bg-g-surface border-s border-g-border overflow-y-auto p-5">
             <div className="flex items-start gap-3 mb-4">
               <LevelChip level={selected.level} />
               <div className="flex-1 text-g-text break-words">{selected.message || selected.name}</div>

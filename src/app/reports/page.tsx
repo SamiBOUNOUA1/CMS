@@ -15,6 +15,7 @@ interface ReportData {
   bookingsByEventType: { key: string; label: string; count: number; revenue: number }[];
   statusFunnel: { name: string; label: string; color: string; count: number }[];
   topProducts: { name: string; count: number }[];
+  customerSources: { key: string; newCustomers: number; customers: number; orders: number; revenue: number; conversionPct: number }[];
   alerts: { lowStockCount: number; overdueUnpaidCount: number };
 }
 
@@ -69,6 +70,10 @@ export default function ReportsPage() {
   const maxStatus = data ? Math.max(1, ...data.statusFunnel.map(s => s.count)) : 1;
   const maxType = data ? Math.max(1, ...data.bookingsByEventType.map(b => b.count)) : 1;
   const maxProduct = data ? Math.max(1, ...data.topProducts.map(p => p.count)) : 1;
+  const sourceRevenueTotal = data ? data.customerSources.reduce((s, c) => s + c.revenue, 0) : 0;
+  const sourceLabels = t.customerDetail.fields.leadSources as Record<string, string>;
+  const sourceLabel = (key: string) => key === 'unknown' ? tr.customerSources.unknown : (sourceLabels[key] ?? key);
+  const hasUnknownSource = !!data?.customerSources.some(c => c.key === 'unknown');
 
   const kpiCards = data ? [
     { label: tr.kpi.revenue, value: formatCurrency(data.kpis.totalRevenue, currency), color: '#1a73e8' },
@@ -146,7 +151,7 @@ export default function ReportsPage() {
                     <div className="flex-1 h-4 rounded-full bg-g-bg overflow-hidden">
                       <div className="h-full rounded-full bg-google-blue" style={{ width: `${(m.revenue / maxRevenue) * 100}%`, minWidth: 4 }} />
                     </div>
-                    <span className="text-[11px] text-g-text font-medium w-[68px] text-right flex-shrink-0">{formatCurrency(m.revenue, currency)}</span>
+                    <span className="text-[11px] text-g-text font-medium w-[68px] text-end flex-shrink-0">{formatCurrency(m.revenue, currency)}</span>
                   </div>
                 ))}
               </div>
@@ -215,6 +220,81 @@ export default function ReportsPage() {
             </Card>
           </div>
 
+          {/* Customer sources */}
+          <Card className="p-5 mb-6">
+            <h2 className="font-sans text-[15px] font-medium text-g-text m-0">{tr.customerSources.title}</h2>
+            <p className="text-xs text-g-text-2 m-0 mt-1 mb-4">{tr.customerSources.subtitle}</p>
+            {data.customerSources.length === 0 ? (
+              <p className="text-g-text-3 text-sm m-0">{tr.empty}</p>
+            ) : (<>
+              {/* Mobile: stacked cards */}
+              <div className="sm:hidden space-y-3">
+                {data.customerSources.map(s => {
+                  const share = sourceRevenueTotal ? Math.round((s.revenue / sourceRevenueTotal) * 100) : 0;
+                  return (
+                    <div key={s.key} className="p-3 rounded-xl border border-g-border">
+                      <div className="flex items-center justify-between text-sm mb-1.5">
+                        <span className="text-g-text font-medium">{sourceLabel(s.key)}</span>
+                        <span className="text-g-text font-medium">{formatCurrency(s.revenue, currency)}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-g-bg overflow-hidden mb-2">
+                        <div className="h-full rounded-full" style={{ width: `${share}%`, background: s.key === 'unknown' ? '#9aa0a6' : '#e37400' }} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-g-text-2">
+                        <span>{tr.customerSources.newCustomers}: <b className="text-g-text font-medium">{s.newCustomers}</b></span>
+                        <span>{tr.customerSources.orders}: <b className="text-g-text font-medium">{s.orders}</b></span>
+                        <span>{tr.customerSources.conversion}: <b className="text-g-text font-medium">{s.orders ? `${s.conversionPct}%` : '—'}</b></span>
+                        <span>{tr.customerSources.share}: <b className="text-g-text font-medium">{share}%</b></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="text-xs text-g-text-2 text-start">
+                      <th className="font-medium pb-2 pe-3">{tr.customerSources.source}</th>
+                      <th className="font-medium pb-2 px-3 text-end">{tr.customerSources.newCustomers}</th>
+                      <th className="font-medium pb-2 px-3 text-end">{tr.customerSources.customers}</th>
+                      <th className="font-medium pb-2 px-3 text-end">{tr.customerSources.orders}</th>
+                      <th className="font-medium pb-2 px-3 text-end">{tr.customerSources.conversion}</th>
+                      <th className="font-medium pb-2 px-3 text-end">{tr.customerSources.revenue}</th>
+                      <th className="font-medium pb-2 ps-3 w-[28%]">{tr.customerSources.share}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.customerSources.map(s => {
+                      const share = sourceRevenueTotal ? Math.round((s.revenue / sourceRevenueTotal) * 100) : 0;
+                      return (
+                        <tr key={s.key} className="border-t border-g-border">
+                          <td className="py-2.5 pe-3 text-g-text font-medium">{sourceLabel(s.key)}</td>
+                          <td className="py-2.5 px-3 text-end text-g-text">{s.newCustomers}</td>
+                          <td className="py-2.5 px-3 text-end text-g-text">{s.customers}</td>
+                          <td className="py-2.5 px-3 text-end text-g-text">{s.orders}</td>
+                          <td className="py-2.5 px-3 text-end text-g-text">{s.orders ? `${s.conversionPct}%` : '—'}</td>
+                          <td className="py-2.5 px-3 text-end text-g-text font-medium whitespace-nowrap">{formatCurrency(s.revenue, currency)}</td>
+                          <td className="py-2.5 ps-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 rounded-full bg-g-bg overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${share}%`, background: s.key === 'unknown' ? '#9aa0a6' : '#e37400' }} />
+                              </div>
+                              <span className="text-xs text-g-text-2 w-9 text-end">{share}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {hasUnknownSource && (
+                <p className="text-[11px] text-g-text-3 m-0 mt-3">{tr.customerSources.unknownHint}</p>
+              )}
+            </>)}
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Top products */}
             <Card className="p-5">
@@ -226,7 +306,7 @@ export default function ReportsPage() {
                   {data.topProducts.map(p => (
                     <div key={p.name}>
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-g-text font-medium truncate pr-2">{p.name}</span>
+                        <span className="text-g-text font-medium truncate pe-2">{p.name}</span>
                         <span className="text-g-text-2 flex-shrink-0">{p.count}×</span>
                       </div>
                       <div className="h-2 rounded-full bg-g-bg overflow-hidden">

@@ -94,7 +94,7 @@ export default function IssueInvoiceModal({ t, orderId, onClose, onIssued }) {
           {(problems.seller.length > 0 || problems.order.length > 0) && (
             <div className="rounded-xl border border-google-red/40 bg-[var(--google-red-light,#fce8e6)] p-3.5 text-[13px] text-g-text">
               <p className="m-0 mb-1.5 font-medium text-google-red">{tis.problemsTitle}</p>
-              <ul className="m-0 pl-5">
+              <ul className="m-0 ps-5">
                 {problems.order.map(p => <li key={p}>{tis.problems[p] || p}</li>)}
                 {problems.seller.map(p => <li key={p}>{tis.sellerMissing(tis.fields[p] || p)}</li>)}
               </ul>

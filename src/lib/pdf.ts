@@ -112,14 +112,20 @@ async function mintInternalToken(): Promise<string> {
  * an internal auth cookie. The buffer is never written to disk — the caller is
  * responsible for using it and letting it be garbage-collected.
  */
-export async function renderPagePdf(requestOrigin: string, path: string): Promise<Buffer> {
+export async function renderPagePdf(
+  requestOrigin: string,
+  path: string,
+  // Platform pages pass the operator's own session cookie instead of a minted
+  // tenant token (there is no tenant context in /api/platform routes).
+  opts: { cookie?: { name: string; value: string } } = {},
+): Promise<Buffer> {
   // In production (Cloud Run) the request origin is the container's internal
   // address with the proxy's https scheme (e.g. https://0.0.0.0:8080), which
   // doesn't work. Load the page straight from this server over plain http.
   const origin = process.env.NODE_ENV === 'production'
     ? `http://127.0.0.1:${process.env.PORT || 8080}`
     : requestOrigin;
-  const token = await mintInternalToken();
+  const cookie = opts.cookie ?? { name: 'cq_token', value: await mintInternalToken() };
   // Recent Chromium events, attached to the error log if rendering fails.
   const trail: string[] = [];
   const note = (s: string) => { trail.push(s.slice(0, 300)); if (trail.length > 40) trail.shift(); };
@@ -137,7 +143,7 @@ export async function renderPagePdf(requestOrigin: string, path: string): Promis
     page.on('requestfailed', r => note(`request failed: ${r.url()} ${r.failure()?.errorText ?? ''}`));
     page.on('response', r => { if (r.status() >= 300) note(`HTTP ${r.status()} ${r.url()}`); });
     page.on('framenavigated', f => { if (f === page.mainFrame()) note(`navigated: ${f.url()}`); });
-    await page.setCookie({ name: 'cq_token', value: token, url: origin });
+    await page.setCookie({ name: cookie.name, value: cookie.value, url: origin });
     await page.goto(`${origin}${path}`, { waitUntil: 'networkidle0', timeout: 60_000 });
     await page.emulateMediaType('print');
     const pdf = await page.pdf({
