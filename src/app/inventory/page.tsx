@@ -166,19 +166,19 @@ export default function InventoryPage() {
 
       {/* Search bar */}
       <div className="relative mb-3">
-        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-g-text-3 pointer-events-none">
+        <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-g-text-3 pointer-events-none">
           <SearchIcon />
         </span>
         <input
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           placeholder={ti.search}
-          className="w-full py-2.5 pl-11 pr-10 rounded-full border border-g-border text-sm bg-g-surface text-g-text outline-none focus:border-google-blue transition-colors"
+          className="w-full py-2.5 ps-11 pe-10 rounded-full border border-g-border text-sm bg-g-surface text-g-text outline-none focus:border-google-blue transition-colors"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-g-text-3 p-0 border-none bg-transparent cursor-pointer flex"
+            className="absolute end-3.5 top-1/2 -translate-y-1/2 text-g-text-3 p-0 border-none bg-transparent cursor-pointer flex"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
           </button>
@@ -355,7 +355,7 @@ export default function InventoryPage() {
                 <tr className="border-b border-g-border bg-g-bg">
                   <th className="w-[52px] py-3 px-3" />
                   {[ti.table.name, ti.table.category, ti.table.unit, ti.table.stock, ti.table.minStock, ti.table.unitCost, ti.table.supplier, ti.table.warehouse].map((h: string) => (
-                    <th key={h} className="py-3 px-3.5 text-left font-semibold text-[11px] text-g-text-2 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    <th key={h} className="py-3 px-3.5 text-start font-semibold text-[11px] text-g-text-2 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -366,7 +366,7 @@ export default function InventoryPage() {
                     {...rowLink(`/inventory/${item._id}`)}
                     className="hover:bg-[var(--google-row-hover)] border-b border-g-border last:border-b-0 cursor-pointer transition-colors"
                   >
-                    <td className="py-2.5 pl-3.5 pr-1">
+                    <td className="py-2.5 ps-3.5 pe-1">
                       {item.imageUrl ? (
                         <button
                           type="button"

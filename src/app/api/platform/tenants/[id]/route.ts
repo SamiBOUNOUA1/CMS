@@ -7,6 +7,7 @@ import { withPlatformAdmin } from '@/lib/requireAuth';
 import { evaluateLicense, invalidateTenantLicense } from '@/lib/license';
 import { tenantMetrics, tenantAdmins } from '@/lib/platformMetrics';
 import { deleteTenant } from '@/lib/tenantProvisioning';
+import { TENANT_LEGAL_FIELDS } from '@/lib/contracts';
 
 const notFound = () => NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -33,7 +34,19 @@ export const PATCH = withPlatformAdmin(async (request, { params }) => {
   for (const k of ['name', 'contactName', 'contactEmail', 'contactPhone', 'notes']) {
     if (typeof b[k] === 'string') update[k] = b[k];
   }
-  if (b.status === 'active' || b.status === 'suspended') update.status = b.status;
+  if (b.status === 'active' || b.status === 'suspended') {
+    // A new tenant only opens through the contract flow (confirm the signed copy).
+    const current = await Tenant.findById(params.id).select('status').lean();
+    if (!current) return notFound();
+    if (current.status === 'pending_contract')
+      return NextResponse.json({ error: 'This tenant is awaiting its signed contract. Confirm the signed contract to activate it.' }, { status: 409 });
+    update.status = b.status;
+  }
+  if (b.legal && typeof b.legal === 'object') {
+    for (const [k] of TENANT_LEGAL_FIELDS) {
+      if (typeof b.legal[k] === 'string') update[`legal.${k}`] = b.legal[k].trim().slice(0, 300);
+    }
+  }
   if (b.plan !== undefined) update.plan = b.plan || null;
   if (b.licenseStartsAt) update['license.startsAt'] = new Date(b.licenseStartsAt);
   if (b.licenseExpiresAt) update['license.expiresAt'] = new Date(b.licenseExpiresAt);

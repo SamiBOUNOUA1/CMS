@@ -432,7 +432,7 @@ export default function InventoryItemPage({ params }) {
                 <thead>
                   <tr className="border-b border-g-border">
                     {['Date', 'Type', 'Qty', 'Notes', 'By'].map(h => (
-                      <th key={h} className="py-2 px-3 text-left text-[11px] font-semibold text-g-text-2 uppercase tracking-wider">{h}</th>
+                      <th key={h} className="py-2 px-3 text-start text-[11px] font-semibold text-g-text-2 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -451,7 +451,7 @@ export default function InventoryItemPage({ params }) {
                             {typeLabel}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-semibold" style={{ color: isPositive ? '#137333' : '#d93025' }}>
+                        <td className="py-2.5 px-3 text-end font-semibold" style={{ color: isPositive ? '#137333' : '#d93025' }}>
                           {isPositive ? `+${adj.quantity}` : adj.quantity}
                         </td>
                         <td className="py-2.5 px-3 text-g-text-2">{adj.notes || '—'}</td>

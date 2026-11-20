@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { Tenant, TenantPayment } from '@/lib/models';
 import { withPlatformAdmin } from '@/lib/requireAuth';
+import { getPlatformSettings } from '@/lib/platformSettings';
 
 const notFound = () => NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -14,16 +15,22 @@ export const GET = withPlatformAdmin(async (_request, { params }) => {
   const payment = await TenantPayment.findById(params.id).lean();
   if (!payment) return notFound();
   const tenant = await Tenant.findById(payment.tenant).select('name contactName contactEmail contactPhone').lean();
-  const env = process.env;
+  // Issuer from /platform/settings (env PLATFORM_INVOICE_* as fallback).
+  const { issuer: i } = await getPlatformSettings();
   return NextResponse.json({
     payment,
     tenant: tenant ?? { name: payment.tenantName, contactName: '', contactEmail: '', contactPhone: '' },
     issuer: {
-      name: env.PLATFORM_INVOICE_NAME || 'Catero',
-      address: env.PLATFORM_INVOICE_ADDRESS || '',
-      email: env.PLATFORM_INVOICE_EMAIL || '',
-      phone: env.PLATFORM_INVOICE_PHONE || '',
-      taxId: env.PLATFORM_INVOICE_TAX_ID || '',
+      name: i.legalName || i.name,
+      address: [i.address, i.city].filter(Boolean).join(', '),
+      email: i.email,
+      phone: i.phone,
+      taxId: '',
+      ice: i.ice,
+      identifiantFiscal: i.identifiantFiscal,
+      rcNumber: i.rcNumber,
+      rcCourt: i.rcCourt,
+      taxeProfessionnelle: i.taxeProfessionnelle,
     },
   });
 });

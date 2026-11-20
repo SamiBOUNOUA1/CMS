@@ -85,7 +85,7 @@ export function StepStaff({ form, setForm, isMobile, tn, currency, staffRoles = 
               </Field>
             </div>
 
-            <div className="text-right font-sans font-medium text-g-text" style={{ fontSize: isMobile ? 14 : 16 }}>
+            <div className="text-end font-sans font-medium text-g-text" style={{ fontSize: isMobile ? 14 : 16 }}>
               = {fmt(Number(sa.count) * Number(sa.hours) * Number(sa.ratePerHour), currency)}
             </div>
           </div>

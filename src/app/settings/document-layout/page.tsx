@@ -118,7 +118,7 @@ export default function DocumentLayoutSettingsPage() {
               className="w-4 h-4 accent-google-blue cursor-pointer"
             />
             <span className="text-sm text-g-text">{label}</span>
-            <span className="text-[10px] uppercase tracking-wider text-g-text-3 ml-auto">{scope}</span>
+            <span className="text-[10px] uppercase tracking-wider text-g-text-3 ms-auto">{scope}</span>
           </label>
         ))}
       </div>

@@ -1,12 +1,14 @@
 // @ts-nocheck
 // Daily job: sends deposit, guest-count and thank-you reminder emails for every
-// active tenant. Called by /api/cron/reminders (Cloud Scheduler).
+// active tenant, then runs the staff notification checks (jobs/notifications.ts).
+// Called by /api/cron/reminders (Cloud Scheduler).
 import { connectDB } from '@/lib/mongodb';
 import { EmailLog, EmailSettings, Order, Tenant } from '@/lib/models';
 import { runAsSystem, runWithTenant } from '@/lib/tenantContext';
 import { evaluateLicense } from '@/lib/license';
 import { buildVars, configProblem, fillTemplate, getTemplate, isValidEmail, sendEmail } from '@/lib/email';
 import { logError } from '@/lib/logger';
+import { runNotificationJobs } from '@/lib/jobs/notifications';
 
 const DAY = 24 * 60 * 60 * 1000;
 // If the job misses a day (outage), it still catches up for this many days.
@@ -29,7 +31,7 @@ export function dueWindow(type: ReminderType, days: number, now = new Date()) {
   return { $gte: new Date(today + Math.max(0, days - CATCH_UP_DAYS) * DAY), $lt: new Date(today + days * DAY + DAY) };
 }
 
-interface Result { tenants: number; sent: number; failed: number; skipped: number }
+interface Result { tenants: number; sent: number; failed: number; skipped: number; notifications: number }
 
 async function runForTenant(result: Result) {
   const settings = await EmailSettings.findOne({}).lean();
@@ -82,7 +84,7 @@ async function runForTenant(result: Result) {
 
 export async function runReminders(): Promise<Result> {
   await connectDB();
-  const result: Result = { tenants: 0, sent: 0, failed: 0, skipped: 0 };
+  const result: Result = { tenants: 0, sent: 0, failed: 0, skipped: 0, notifications: 0 };
   const tenants = await runAsSystem(() => Tenant.find({ status: 'active' }).populate('plan').lean());
 
   for (const tenant of tenants) {
@@ -93,6 +95,12 @@ export async function runReminders(): Promise<Result> {
     } catch (err) {
       // One tenant's failure must not stop the others.
       await logError(err, { tenantId: String(tenant._id), route: 'cron/reminders' });
+    }
+    try {
+      const n = await runWithTenant(String(tenant._id), () => runNotificationJobs(tenant));
+      result.notifications += n.created;
+    } catch (err) {
+      await logError(err, { tenantId: String(tenant._id), route: 'cron/notifications' });
     }
   }
   return result;

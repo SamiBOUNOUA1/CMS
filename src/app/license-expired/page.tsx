@@ -7,7 +7,9 @@ import { useT } from '@/lib/LanguageContext';
 function LicenseExpired() {
   const t = useT();
   const reason = useSearchParams().get('reason');
-  const message = reason === 'suspended' ? t.license.suspended
+  const pending = reason === 'pending_contract';
+  const message = pending ? t.license.pendingContract
+    : reason === 'suspended' ? t.license.suspended
     : reason === 'expired' || !reason ? t.license.expired
     : t.license.generic;
 
@@ -29,7 +31,7 @@ function LicenseExpired() {
         </div>
         <h1 className="font-sans text-[22px] font-normal text-g-text m-0 mb-2">{t.license.title}</h1>
         <p className="text-sm text-g-text m-0 mb-2">{message}</p>
-        <p className="text-sm text-g-text-2 m-0 mb-8">{t.license.contact}</p>
+        <p className="text-sm text-g-text-2 m-0 mb-8">{pending ? t.license.pendingContact : t.license.contact}</p>
         <button
           onClick={backToLogin}
           className="h-10 px-6 rounded-full bg-google-blue text-white text-sm font-medium border-none cursor-pointer"

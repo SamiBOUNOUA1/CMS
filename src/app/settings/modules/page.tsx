@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useT, useLanguage } from '@/lib/LanguageContext';
 import { useUser } from '@/lib/UserContext';
+import { localized } from '@/lib/modules';
 
 interface Module {
   id: string;
@@ -99,7 +100,7 @@ export default function ModulesSettingsPage() {
       });
       if (!res.ok) throw new Error();
       refreshModules();
-      const label = lang === 'fr' ? mod.nameFr : mod.name;
+      const label = localized(mod, 'name', lang);
       showToast(newValue ? ts.notifications.enabled(label) : ts.notifications.disabled(label));
     } catch {
       setModules(prev);
@@ -160,7 +161,7 @@ export default function ModulesSettingsPage() {
                   )}
                 </div>
                 <p className="m-0 text-[13px] text-g-text-2 leading-[1.5]">
-                  {mod.description}
+                  {localized(mod, 'description', lang)}
                 </p>
                 {mod.builtIn && (
                   <p className="mt-1 mb-0 text-xs text-g-text-3">
@@ -171,7 +172,7 @@ export default function ModulesSettingsPage() {
 
               {/* Toggle */}
               <div className="flex-shrink-0 flex items-center gap-2">
-                <span className="text-xs text-g-text-2 min-w-[48px] text-right">
+                <span className="text-xs text-g-text-2 min-w-[48px] text-end">
                   {mod.isEnabled ? ts.enabled : ts.disabled}
                 </span>
                 <Toggle

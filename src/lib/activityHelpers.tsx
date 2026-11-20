@@ -20,6 +20,7 @@ export const ACTION_LABELS: Record<string, string> = {
   invoice_issued:       'Invoice issued',
   credit_note_issued:   'Credit note issued',
   invoice_sent:         'Invoice sent',
+  case_created:         'Support case opened',
 };
 
 export function ActivityIcon({ action }: { action: string }) {
@@ -115,6 +116,12 @@ export function ActivityIcon({ action }: { action: string }) {
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="2"/>
           <path d="m22 7-10 6L2 7"/>
+        </svg>
+      );
+    case 'case_created':
+      return (
+        <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
       );
     default:

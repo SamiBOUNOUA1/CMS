@@ -123,11 +123,11 @@ export default function PaymentsCard({ tenantId, plan, licenseExpiresAt, onChang
         <div className="overflow-x-auto -mx-1">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
+              <tr className="text-start text-[11px] uppercase tracking-wider text-g-text-2 border-b border-g-border">
                 <th className="px-1 py-2 font-medium">Paid</th>
                 <th className="px-1 py-2 font-medium">Invoice</th>
                 <th className="px-1 py-2 font-medium">Period</th>
-                <th className="px-1 py-2 font-medium text-right">Amount</th>
+                <th className="px-1 py-2 font-medium text-end">Amount</th>
                 <th className="px-1 py-2 font-medium">Method</th>
                 <th className="px-1 py-2" />
               </tr>
@@ -138,10 +138,10 @@ export default function PaymentsCard({ tenantId, plan, licenseExpiresAt, onChang
                   <td className="px-1 py-2 text-g-text whitespace-nowrap">{fmtDate(p.paidAt)}</td>
                   <td className="px-1 py-2 text-g-text whitespace-nowrap">{p.invoiceNumber}</td>
                   <td className="px-1 py-2 text-g-text-2 whitespace-nowrap">{fmtDate(p.periodFrom)} → {fmtDate(p.periodTo)}</td>
-                  <td className="px-1 py-2 text-g-text text-right whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
+                  <td className="px-1 py-2 text-g-text text-end whitespace-nowrap">{fmtMoney(p.amount, p.currency)}</td>
                   <td className="px-1 py-2 text-g-text-2">{methodName(p.method)}</td>
-                  <td className="px-1 py-2 text-right whitespace-nowrap">
-                    <Link href={`/platform/billing/invoice/${p._id}`} target="_blank" className="text-google-blue no-underline text-sm mr-3">Print</Link>
+                  <td className="px-1 py-2 text-end whitespace-nowrap">
+                    <Link href={`/platform/billing/invoice/${p._id}`} target="_blank" className="text-google-blue no-underline text-sm me-3">Print</Link>
                     <button type="button" className={removeBtn} onClick={() => remove(p)}>Delete</button>
                   </td>
                 </tr>

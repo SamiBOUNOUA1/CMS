@@ -58,8 +58,8 @@ function getDeadlineClass(task: Task): string {
   const now = Date.now();
   const due = new Date(task.scheduledDate).getTime();
   const oneDay = 86400000;
-  if (due < now) return 'bg-google-red-light border-l-[3px] border-l-google-red';
-  if (due - now <= oneDay) return 'bg-google-yellow-light border-l-[3px] border-l-google-yellow';
+  if (due < now) return 'bg-google-red-light border-s-[3px] border-s-google-red';
+  if (due - now <= oneDay) return 'bg-google-yellow-light border-s-[3px] border-s-google-yellow';
   return '';
 }
 
@@ -263,7 +263,7 @@ export default function HomePage() {
 
               {/* Materials progress */}
               {ev.materials.total > 0 && (
-                <div className="text-xs font-[Roboto,Arial] flex-shrink-0 text-right">
+                <div className="text-xs font-[Roboto,Arial] flex-shrink-0 text-end">
                   <div className="text-g-text-2">
                     {tp.materials} {ev.materials.checked}/{ev.materials.total}
                   </div>
@@ -404,7 +404,7 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <div className="text-[11px] text-g-text-3 font-[Roboto,Arial] flex-shrink-0 text-right leading-tight">
+                <div className="text-[11px] text-g-text-3 font-[Roboto,Arial] flex-shrink-0 text-end leading-tight">
                   {format(new Date(a.createdAt), 'dd MMM')}
                   <div>{format(new Date(a.createdAt), 'HH:mm')}</div>
                 </div>

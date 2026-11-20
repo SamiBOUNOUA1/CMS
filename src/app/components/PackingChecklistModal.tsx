@@ -128,7 +128,7 @@ export default function PackingChecklistModal({
                   type="button"
                   onClick={() => toggle(pack)}
                   disabled={!canEdit}
-                  className="w-full text-left bg-g-surface rounded-xl border shadow-google-1 p-3 flex items-center gap-3 transition-colors"
+                  className="w-full text-start bg-g-surface rounded-xl border shadow-google-1 p-3 flex items-center gap-3 transition-colors"
                   style={{
                     borderColor: pack.checked ? '#a8dab5' : 'var(--google-border)',
                     background: pack.checked ? '#e6f4ea66' : undefined,

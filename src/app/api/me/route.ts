@@ -3,7 +3,7 @@ import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { compare, hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
-import { User } from '@/lib/models';
+import { User, NOTIFICATION_GROUPS } from '@/lib/models';
 import { getAuth } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
 import { passwordProblem } from '@/lib/passwordPolicy';
@@ -55,9 +55,16 @@ async function PATCH_(request: NextRequest) {
     }
 
     if (body.preferredLanguage !== undefined) {
-      if (!['en', 'fr'].includes(body.preferredLanguage))
+      if (!['en', 'fr', 'ar'].includes(body.preferredLanguage))
         return NextResponse.json({ error: 'Invalid language' }, { status: 400 });
       user.preferredLanguage = body.preferredLanguage;
+    }
+
+    if (body.notificationEmail !== undefined) {
+      const groups = NOTIFICATION_GROUPS;
+      if (!Array.isArray(body.notificationEmail) || body.notificationEmail.some(g => !groups.includes(g)))
+        return NextResponse.json({ error: 'Invalid notification settings' }, { status: 400 });
+      user.notificationEmail = [...new Set(body.notificationEmail)];
     }
 
     // Password change requires the current password for verification.

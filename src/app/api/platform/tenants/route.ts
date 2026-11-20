@@ -27,7 +27,7 @@ export const GET = withPlatformAdmin(async () => {
   return NextResponse.json({ tenants: rows });
 });
 
-export const POST = withPlatformAdmin(async (request) => {
+export const POST = withPlatformAdmin(async (request, _ctx, admin) => {
   const b = await request.json();
   if (!b.name?.trim() || !b.adminName?.trim() || !b.adminEmail?.trim() || !b.adminPassword || !b.licenseExpiresAt)
     return NextResponse.json({ error: 'Company name, admin name/email/password and license expiry are required' }, { status: 400 });
@@ -36,6 +36,8 @@ export const POST = withPlatformAdmin(async (request) => {
   try {
     const tenant = await provisionTenant({
       name: b.name.trim(),
+      contractLanguage: b.contractLanguage || undefined,
+      createdBy: admin?.name,
       contactName: b.contactName || undefined,
       contactEmail: b.contactEmail || undefined,
       contactPhone: b.contactPhone || undefined,

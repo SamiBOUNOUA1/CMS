@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormCard, FormSectionLabel, FormGrid, Field, FormInput, FormSelect, btnFilled, btnOutline } from '@/app/components/FormPrimitives';
 import { api, toDateInput, addPeriod } from '../../shared';
 import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
+import { CONTRACT_LANGS, CONTRACT_LANG_LABELS } from '@/lib/contracts';
 
 interface PlanOpt { _id: string; name: string; isActive: boolean }
 
@@ -19,6 +20,7 @@ export default function NewTenantPage() {
     licenseStartsAt: toDateInput(new Date()),
     licenseExpiresAt: toDateInput(addPeriod(new Date(), 12)),
     adminName: '', adminEmail: '', adminPassword: '',
+    contractLanguage: 'fr',
   });
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -28,6 +30,9 @@ export default function NewTenantPage() {
       setPlans(active);
       if (active[0]) setForm(f => ({ ...f, plan: f.plan || active[0]._id }));
     }).catch(() => {});
+    api<{ defaultContractLanguage: string }>('/api/platform/settings')
+      .then(d => setForm(f => ({ ...f, contractLanguage: d.defaultContractLanguage || f.contractLanguage })))
+      .catch(() => {});
   }, []);
 
   const submit = async (e: React.FormEvent) => {
@@ -71,6 +76,20 @@ export default function NewTenantPage() {
           <Field label="Starts"><FormInput type="date" value={form.licenseStartsAt} onChange={e => set('licenseStartsAt', e.target.value)} /></Field>
           <Field label="Expires *"><FormInput type="date" value={form.licenseExpiresAt} onChange={e => set('licenseExpiresAt', e.target.value)} required /></Field>
         </FormGrid>
+      </FormCard>
+
+      <FormCard>
+        <FormSectionLabel>Contract</FormSectionLabel>
+        <FormGrid>
+          <Field label="Contract language">
+            <FormSelect value={form.contractLanguage} onChange={e => set('contractLanguage', e.target.value)}>
+              {CONTRACT_LANGS.map(l => <option key={l} value={l}>{CONTRACT_LANG_LABELS[l]}</option>)}
+            </FormSelect>
+          </Field>
+        </FormGrid>
+        <p className="text-xs text-g-text-2 mt-3 mb-0">
+          The tenant starts <strong>blocked</strong>. A draft contract is created; access opens once the signed contract is uploaded and confirmed on the tenant page.
+        </p>
       </FormCard>
 
       <FormCard>

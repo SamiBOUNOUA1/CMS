@@ -78,12 +78,12 @@ export default function InvoicesPage() {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-g-text-3">
+              <tr className="text-start text-[11px] uppercase tracking-wide text-g-text-3">
                 <th className="py-3 px-4 font-medium">{ti.number}</th>
                 <th className="py-3 px-4 font-medium">{ti.date}</th>
                 <th className="py-3 px-4 font-medium">{ti.customer}</th>
-                <th className="py-3 px-4 font-medium text-right">{ti.totalTTC}</th>
-                <th className="py-3 px-4 font-medium text-right">{ti.balanceDue}</th>
+                <th className="py-3 px-4 font-medium text-end">{ti.totalTTC}</th>
+                <th className="py-3 px-4 font-medium text-end">{ti.balanceDue}</th>
                 <th className="py-3 px-4 font-medium">{ti.status}</th>
               </tr>
             </thead>
@@ -98,17 +98,17 @@ export default function InvoicesPage() {
                   <tr key={inv._id} {...rowLink(`/invoices/${inv._id}`)} className="border-t border-g-border cursor-pointer hover:bg-[var(--google-row-hover)]">
                     <td className="py-3 px-4 font-medium text-g-text whitespace-nowrap">
                       {inv.invoiceNumber}
-                      {isCredit && <span className="ml-2 text-[11px] text-g-text-3">{ti.types.credit_note} → {inv.creditedInvoiceNumber}</span>}
+                      {isCredit && <span className="ms-2 text-[11px] text-g-text-3">{ti.types.credit_note} → {inv.creditedInvoiceNumber}</span>}
                     </td>
                     <td className="py-3 px-4 text-g-text-2 whitespace-nowrap">{format(new Date(inv.issuedDate), 'dd MMM yyyy')}</td>
                     <td className="py-3 px-4 text-g-text">
                       {inv.buyer?.legalName || inv.buyer?.name}
                       {inv.buyer?.ice && <div className="text-[11px] text-g-text-3">ICE {inv.buyer.ice}</div>}
                     </td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap" style={{ color: isCredit ? 'var(--google-red)' : undefined }}>
+                    <td className="py-3 px-4 text-end whitespace-nowrap" style={{ color: isCredit ? 'var(--google-red)' : undefined }}>
                       {isCredit ? '– ' : ''}{formatMoney(net, inv.currency)}
                     </td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap text-g-text-2">{isCredit ? '—' : formatMoney(inv.balanceDue, inv.currency)}</td>
+                    <td className="py-3 px-4 text-end whitespace-nowrap text-g-text-2">{isCredit ? '—' : formatMoney(inv.balanceDue, inv.currency)}</td>
                     <td className="py-3 px-4"><StatusBadge status={inv.status} label={isCredit ? ti.types.credit_note : ti.statuses[inv.status]} /></td>
                   </tr>
                 );

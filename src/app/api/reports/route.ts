@@ -2,7 +2,7 @@
 import { withTenant } from '@/lib/requireAuth';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { Order, Payment, InventoryItem, OrderStatusConfig, EventTypeConfig } from '@/lib/models';
+import { Order, Payment, InventoryItem, OrderStatusConfig, EventTypeConfig, Client } from '@/lib/models';
 import { requirePermission } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
 
@@ -34,7 +34,7 @@ async function GET_(request: NextRequest) {
 
     const [ordersInRange, statusConfigs, eventTypeConfigs] = await Promise.all([
       Order.find({ eventDate: { $gte: start } })
-        .select('totalAmount eventDate eventType status paymentStatus guestCount lineGroups')
+        .select('totalAmount eventDate eventType status paymentStatus guestCount lineGroups clientPhone')
         .lean(),
       OrderStatusConfig.find({}).select('name label color triggerEvent sortOrder').lean(),
       EventTypeConfig.find({}).select('key label').lean(),
@@ -129,6 +129,41 @@ async function GET_(request: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    // ── Customer sources ──────────────────────────────────────────────────────
+    // Orders carry denormalized client data, so they're joined to Client by phone
+    // (the customer identifier). Unmatched / blank sources fall into 'unknown'.
+    const orderPhones = [...new Set(ordersInRange.map(o => o.clientPhone).filter(Boolean))];
+    const [orderClients, newClientsAgg] = await Promise.all([
+      orderPhones.length
+        ? Client.find({ phone: { $in: orderPhones } }).select('phone leadSource').lean()
+        : [],
+      Client.aggregate([
+        { $match: { createdAt: { $gte: start } } },
+        { $group: { _id: '$leadSource', count: { $sum: 1 } } },
+      ]),
+    ]);
+    const sourceByPhone = Object.fromEntries(orderClients.map(c => [c.phone, c.leadSource || 'unknown']));
+    const bySource: Record<string, { newCustomers: number; orders: number; confirmed: number; revenue: number; customers: Set<string> }> = {};
+    const bucket = (k: string) => (bySource[k] ??= { newCustomers: 0, orders: 0, confirmed: 0, revenue: 0, customers: new Set() });
+    for (const g of newClientsAgg) bucket(g._id || 'unknown').newCustomers += g.count;
+    for (const o of ordersInRange) {
+      const b = bucket(sourceByPhone[o.clientPhone] ?? 'unknown');
+      b.orders += 1;
+      b.revenue += o.totalAmount || 0;
+      if (eventTriggerStatuses.has(o.status)) b.confirmed += 1;
+      if (o.clientPhone) b.customers.add(o.clientPhone);
+    }
+    const customerSources = Object.entries(bySource)
+      .map(([key, v]) => ({
+        key,
+        newCustomers: v.newCustomers,
+        customers: v.customers.size,
+        orders: v.orders,
+        revenue: +v.revenue.toFixed(2),
+        conversionPct: v.orders ? Math.round((v.confirmed / v.orders) * 100) : 0,
+      }))
+      .sort((a, b) => (a.key === 'unknown' ? 1 : b.key === 'unknown' ? -1 : b.revenue - a.revenue || b.newCustomers - a.newCustomers));
+
     // ── Alerts (current, not range-bound) ─────────────────────────────────────
     const [lowStockCount, overdueUnpaidCount] = await Promise.all([
       InventoryItem.countDocuments({ isActive: true, minStock: { $gt: 0 }, $expr: { $lte: ['$currentStock', '$minStock'] } }),
@@ -143,6 +178,7 @@ async function GET_(request: NextRequest) {
       bookingsByEventType,
       statusFunnel,
       topProducts,
+      customerSources,
       alerts: { lowStockCount, overdueUnpaidCount },
     });
   } catch (err: unknown) {

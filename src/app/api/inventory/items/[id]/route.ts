@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { InventoryItem, InventoryAdjustment, Supplier } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { notifyIfLow } from '@/lib/notifications';
 import { requirePermission } from '@/lib/requireAuth';
 import { serverError } from '@/lib/logger';
 
@@ -49,6 +50,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (fields.supplier === '') fields.supplier = null;
     if (fields.category === '') fields.category = null;
     if (fields.warehouse === '') fields.warehouse = null;
+
+    const prevStock = item.currentStock;
 
     // Apply field updates
     Object.assign(item, fields);
@@ -103,6 +106,7 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     }
 
     await item.save();
+    await notifyIfLow('inventory', item, prevStock, auth.userId);
     await item.populate('category', 'name color');
     await item.populate('supplier', 'name');
     await item.populate('warehouse', 'name');

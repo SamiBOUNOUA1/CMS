@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { LaundryBatch, InventoryItem, InventoryAdjustment } from '@/lib/models';
 import { logActivity } from '@/lib/activityLogger';
+import { notify, notifyIfLow, usersWithPermission } from '@/lib/notifications';
 import { requirePermission } from '@/lib/requireAuth';
 
 const STATUS_ORDER = ['draft', 'sent', 'returned', 'completed'];
@@ -75,8 +76,10 @@ async function PATCH_(
           });
           const invItem = await InventoryItem.findById(item.inventoryItem);
           if (invItem) {
+            const prevStock = invItem.currentStock;
             invItem.currentStock = Math.max(0, invItem.currentStock + delta);
             await invItem.save();
+            await notifyIfLow('inventory', invItem, prevStock, userId);
           }
         }
       }
@@ -96,6 +99,7 @@ async function PATCH_(
     }
 
     batch.status = body.status;
+    if (body.status === 'sent') batch.sentAt = new Date();
     await batch.save();
 
     if (body.status === 'sent') {
@@ -116,6 +120,19 @@ async function PATCH_(
         performedBy: userId,
         metadata: { batchNumber: batch.batchNumber },
       });
+    }
+
+    if (body.status === 'completed') {
+      const lost = batch.items.reduce((s: number, i: any) => s + (i.quantityLost || 0), 0);
+      const damaged = batch.items.reduce((s: number, i: any) => s + (i.quantityDamaged || 0), 0);
+      if (lost + damaged > 0) {
+        await notify({
+          recipients: await usersWithPermission('manage_inventory', 'manage_laundry'),
+          group: 'stock', type: 'laundry_losses',
+          params: { batch: batch.batchNumber, lost, damaged },
+          link: `/laundry/${params.id}`, actorId: userId,
+        });
+      }
     }
 
     return NextResponse.json({ batch: await getPopulated(params.id) });

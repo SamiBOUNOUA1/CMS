@@ -3,8 +3,10 @@ export const MODULE_REGISTRY = [
     id: 'order_management',
     name: 'Order Management',
     nameFr: 'Gestion des commandes',
+    nameAr: 'إدارة الطلبات',
     description: 'Orders, quotes, customers, calendar, and events.',
     descriptionFr: 'Commandes, devis, clients, calendrier et événements.',
+    descriptionAr: 'الطلبات وعروض الأسعار والعملاء والتقويم والمناسبات.',
     icon: 'ClipboardList',
     color: '#1a73e8',
     primaryRoute: '/orders',
@@ -19,12 +21,12 @@ export const MODULE_REGISTRY = [
       'manage_event_materials', 'check_event_materials',
     ],
     subRoutes: [
-      { href: '/orders',         label: 'Orders',    labelFr: 'Commandes',       permission: 'view_orders' },
-      { href: '/calculator',     label: 'Calculator', labelFr: 'Calculateur',    permission: 'view_orders' },
-      { href: '/customers',      label: 'Customers', labelFr: 'Clients',         permission: 'view_customers' },
-      { href: '/invoices',       label: 'Invoices',  labelFr: 'Factures',        permission: 'view_invoices' },
-      { href: '/calendar',       label: 'Calendar',  labelFr: 'Calendrier',      permission: 'view_calendar' },
-      { href: '/manager/events', label: 'My Events', labelFr: 'Mes événements',  anyPermission: ['update_flow_status', 'manage_event_materials', 'check_event_materials'] },
+      { href: '/orders',         label: 'Orders',    labelFr: 'Commandes', labelAr: 'الطلبات',       permission: 'view_orders' },
+      { href: '/calculator',     label: 'Calculator', labelFr: 'Calculateur', labelAr: 'الحاسبة',    permission: 'view_orders' },
+      { href: '/customers',      label: 'Customers', labelFr: 'Clients', labelAr: 'العملاء',         permission: 'view_customers' },
+      { href: '/invoices',       label: 'Invoices',  labelFr: 'Factures', labelAr: 'الفواتير',        permission: 'view_invoices' },
+      { href: '/calendar',       label: 'Calendar',  labelFr: 'Calendrier', labelAr: 'التقويم',      permission: 'view_calendar' },
+      { href: '/manager/events', label: 'My Events', labelFr: 'Mes événements', labelAr: 'مناسباتي',  anyPermission: ['update_flow_status', 'manage_event_materials', 'check_event_materials'] },
     ],
     builtIn: true,
   },
@@ -32,8 +34,10 @@ export const MODULE_REGISTRY = [
     id: 'inventory',
     name: 'Inventory',
     nameFr: 'Inventaire',
+    nameAr: 'المخزون',
     description: 'Track kitchen equipment, stock levels, and supplier info.',
     descriptionFr: 'Suivi des équipements, niveaux de stock et informations fournisseurs.',
+    descriptionAr: 'تتبّع معدات المطبخ ومستويات المخزون ومعلومات الموردين.',
     icon: 'Warehouse',
     color: '#137333',
     primaryRoute: '/inventory',
@@ -41,10 +45,10 @@ export const MODULE_REGISTRY = [
     apiPrefixes: ['/api/inventory'],
     permissions: ['view_inventory', 'manage_inventory', 'view_suppliers', 'edit_suppliers', 'delete_suppliers', 'view_warehouses', 'edit_warehouses', 'delete_warehouses'],
     subRoutes: [
-      { href: '/inventory',            label: 'Items',      labelFr: 'Articles',     permission: 'view_inventory' },
-      { href: '/inventory/categories', label: 'Categories', labelFr: 'Catégories',   permission: 'manage_inventory' },
-      { href: '/inventory/suppliers',  label: 'Suppliers',  labelFr: 'Fournisseurs', permission: 'view_suppliers' },
-      { href: '/inventory/warehouses', label: 'Warehouses', labelFr: 'Entrepôts',    permission: 'view_warehouses' },
+      { href: '/inventory',            label: 'Items',      labelFr: 'Articles', labelAr: 'الأصناف',     permission: 'view_inventory' },
+      { href: '/inventory/categories', label: 'Categories', labelFr: 'Catégories', labelAr: 'الفئات',   permission: 'manage_inventory' },
+      { href: '/inventory/suppliers',  label: 'Suppliers',  labelFr: 'Fournisseurs', labelAr: 'الموردون', permission: 'view_suppliers' },
+      { href: '/inventory/warehouses', label: 'Warehouses', labelFr: 'Entrepôts', labelAr: 'المستودعات',    permission: 'view_warehouses' },
     ],
     builtIn: false,
   },
@@ -52,8 +56,10 @@ export const MODULE_REGISTRY = [
     id: 'tasks',
     name: 'Tasks',
     nameFr: 'Tâches',
+    nameAr: 'المهام',
     description: 'Schedule and track follow-up tasks.',
     descriptionFr: 'Planifier et suivre les tâches de suivi.',
+    descriptionAr: 'جدولة مهام المتابعة وتتبعها.',
     icon: 'CheckSquare',
     color: '#1a73e8',
     primaryRoute: '/tasks',
@@ -66,8 +72,10 @@ export const MODULE_REGISTRY = [
     id: 'laundry',
     name: 'Laundry',
     nameFr: 'Blanchisserie',
+    nameAr: 'الغسيل',
     description: 'Track linen batches sent to laundry, manage returns and write off losses.',
     descriptionFr: 'Suivi des envois de linge, gestion des retours et déduction des pertes.',
+    descriptionAr: 'تتبّع دفعات المفروشات المرسلة إلى الغسيل، وإدارة المُعاد منها وشطب الخسائر.',
     icon: 'WashingMachine',
     color: '#0b8043',
     primaryRoute: '/laundry',
@@ -75,7 +83,7 @@ export const MODULE_REGISTRY = [
     apiPrefixes: ['/api/laundry'],
     permissions: ['view_laundry', 'manage_laundry'],
     subRoutes: [
-      { href: '/laundry', label: 'Batches', labelFr: 'Lots', permission: 'view_laundry' },
+      { href: '/laundry', label: 'Batches', labelFr: 'Lots', labelAr: 'الدفعات', permission: 'view_laundry' },
     ],
     builtIn: false,
   },
@@ -83,8 +91,10 @@ export const MODULE_REGISTRY = [
     id: 'kitchen',
     name: 'Kitchen',
     nameFr: 'Cuisine',
+    nameAr: 'المطبخ',
     description: 'Manage kitchen stock, recipes, and ingredient costs.',
     descriptionFr: 'Gérez le stock cuisine, les recettes et les coûts d\'ingrédients.',
+    descriptionAr: 'إدارة مخزون المطبخ والوصفات وتكاليف المكونات.',
     icon: 'ChefHat',
     color: '#e37400',
     primaryRoute: '/kitchen',
@@ -92,8 +102,8 @@ export const MODULE_REGISTRY = [
     apiPrefixes: ['/api/kitchen'],
     permissions: ['view_kitchen', 'manage_kitchen'],
     subRoutes: [
-      { href: '/kitchen/stock',   label: 'Stock',   labelFr: 'Stock',    permission: 'view_kitchen' },
-      { href: '/kitchen/recipes', label: 'Recipes', labelFr: 'Recettes', permission: 'view_kitchen' },
+      { href: '/kitchen/stock',   label: 'Stock',   labelFr: 'Stock', labelAr: 'المخزون',    permission: 'view_kitchen' },
+      { href: '/kitchen/recipes', label: 'Recipes', labelFr: 'Recettes', labelAr: 'الوصفات', permission: 'view_kitchen' },
     ],
     builtIn: false,
   },
@@ -101,8 +111,10 @@ export const MODULE_REGISTRY = [
     id: 'reports',
     name: 'Reports',
     nameFr: 'Rapports',
+    nameAr: 'التقارير',
     description: 'Revenue trends, bookings, conversion, and business KPIs.',
     descriptionFr: 'Tendances du chiffre d\'affaires, réservations, conversion et indicateurs clés.',
+    descriptionAr: 'اتجاهات الإيرادات والحجوزات ومعدل التحويل ومؤشرات الأداء الرئيسية.',
     icon: 'BarChart',
     color: '#9334e6',
     primaryRoute: '/reports',
@@ -111,6 +123,37 @@ export const MODULE_REGISTRY = [
     permissions: ['view_reports'],
     builtIn: false,
   },
+  {
+    // Built in so a support channel is always available, whatever the plan.
+    id: 'support',
+    name: 'Support',
+    nameFr: 'Assistance',
+    nameAr: 'الدعم',
+    description: 'Open support cases with the platform team and follow their progress.',
+    descriptionFr: 'Ouvrir des demandes auprès de l\'équipe de la plateforme et suivre leur avancement.',
+    descriptionAr: 'افتح طلبات دعم لدى فريق المنصة وتابع تقدمها.',
+    icon: 'LifeBuoy',
+    color: '#5f6368',
+    primaryRoute: '/support',
+    routes: ['/support'],
+    apiPrefixes: ['/api/cases'],
+    permissions: ['create_cases', 'view_all_cases'],
+    subRoutes: [
+      { href: '/support', label: 'Cases', labelFr: 'Demandes', labelAr: 'الطلبات', anyPermission: ['create_cases', 'view_all_cases'] },
+    ],
+    builtIn: true,
+  },
 ];
+
+/**
+ * Picks the label for the UI language: `field` + "Fr" / "Ar" when present,
+ * falling back to the English `field`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function localized(obj: any, field: string, lang: string): string {
+  if (!obj) return '';
+  const suffix = lang === 'fr' ? 'Fr' : lang === 'ar' ? 'Ar' : '';
+  return (suffix && obj[field + suffix]) || obj[field] || '';
+}
 
 export const MODULE_IDS = MODULE_REGISTRY.map(m => m.id);

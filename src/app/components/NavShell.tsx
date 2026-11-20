@@ -47,7 +47,7 @@ export default function NavShell({ children }: NavShellProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center px-4 h-16 bg-g-surface border-b border-g-border shadow-[0_1px_2px_rgba(60,64,67,.08)]">
+      <header className="fixed top-0 start-0 end-0 z-50 flex items-center px-4 h-16 bg-g-surface border-b border-g-border shadow-[0_1px_2px_rgba(60,64,67,.08)]">
         <AppNav />
       </header>
       <SubNav />

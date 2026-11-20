@@ -13,9 +13,13 @@ import {
   btnFilled,
 } from '@/app/components/FormPrimitives';
 import MfaSettings from '@/app/components/MfaSettings';
+import CalendarFeedSettings from '@/app/components/CalendarFeedSettings';
 import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
+import { NOTIFICATION_GROUP_LABELS } from '@/lib/notificationText';
 
-type Lang = 'en' | 'fr';
+const NOTIFICATION_GROUPS = ['event', 'task', 'sales', 'stock', 'system'];
+
+type Lang = 'en' | 'fr' | 'ar';
 
 interface ProfileForm {
   name: string;
@@ -26,11 +30,12 @@ interface ProfileForm {
 export default function ProfilePage() {
   const t = useT();
   const tp = t.profile;
-  const { switchLanguage } = useLanguage();
+  const { switchLanguage, lang } = useLanguage();
   const { refresh: refreshUser } = useUser();
 
   const [form, setForm] = useState<ProfileForm>({ name: '', email: '', preferredLanguage: 'en' });
   const [role, setRole] = useState('');
+  const [emailGroups, setEmailGroups] = useState<string[]>([]);
   const [loadedEmail, setLoadedEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -49,10 +54,11 @@ export default function ProfilePage() {
         setForm({
           name: u.name || '',
           email: u.email || '',
-          preferredLanguage: (u.preferredLanguage === 'fr' ? 'fr' : 'en'),
+          preferredLanguage: (u.preferredLanguage === 'fr' || u.preferredLanguage === 'ar' ? u.preferredLanguage : 'en'),
         });
         setLoadedEmail((u.email || '').toLowerCase());
         setRole(u.role || '');
+        setEmailGroups(Array.isArray(u.notificationEmail) ? u.notificationEmail : []);
       })
       .catch(() => showNotif(tp.loadFailed, 'error'))
       .finally(() => setLoading(false));
@@ -84,6 +90,7 @@ export default function ProfilePage() {
         name: form.name,
         email: form.email,
         preferredLanguage: form.preferredLanguage,
+        notificationEmail: emailGroups,
       };
       if (currentPassword) payload.currentPassword = currentPassword;
       if (newPassword) {
@@ -144,9 +151,28 @@ export default function ProfilePage() {
           <FormSelect value={form.preferredLanguage} onChange={e => set('preferredLanguage', e.target.value)}>
             <option value="en">{tp.languages.en}</option>
             <option value="fr">{tp.languages.fr}</option>
+            <option value="ar">{tp.languages.ar}</option>
           </FormSelect>
         </Field>
         <p className="text-[11px] text-g-text-3 mt-1">{tp.languageHint}</p>
+      </div>
+
+      <FormSectionLabel>{t.notifications.emailSection}</FormSectionLabel>
+      <div className="mb-6">
+        <p className="text-[13px] text-g-text-2 m-0 mb-3">{t.notifications.emailHint}</p>
+        <div className="flex flex-col gap-2.5">
+          {NOTIFICATION_GROUPS.map(g => (
+            <label key={g} className="flex items-center gap-2.5 text-sm text-g-text cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                className="w-4 h-4 cursor-pointer accent-google-blue"
+                checked={emailGroups.includes(g)}
+                onChange={e => setEmailGroups(list => e.target.checked ? [...list, g] : list.filter(x => x !== g))}
+              />
+              {NOTIFICATION_GROUP_LABELS[lang][g]}
+            </label>
+          ))}
+        </div>
       </div>
 
       <FormSectionLabel>{tp.passwordSection}</FormSectionLabel>
@@ -170,6 +196,11 @@ export default function ProfilePage() {
       <button onClick={handleSave} disabled={saving} className={btnFilled}>
         {saving ? tp.saving : tp.save}
       </button>
+
+      <div className="mt-10" id="calendar-sync">
+        <FormSectionLabel>{tp.calendarFeeds.section}</FormSectionLabel>
+        <CalendarFeedSettings labels={tp.calendarFeeds} notify={showNotif} />
+      </div>
 
       <div className="mt-10">
         <FormSectionLabel>{tp.mfa.section}</FormSectionLabel>

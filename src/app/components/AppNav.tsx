@@ -7,6 +7,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { useUser } from '@/lib/UserContext';
 import ThemeSwitch, { THEME_OPTIONS } from './ThemeSwitch';
+import NotificationBell from './NotificationBell';
+import { localized } from '@/lib/modules';
 
 const ModuleClipboardIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -44,6 +46,12 @@ const ModuleBarChartIcon = () => (
   </svg>
 );
 
+const ModuleLifeBuoyIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm7.46 7.12l-2.78 1.15a4.982 4.982 0 0 0-2.95-2.94l1.15-2.78c2.1.8 3.77 2.47 4.58 4.57zM12 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zM9.13 4.54l1.17 2.78a5 5 0 0 0-2.98 2.97L4.54 9.13a7.984 7.984 0 0 1 4.59-4.59zM4.54 14.87l2.78-1.15a4.968 4.968 0 0 0 2.97 2.96l-1.17 2.78a7.996 7.996 0 0 1-4.58-4.59zm10.34 4.59l-1.15-2.78a4.978 4.978 0 0 0 2.95-2.97l2.78 1.17a8.007 8.007 0 0 1-4.58 4.58z"/>
+  </svg>
+);
+
 const MODULE_ICON_MAP: Record<string, () => JSX.Element> = {
   ClipboardList: ModuleClipboardIcon,
   Warehouse: ModuleWarehouseIcon,
@@ -51,6 +59,7 @@ const MODULE_ICON_MAP: Record<string, () => JSX.Element> = {
   WashingMachine: ModuleWashingMachineIcon,
   ChefHat: ModuleChefHatIcon,
   BarChart: ModuleBarChartIcon,
+  LifeBuoy: ModuleLifeBuoyIcon,
 };
 
 const GearIcon = () => (
@@ -96,7 +105,7 @@ export default function AppNav() {
   return (
     <>
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2 no-underline mr-3 flex-shrink-0">
+      <Link href="/" className="flex items-center gap-2 no-underline me-3 flex-shrink-0">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="6" fill="#1a73e8" />
           <path d="M8 14h12M14 8v12" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
@@ -108,7 +117,7 @@ export default function AppNav() {
 
       {/* Company (tenant) the user is signed in to */}
       {company && (
-        <div className="flex items-center gap-2 min-w-0 pl-3 border-l border-g-border h-7" title={company.name}>
+        <div className="flex items-center gap-2 min-w-0 ps-3 border-s border-g-border h-7" title={company.name}>
           {company.logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={company.logoUrl} alt="" className="h-6 w-6 rounded object-contain flex-shrink-0 hidden sm:block" />
@@ -121,7 +130,10 @@ export default function AppNav() {
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-2 ms-auto">
+        {/* Notifications — all screen sizes */}
+        {user && <NotificationBell />}
+
         {/* Theme switcher — desktop only */}
         <div className="hidden sm:flex">
           <ThemeSwitch />
@@ -129,7 +141,7 @@ export default function AppNav() {
 
         {/* Language switcher — desktop only */}
         <div className="hidden sm:flex rounded-full border border-g-border overflow-hidden flex-shrink-0">
-          {(['en', 'fr'] as const).map(l => (
+          {(['en', 'fr', 'ar'] as const).map(l => (
             <button
               key={l}
               onClick={() => switchLanguage(l)}
@@ -177,7 +189,7 @@ export default function AppNav() {
             {userMenuOpen && (
               <>
                 <div onClick={() => setUserMenuOpen(false)} className="fixed inset-0 z-[99]" />
-                <div className="absolute right-0 top-11 z-[100] bg-g-surface rounded-xl border border-g-border overflow-hidden min-w-[200px]"
+                <div className="absolute end-0 top-11 z-[100] bg-g-surface rounded-xl border border-g-border overflow-hidden min-w-[200px]"
                   style={{ boxShadow: '0 8px 24px rgba(0,0,0,.18)' }}
                 >
                   <div className="px-4 py-3.5 border-b border-g-border">
@@ -201,14 +213,14 @@ export default function AppNav() {
                   <Link
                     href="/profile"
                     onClick={() => setUserMenuOpen(false)}
-                    className="w-full px-4 py-3 border-b border-g-border bg-transparent text-left text-sm text-g-text no-underline cursor-pointer font-sans flex items-center gap-2"
+                    className="w-full px-4 py-3 border-b border-g-border bg-transparent text-start text-sm text-g-text no-underline cursor-pointer font-sans flex items-center gap-2"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
                     {t.nav.profile}
                   </Link>
                   <button
                     onClick={logout}
-                    className="w-full px-4 py-3 border-none bg-transparent text-left text-sm text-google-red cursor-pointer font-sans flex items-center gap-2"
+                    className="w-full px-4 py-3 border-none bg-transparent text-start text-sm text-google-red cursor-pointer font-sans flex items-center gap-2"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" /></svg>
                     {t.nav.signOut}
@@ -239,7 +251,7 @@ export default function AppNav() {
             onClick={() => setDrawerOpen(false)}
             className="fixed inset-0 bg-black/50 z-[149]"
           />
-          <div className="fixed top-0 left-0 bottom-0 w-70 bg-g-surface z-[150] flex flex-col overflow-y-auto"
+          <div className="fixed top-0 start-0 bottom-0 w-70 bg-g-surface z-[150] flex flex-col overflow-y-auto"
             style={{ width: 280, boxShadow: '4px 0 20px rgba(0,0,0,.2)' }}
           >
             {/* Drawer header */}
@@ -260,7 +272,7 @@ export default function AppNav() {
                 {visibleModules.map(mod => {
                   const IconComp = MODULE_ICON_MAP[mod.icon] ?? ModuleClipboardIcon;
                   const isModActive = mod.routes.some(r => pathname.startsWith(r));
-                  const modLabel = lang === 'fr' ? mod.nameFr : mod.name;
+                  const modLabel = localized(mod, 'name', lang);
                   const visibleSubRoutes = (mod.subRoutes ?? []).filter(sr =>
                     (!sr.permission || perms[sr.permission]) &&
                     (!sr.anyPermission || sr.anyPermission.some(p => perms[p]))
@@ -282,14 +294,14 @@ export default function AppNav() {
                         {modLabel}
                       </Link>
                       {visibleSubRoutes.map(sr => {
-                        const srLabel = lang === 'fr' ? sr.labelFr : sr.label;
+                        const srLabel = localized(sr, 'label', lang);
                         const srActive = pathname === sr.href || pathname.startsWith(sr.href + '/');
                         return (
                           <Link
                             key={sr.href}
                             href={sr.href}
                             onClick={() => setDrawerOpen(false)}
-                            className="block py-2.5 pl-[52px] pr-5 no-underline font-sans text-sm"
+                            className="block py-2.5 ps-[52px] pe-5 no-underline font-sans text-sm"
                             style={{
                               color: srActive ? mod.color : 'var(--google-text-secondary)',
                               fontWeight: srActive ? 600 : 400,
@@ -327,7 +339,7 @@ export default function AppNav() {
             <div className="px-5 py-3 border-t border-g-border">
               <p className="m-0 mb-2 text-xs text-g-text-3 font-sans font-medium uppercase tracking-[0.05em]">{t.nav.language}</p>
               <div className="flex gap-1.5">
-                {(['en', 'fr'] as const).map(l => (
+                {(['en', 'fr', 'ar'] as const).map(l => (
                   <button
                     key={l}
                     onClick={() => switchLanguage(l)}

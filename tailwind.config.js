@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Google Sans', 'Roboto', 'Arial', 'sans-serif'],
+        sans: ['Google Sans', 'Roboto', 'Noto Sans Arabic', 'Arial', 'sans-serif'],
       },
       colors: {
         // CSS-variable-based theme tokens (light/dark mode aware)

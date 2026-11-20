@@ -245,7 +245,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
       <p className="text-[13px] text-g-text-2 mb-4">
         {String(tli.groupHint)}
         {products.length === 0 && (
-          <span className="text-google-yellow ml-1.5">
+          <span className="text-google-yellow ms-1.5">
             {String(tli.noCategories)}{' '}
             <a href="/settings/catalog" className="text-google-blue">{String(tli.setupLink)}</a>
           </span>
@@ -408,7 +408,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                           <span className="text-[13px] text-g-text flex-1">
                             {opt.name}
                             {opt._orphan && (
-                              <span className="text-[11px] text-g-text-3 ml-1.5">({String(tli.optionUnavailable)})</span>
+                              <span className="text-[11px] text-g-text-3 ms-1.5">({String(tli.optionUnavailable)})</span>
                             )}
                           </span>
                           <span className="text-[13px] font-medium text-g-text-2 whitespace-nowrap">
@@ -459,7 +459,7 @@ export function StepLineItems({ form, setForm, errors, products, isMobile, tn, i
                   )}
                 </div>
                 {isMobile && (
-                  <div className="text-right font-sans text-[15px] font-medium text-g-text">
+                  <div className="text-end font-sans text-[15px] font-medium text-g-text">
                     = {fmt(itemLineTotal(group.count, item), currency)}
                   </div>
                 )}

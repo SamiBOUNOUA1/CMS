@@ -2,7 +2,8 @@
 import mongoose from 'mongoose';
 import { hash } from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
-import { Tenant, User, Role, CompanySettings } from '@/lib/models';
+import { Tenant, User, Role, CompanySettings, TenantContract } from '@/lib/models';
+import { createDraftContract } from '@/lib/contractService';
 import { runAsSystem, runWithTenant } from '@/lib/tenantContext';
 import { getBucket } from '@/lib/storage';
 import { invalidateTenantLicense } from '@/lib/license';
@@ -31,6 +32,10 @@ export interface ProvisionInput {
   adminName: string;
   adminEmail: string;
   adminPassword: string;
+  /** Language of the initial draft contract (defaults to the platform setting). */
+  contractLanguage?: string;
+  /** Operator name, recorded in the contract history. */
+  createdBy?: string;
 }
 
 /**
@@ -56,6 +61,8 @@ export async function provisionTenant(input: ProvisionInput) {
     contactEmail: input.contactEmail ?? email,
     contactPhone: input.contactPhone ?? '',
     plan: input.plan || null,
+    // Blocked until its contract is signed and confirmed (lib/contractService.ts).
+    status: 'pending_contract',
     license: { startsAt: input.licenseStartsAt ?? new Date(), expiresAt: input.licenseExpiresAt },
   });
 
@@ -72,8 +79,10 @@ export async function provisionTenant(input: ProvisionInput) {
         role: 'admin',
       });
     });
+    await createDraftContract(String(tenant._id), { language: input.contractLanguage, by: input.createdBy });
   } catch (err) {
     await deleteTenantData(String(tenant._id));
+    await TenantContract.deleteMany({ tenant: tenant._id });
     await Tenant.deleteOne({ _id: tenant._id });
     throw err;
   }
@@ -101,12 +110,15 @@ export async function deleteTenant(tenantId: string) {
   const documents = await deleteTenantData(tenantId);
   let files = 0;
   try {
-    const [list] = await getBucket().getFiles({ prefix: `tenants/${tenantId}/` });
-    await Promise.all(list.map(f => f.delete()));
-    files = list.length;
+    for (const prefix of [`tenants/${tenantId}/`, `platform/contracts/${tenantId}/`]) {
+      const [list] = await getBucket().getFiles({ prefix });
+      await Promise.all(list.map(f => f.delete()));
+      files += list.length;
+    }
   } catch {
     /* storage not configured (e.g. local dev) — nothing to remove */
   }
+  await TenantContract.deleteMany({ tenant: tenantId });
   await Tenant.deleteOne({ _id: tenantId });
   invalidateTenantLicense(tenantId);
   return { documents, files };

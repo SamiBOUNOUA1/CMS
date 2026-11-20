@@ -9,6 +9,7 @@ import { getAuth, requirePermission } from '@/lib/requireAuth';
 import { lineGroupsTotal, normalizeLineGroups } from '@/lib/pricing';
 import { applyStatusEventTrigger } from '@/lib/orderStatus';
 import { serverError } from '@/lib/logger';
+import { notify, orderTeam, orderLink, statusLabel } from '@/lib/notifications';
 
 async function GET_(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
@@ -48,6 +49,10 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const prevStatus = order.status;
+    const prevTeam = new Set(orderTeam(order));
+    // Snapshot of the fields the team cares about, to tell them what changed.
+    const WATCHED = ['eventDate', 'startTime', 'guestCount', 'eventLocation'];
+    const prevWatched = Object.fromEntries(WATCHED.map(k => [k, order[k] instanceof Date ? order[k].getTime() : (order[k] ?? '')]));
     const allowed = [
       'clientName', 'clientEmail', 'clientPhone', 'eventDate', 'eventType',
       'guestCount', 'tableCount', 'startTime', 'eventLocation', 'notes', 'externalNotes', 'status',
@@ -127,6 +132,8 @@ async function PATCH_(request: NextRequest, { params }: { params: Record<string,
       });
     }
 
+    await notifyOrderChanges(order, { prevTeam, prevWatched, prevStatus, actorId: auth.userId });
+
     // Reuse the doc we just saved; populate its refs instead of re-fetching the order.
     await order.populate('event', 'eventDate eventType guestCount status eventLocation');
     await order.populate('assignees.user', 'name email');
@@ -160,3 +167,34 @@ async function DELETE_(request: NextRequest, { params }: { params: Record<string
 export const GET = withTenant(GET_);
 export const PATCH = withTenant(PATCH_);
 export const DELETE = withTenant(DELETE_);
+
+/** Tells the order team about assignment, detail and status changes. */
+async function notifyOrderChanges(order, { prevTeam, prevWatched, prevStatus, actorId }) {
+  const base = { client: order.clientName, date: order.eventDate };
+  const link = orderLink(order);
+  const team = orderTeam(order);
+
+  // Newly added team members, each with their role.
+  for (const a of order.assignees || []) {
+    const id = String(a.user?._id || a.user);
+    if (!a.user || prevTeam.has(id)) continue;
+    await notify({ recipients: [id], group: 'event', type: 'event_assigned', params: { ...base, role: a.role }, link, actorId });
+  }
+
+  // Everyone already on the team before this edit.
+  const existing = team.filter(id => prevTeam.has(id));
+  const changes = Object.keys(prevWatched).filter(k => {
+    const now = order[k] instanceof Date ? order[k].getTime() : (order[k] ?? '');
+    return String(now) !== String(prevWatched[k]);
+  });
+  if (changes.length) {
+    await notify({
+      recipients: existing, group: 'event', type: 'event_updated',
+      params: { ...base, changes, ...(changes.includes('guestCount') ? { guestCount: order.guestCount } : {}) },
+      link, actorId,
+    });
+  }
+  if (order.status !== prevStatus) {
+    await notify({ recipients: existing, group: 'event', type: 'event_status', params: { ...base, status: await statusLabel(order.status) }, link, actorId });
+  }
+}

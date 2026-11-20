@@ -283,11 +283,11 @@ export default function CalculatorPage() {
         </p>
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-left border-b border-g-border">
+            <tr className="text-start border-b border-g-border">
               <th className="py-1.5 font-medium">{tc.item}</th>
-              <th className="py-1.5 font-medium text-right">{tc.quantity}</th>
-              <th className="py-1.5 font-medium text-right">{tc.unitPrice}</th>
-              <th className="py-1.5 font-medium text-right">{tc.lineTotal}</th>
+              <th className="py-1.5 font-medium text-end">{tc.quantity}</th>
+              <th className="py-1.5 font-medium text-end">{tc.unitPrice}</th>
+              <th className="py-1.5 font-medium text-end">{tc.lineTotal}</th>
             </tr>
           </thead>
           <tbody>
@@ -297,33 +297,33 @@ export default function CalculatorPage() {
                   {l.name}
                   {l.selectedOptions.length > 0 && <span className="block text-xs">+ {l.selectedOptions.map(o => o.name).join(', ')}</span>}
                 </td>
-                <td className="py-1.5 text-right">{lineQty(l, counts)}</td>
-                <td className="py-1.5 text-right">{money(itemUnitPrice(l))}</td>
-                <td className="py-1.5 text-right">{money(lineTotal(l, counts))}</td>
+                <td className="py-1.5 text-end">{lineQty(l, counts)}</td>
+                <td className="py-1.5 text-end">{money(itemUnitPrice(l))}</td>
+                <td className="py-1.5 text-end">{money(lineTotal(l, counts))}</td>
               </tr>
             ))}
             {s.staff.filter(x => staffTotal(x) > 0).map(x => (
               <tr key={x.id} className="border-b border-g-border">
                 <td className="py-1.5">{roleLabel(x.role) || tc.staff}</td>
-                <td className="py-1.5 text-right">{num(x.count)} × {num(x.hours)} h</td>
-                <td className="py-1.5 text-right">{money(num(x.ratePerHour))}</td>
-                <td className="py-1.5 text-right">{money(staffTotal(x))}</td>
+                <td className="py-1.5 text-end">{num(x.count)} × {num(x.hours)} h</td>
+                <td className="py-1.5 text-end">{money(num(x.ratePerHour))}</td>
+                <td className="py-1.5 text-end">{money(staffTotal(x))}</td>
               </tr>
             ))}
             {totals.travel > 0 && (
               <tr className="border-b border-g-border">
                 <td className="py-1.5">{tc.transport}{s.travel.label ? ` — ${s.travel.label}` : ''}</td>
-                <td className="py-1.5 text-right">1</td>
-                <td className="py-1.5 text-right">{money(totals.travel)}</td>
-                <td className="py-1.5 text-right">{money(totals.travel)}</td>
+                <td className="py-1.5 text-end">1</td>
+                <td className="py-1.5 text-end">{money(totals.travel)}</td>
+                <td className="py-1.5 text-end">{money(totals.travel)}</td>
               </tr>
             )}
             {s.extras.filter(e => extraTotal(e, counts) > 0).map(e => (
               <tr key={e.id} className="border-b border-g-border">
                 <td className="py-1.5">{e.name || tc.other}</td>
-                <td className="py-1.5 text-right">{extraQty(e, counts)}</td>
-                <td className="py-1.5 text-right">{money(num(e.amount))}</td>
-                <td className="py-1.5 text-right">{money(extraTotal(e, counts))}</td>
+                <td className="py-1.5 text-end">{extraQty(e, counts)}</td>
+                <td className="py-1.5 text-end">{money(num(e.amount))}</td>
+                <td className="py-1.5 text-end">{money(extraTotal(e, counts))}</td>
               </tr>
             ))}
           </tbody>
@@ -389,18 +389,18 @@ export default function CalculatorPage() {
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 max-h-[236px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 max-h-[236px] overflow-y-auto pe-1">
                   {visibleProducts.map(p => {
                     const n = addedCount(p._id);
                     return (
                       <button
                         key={p._id} type="button" onClick={() => addProduct(p)}
-                        className={`relative text-left rounded-xl border p-3 cursor-pointer bg-g-surface hover:bg-g-bg transition-colors ${n > 0 ? 'border-google-blue' : 'border-g-border'}`}
+                        className={`relative text-start rounded-xl border p-3 cursor-pointer bg-g-surface hover:bg-g-bg transition-colors ${n > 0 ? 'border-google-blue' : 'border-g-border'}`}
                       >
-                        <span className="block text-[13px] font-medium text-g-text leading-snug pr-5">{p.name}</span>
+                        <span className="block text-[13px] font-medium text-g-text leading-snug pe-5">{p.name}</span>
                         <span className="block text-xs text-g-text-2 mt-1">{money(p.defaultPrice ?? 0)}</span>
                         {n > 0 && (
-                          <span className="absolute top-2 right-2 min-w-[20px] h-5 px-1 rounded-full bg-google-blue text-white text-[11px] font-medium flex items-center justify-center">{n}</span>
+                          <span className="absolute top-2 end-2 min-w-[20px] h-5 px-1 rounded-full bg-google-blue text-white text-[11px] font-medium flex items-center justify-center">{n}</span>
                         )}
                       </button>
                     );
@@ -458,9 +458,9 @@ export default function CalculatorPage() {
                           {line.qtyMode === 'event' ? (
                             <button type="button" onClick={() => updLine(line.id, { qtyMode: 'custom', qty: counts.effectiveCount })}
                               title={tc.customQty}
-                              className="w-full text-left py-2.5 px-3.5 rounded-lg border border-dashed border-g-border bg-g-bg text-sm text-g-text cursor-pointer">
+                              className="w-full text-start py-2.5 px-3.5 rounded-lg border border-dashed border-g-border bg-g-bg text-sm text-g-text cursor-pointer">
                               × {counts.effectiveCount}
-                              <span className="text-[11px] text-g-text-3 ml-1.5">{followsLabel}</span>
+                              <span className="text-[11px] text-g-text-3 ms-1.5">{followsLabel}</span>
                             </button>
                           ) : (
                             <div className="flex items-center gap-1">
@@ -469,7 +469,7 @@ export default function CalculatorPage() {
                             </div>
                           )}
                         </div>
-                        <div className="col-span-2 sm:col-span-1 text-right font-sans text-[15px] font-medium text-g-text pb-2.5 whitespace-nowrap">
+                        <div className="col-span-2 sm:col-span-1 text-end font-sans text-[15px] font-medium text-g-text pb-2.5 whitespace-nowrap">
                           = {money(lineTotal(line, counts))}
                         </div>
                       </div>
@@ -513,7 +513,7 @@ export default function CalculatorPage() {
                       <label className={labelCls}>{tc.rate}</label>
                       <NumInput value={x.ratePerHour} step="0.01" onChange={v => updStaff(x.id, { ratePerHour: v })} />
                     </div>
-                    <div className="col-span-3 sm:col-span-1 text-right font-sans text-[15px] font-medium text-g-text pb-2.5 whitespace-nowrap">
+                    <div className="col-span-3 sm:col-span-1 text-end font-sans text-[15px] font-medium text-g-text pb-2.5 whitespace-nowrap">
                       = {money(staffTotal(x))}
                     </div>
                   </div>
@@ -540,7 +540,7 @@ export default function CalculatorPage() {
                   return (
                     <button key={r._id} type="button" aria-pressed={on}
                       onClick={() => patch({ travel: { regionId: r._id, label: r.label, price: r.travelPrice || 0 } })}
-                      className={`flex items-center justify-between gap-3 text-left rounded-xl border-2 p-3 cursor-pointer transition-colors ${on ? 'border-google-blue bg-google-blue-light dark:bg-google-gray-800' : 'border-g-border bg-g-surface hover:bg-g-bg'}`}
+                      className={`flex items-center justify-between gap-3 text-start rounded-xl border-2 p-3 cursor-pointer transition-colors ${on ? 'border-google-blue bg-google-blue-light dark:bg-google-gray-800' : 'border-g-border bg-g-surface hover:bg-g-bg'}`}
                     >
                       <span className={`text-sm ${on ? 'font-semibold text-google-blue' : 'text-g-text'}`}>{r.label}</span>
                       <span className="text-xs text-g-text-2 whitespace-nowrap">
@@ -585,7 +585,7 @@ export default function CalculatorPage() {
                         ? <NumInput value={e.qty} onChange={v => updExtra(e.id, { qty: v })} />
                         : <div className="py-2.5 px-3.5 rounded-lg border border-dashed border-g-border bg-g-bg text-sm text-g-text">× {counts.guests}</div>}
                     </div>
-                    <div className="text-right font-sans text-[15px] font-medium text-g-text pb-2.5 whitespace-nowrap">
+                    <div className="text-end font-sans text-[15px] font-medium text-g-text pb-2.5 whitespace-nowrap">
                       = {money(extraTotal(e, counts))}
                     </div>
                   </div>

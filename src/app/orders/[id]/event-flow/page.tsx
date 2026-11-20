@@ -155,7 +155,7 @@ export default function EventFlowPage() {
             {order.clientName}
             {order.eventDate && ` — ${format(new Date(order.eventDate), 'dd MMM yyyy')}`}
             {order.eventType && (
-              <span className="ml-2 text-[11px] py-0.5 px-2 rounded-xl bg-google-blue-light text-google-blue font-medium">
+              <span className="ms-2 text-[11px] py-0.5 px-2 rounded-xl bg-google-blue-light text-google-blue font-medium">
                 {order.eventType}
               </span>
             )}

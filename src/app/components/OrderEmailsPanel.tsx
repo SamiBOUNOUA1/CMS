@@ -48,7 +48,7 @@ export default function OrderEmailsPanel({ orderId, className = '' }: { orderId:
                 {e.status === 'failed' && (
                   <span className="rounded-full py-0.5 px-2 text-[11px] font-semibold bg-google-red-light text-google-red" title={e.error}>{te.failed}</span>
                 )}
-                <span className="text-g-text-3 ml-auto">{format(new Date(e.createdAt), 'd MMM yyyy, HH:mm')}</span>
+                <span className="text-g-text-3 ms-auto">{format(new Date(e.createdAt), 'd MMM yyyy, HH:mm')}</span>
               </li>
             ))}
           </ul>
